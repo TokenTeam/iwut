@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "iwut",
+    "name": "掌上吾理",
     "slug": "iwut",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -13,13 +13,14 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "dev.tokenteam.iwut"
     },
     "web": {
       "output": "static",

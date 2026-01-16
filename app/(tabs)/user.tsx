@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 
-export default function HomeScreen() {
+export default function TabTwoScreen() {
   return (
     <View>
     </View>
