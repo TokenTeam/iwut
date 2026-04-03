@@ -7,7 +7,7 @@ const config: ExpoConfig = {
   slug: "iwut",
   version: "1.0.0",
   runtimeVersion: {
-    policy: "appVersion",
+    policy: "fingerprint",
   },
   updates: {
     url: "https://u.expo.dev/db91117d-c051-4555-a16b-7a996823672e",

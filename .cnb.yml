@@ -9,3 +9,26 @@ $:
         - https://cnb.cool/TokenTeam/secrets/-/blob/main/expo.yml
       env:
         CNB_WELCOME_EXECUTE_COMMAND: bash scripts/build-android.sh development
+
+main:
+  push:
+    - docker:
+        image: docker.cnb.cool/zhxycn/env:latest
+      imports:
+        - https://cnb.cool/TokenTeam/secrets/-/blob/main/expo.yml
+      stages:
+        - script: bash scripts/build-android.sh development
+          timeout: 1h
+        - script: mv *.apk iwut-development.apk
+        - script: bash scripts/build-android.sh preview
+          timeout: 1h
+        - script: |
+            for f in *.apk; do
+              [ "$f" = "iwut-development.apk" ] && continue
+              mv "$f" iwut-preview.apk
+            done
+        - image: cnbcool/attachments:latest
+          settings:
+            attachments:
+              - "./iwut-development.apk"
+              - "./iwut-preview.apk"
