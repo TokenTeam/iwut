@@ -16,6 +16,9 @@
     },
     "production": {
       "channel": "production",
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "EXPO_PUBLIC_DEBUG": "0"
       }
