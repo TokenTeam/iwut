@@ -20,6 +20,9 @@ const config: ExpoConfig = {
   ios: {
     bundleIdentifier: IS_DEV ? "dev.tokenteam.iwut.dev" : "dev.tokenteam.iwut",
     supportsTablet: true,
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
+    },
   },
   android: {
     package: IS_DEV ? "dev.tokenteam.iwut.dev" : "dev.tokenteam.iwut",
