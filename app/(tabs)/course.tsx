@@ -15,12 +15,14 @@ import { Schedule } from "@/components/layout/schedule";
 import { ScrollPicker } from "@/components/ui/scroll-picker";
 import { getCurrentDayOfWeek, getCurrentWeek } from "@/lib/date";
 import { useCourseStore } from "@/store/course";
+import { useUserBindStore } from "@/store/user-bind";
 
 const MAX_WEEK = 20;
 
 export default function CourseScreen() {
   const courses = useCourseStore((store) => store.courses);
   const termStart = useCourseStore((store) => store.termStart);
+  const isBound = useUserBindStore((store) => store.isBound);
   const [week, setWeek] = useState<number>(() => getCurrentWeek(termStart));
   const today = getCurrentDayOfWeek();
   const [showWeekPicker, setShowWeekPicker] = useState<boolean>(false);
@@ -104,7 +106,7 @@ export default function CourseScreen() {
         today={week === getCurrentWeek(termStart) ? today : undefined}
       />
 
-      {courses.length === 0 && (
+      {isBound && courses.length === 0 && (
         <>
           <Animated.View
             className="absolute inset-0 bg-black"
