@@ -5,11 +5,11 @@ import {
   Pressable,
   ScrollView,
   Text,
-  useColorScheme,
   useWindowDimensions,
   View,
 } from "react-native";
 
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import type { Course } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";

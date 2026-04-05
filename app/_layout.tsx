@@ -1,7 +1,7 @@
 import { ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Appearance } from "react-native";
 import "react-native-reanimated";
 import Toast from "react-native-toast-message";
@@ -19,8 +19,13 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const themeMode = useThemeStore((s) => s.themeMode);
+  const isFirstMount = useRef(true);
 
   useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      if (themeMode === "system") return;
+    }
     Appearance.setColorScheme(
       themeMode === "system" ? "unspecified" : themeMode,
     );
