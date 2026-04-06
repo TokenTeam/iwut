@@ -33,7 +33,11 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={Themes[colorScheme === "dark" ? "dark" : "default"]}>
-      <Stack>
+      <Stack
+        screenOptions={{
+          headerBackButtonDisplayMode: "minimal",
+        }}
+      >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
