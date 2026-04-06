@@ -1,9 +1,6 @@
 import { useUserBindStore } from "@/store/user-bind";
 
-import {
-  NativeRPCErrorType,
-  nativeRPCError,
-} from "../error";
+import { NativeRPCErrorType, nativeRPCError } from "../error";
 import type {
   NativeRPCResponseData,
   NativeRPCService,
@@ -28,7 +25,6 @@ export class NativeRPCStudentService implements NativeRPCService {
 
     const userBind = useUserBindStore.getState();
 
-    // TODO Fill out other information of profile
     return {
       hasProfile: userBind.isBound,
       name: userBind.studentName,

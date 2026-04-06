@@ -53,9 +53,7 @@ export default function BrowserScreen() {
         style={{ flex: 1 }}
         javaScriptEnabled
         originWhitelist={["*"]}
-        injectedJavaScriptBeforeContentLoaded={
-          NATIVE_RPC_INJECTED_JAVASCRIPT
-        }
+        injectedJavaScriptBeforeContentLoaded={NATIVE_RPC_INJECTED_JAVASCRIPT}
         onNavigationStateChange={onNavigationStateChange}
         onLoadEnd={autoLoginOnLoadEnd}
         onMessage={onMessage}

@@ -2,20 +2,11 @@ import forge from "node-forge";
 import { Platform } from "react-native";
 
 import { CONFIG_BASE } from "@/constants/api";
-import {
-  DefaultSpiderHttpClientProvider,
-  Spider,
-} from "@/lib/spider";
-import type {
-  SpiderHttpClient,
-  SpiderInfo,
-} from "@/lib/spider";
+import { DefaultSpiderHttpClientProvider, Spider } from "@/lib/spider";
+import type { SpiderHttpClient, SpiderInfo } from "@/lib/spider";
 import { useUserBindStore } from "@/store/user-bind";
 
-import {
-  NativeRPCErrorType,
-  nativeRPCError,
-} from "../error";
+import { NativeRPCErrorType, nativeRPCError } from "../error";
 import type {
   NativeRPCResponseData,
   NativeRPCService,
@@ -67,7 +58,11 @@ export class NativeRPCSpiderService implements NativeRPCService {
     }
 
     const rawSpider = params.spiderInfo ?? params.info ?? params.spiderJson;
-    if (!rawSpider && typeof params.spider === "object" && params.spider !== null) {
+    if (
+      !rawSpider &&
+      typeof params.spider === "object" &&
+      params.spider !== null
+    ) {
       return this.spider.deserialize(JSON.stringify(params.spider));
     }
     if (!rawSpider) {
@@ -123,11 +118,12 @@ export class NativeRPCSpiderService implements NativeRPCService {
     const result = await this.spider.run(
       createPublicKeySpider(),
       {},
-      this.client ?? DefaultSpiderHttpClientProvider.create({
-        cookie: true,
-        forceSSL: false,
-        delay: 0,
-      }),
+      this.client ??
+        DefaultSpiderHttpClientProvider.create({
+          cookie: true,
+          forceSSL: false,
+          delay: 0,
+        }),
     );
 
     const publicKey = result.publicKey;
@@ -188,7 +184,10 @@ function encryptRSA(content: string, publicKeyBase64: string): string {
 }
 
 function chunkPem(input: string): string {
-  return input.replace(/\s+/g, "").replace(/(.{64})/g, "$1\n").trim();
+  return input
+    .replace(/\s+/g, "")
+    .replace(/(.{64})/g, "$1\n")
+    .trim();
 }
 
 function createPublicKeySpider(): SpiderInfo {

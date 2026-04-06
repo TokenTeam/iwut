@@ -121,8 +121,17 @@ export async function fetchNoRedirect(
   }
 
   const requestBody = createRequestBody(init.body);
-  const requestHeaders = createRequestHeaders(parsedUrl, init.headers, requestBody);
-  const request = buildRequestMessage(parsedUrl, init.method, requestHeaders, requestBody);
+  const requestHeaders = createRequestHeaders(
+    parsedUrl,
+    init.headers,
+    requestBody,
+  );
+  const request = buildRequestMessage(
+    parsedUrl,
+    init.method,
+    requestHeaders,
+    requestBody,
+  );
   const responseBuffer = await sendRequest(parsedUrl, request, init);
   const response = parseHttpResponse(responseBuffer);
 
@@ -308,7 +317,9 @@ function parseHttpResponse(buffer: Buffer): ParsedResponse {
     throw new Error("Invalid HTTP response: missing status line");
   }
 
-  const statusMatch = statusLine.match(/^HTTP\/\d+(?:\.\d+)?\s+(\d{3})(?:\s+(.*))?$/);
+  const statusMatch = statusLine.match(
+    /^HTTP\/\d+(?:\.\d+)?\s+(\d{3})(?:\s+(.*))?$/,
+  );
   if (!statusMatch) {
     throw new Error(`Invalid HTTP status line: ${statusLine}`);
   }
@@ -367,7 +378,9 @@ function decodeChunkedBody(bodyBuffer: Buffer): Buffer {
   while (cursor < bodyBuffer.length) {
     const lineEnd = bodyBuffer.indexOf("\r\n", cursor);
     if (lineEnd === -1) {
-      throw new Error("Invalid chunked response: missing chunk size terminator");
+      throw new Error(
+        "Invalid chunked response: missing chunk size terminator",
+      );
     }
 
     const sizeText = bodyBuffer

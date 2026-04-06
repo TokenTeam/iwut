@@ -1,9 +1,6 @@
 import { createMMKV } from "react-native-mmkv";
 
-import {
-  NativeRPCErrorType,
-  nativeRPCError,
-} from "../error";
+import { NativeRPCErrorType, nativeRPCError } from "../error";
 import type {
   NativeRPCResponseData,
   NativeRPCService,

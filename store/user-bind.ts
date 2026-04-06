@@ -11,7 +11,14 @@ interface UserBindStore {
   cardId: string;
   college: string;
   eduLevel: string;
-  bind: (studentId: string, studentName: string, password: string, cardId: string, college: string, eduLevel: string) => void;
+  bind: (
+    studentId: string,
+    studentName: string,
+    password: string,
+    cardId: string,
+    college: string,
+    eduLevel: string,
+  ) => void;
   unbind: () => void;
   getCredentials: () => Promise<{
     username: string;
@@ -31,12 +38,26 @@ export const useUserBindStore = create<UserBindStore>()(
 
       bind: (studentId, studentName, password, cardId, college, eduLevel) => {
         SecureStore.setItemAsync("zhlgd_password", password);
-        set({ isBound: true, studentId, studentName, cardId, college, eduLevel });
+        set({
+          isBound: true,
+          studentId,
+          studentName,
+          cardId,
+          college,
+          eduLevel,
+        });
       },
 
       unbind: () => {
         SecureStore.deleteItemAsync("zhlgd_password");
-        set({ isBound: false, studentId: "", studentName: "", cardId: "", college: "", eduLevel: "" });
+        set({
+          isBound: false,
+          studentId: "",
+          studentName: "",
+          cardId: "",
+          college: "",
+          eduLevel: "",
+        });
       },
 
       getCredentials: async () => {
@@ -56,7 +77,7 @@ export const useUserBindStore = create<UserBindStore>()(
         studentName: state.studentName,
         cardId: state.cardId,
         college: state.college,
-        eduLevel: state.eduLevel
+        eduLevel: state.eduLevel,
       }),
     },
   ),

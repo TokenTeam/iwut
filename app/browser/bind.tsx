@@ -70,14 +70,21 @@ export default function BindScreen() {
           );
 
           if (!isLoginPage && !state.loading && pendingCredentials.current) {
-            const isLibraryHome = state.url.includes("202.114.89.11/opac/reader/space");
-            const isInfoPage = state.url.includes("202.114.89.11/opac/reader/getReaderInfo");
+            const isLibraryHome = state.url.includes(
+              "202.114.89.11/opac/reader/space",
+            );
+            const isInfoPage = state.url.includes(
+              "202.114.89.11/opac/reader/getReaderInfo",
+            );
             if (!isLibraryHome && !isInfoPage) {
-              webview.current?.injectJavaScript(`window.location.href = "https://zhlgd.whut.edu.cn/tpass/login?service=http%3A%2F%2F202.114.89.11%2Fopac%2Fspecial%2FtoOpac";`);
+              webview.current?.injectJavaScript(
+                `window.location.href = "https://zhlgd.whut.edu.cn/tpass/login?service=http%3A%2F%2F202.114.89.11%2Fopac%2Fspecial%2FtoOpac";`,
+              );
             } else if (isLibraryHome) {
-              webview.current?.injectJavaScript(`window.location.href = "http://202.114.89.11/opac/reader/getReaderInfo";`)
+              webview.current?.injectJavaScript(
+                `window.location.href = "http://202.114.89.11/opac/reader/getReaderInfo";`,
+              );
             }
-            
           }
         }}
         onMessage={(event: { nativeEvent: { data: string } }) => {
@@ -92,7 +99,16 @@ export default function BindScreen() {
               isBound.current = true;
               const { username, password } = pendingCredentials.current;
 
-              useUserBindStore.getState().bind(username, msg.name, password, msg.cardId, msg.college, msg.eduLevel);
+              useUserBindStore
+                .getState()
+                .bind(
+                  username,
+                  msg.name,
+                  password,
+                  msg.cardId,
+                  msg.college,
+                  msg.eduLevel,
+                );
 
               Toast.show({
                 type: "success",

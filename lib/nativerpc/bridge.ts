@@ -62,7 +62,10 @@ export class NativeRPCBridge {
     request: NativeRPCRequest,
     context: NativeRPCServiceContext,
   ): Promise<NativeRPCResponse> {
-    if (request.method === "_addEventListener" || request.method === "_removeEventListener") {
+    if (
+      request.method === "_addEventListener" ||
+      request.method === "_removeEventListener"
+    ) {
       return {
         _meta: request._meta ?? {},
         method: request.method,
@@ -118,13 +121,13 @@ export class NativeRPCBridge {
 
     return {
       _meta:
-        request._meta && typeof request._meta === "object"
-          ? request._meta
-          : {},
+        request._meta && typeof request._meta === "object" ? request._meta : {},
       method: request.method,
       service: request.service,
       params:
-        request.params && typeof request.params === "object" && !Array.isArray(request.params)
+        request.params &&
+        typeof request.params === "object" &&
+        !Array.isArray(request.params)
           ? request.params
           : null,
     };

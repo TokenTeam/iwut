@@ -85,7 +85,11 @@ export class SpiderHttpClientImpl implements SpiderHttpClient {
     let currentRequest = request;
 
     try {
-      for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount += 1) {
+      for (
+        let redirectCount = 0;
+        redirectCount <= MAX_REDIRECTS;
+        redirectCount += 1
+      ) {
         const response = await fetchNoRedirect(currentRequest.url, {
           method: currentRequest.method,
           headers: this.buildRequestHeaders(currentRequest),
@@ -128,7 +132,9 @@ export class SpiderHttpClientImpl implements SpiderHttpClient {
         };
       }
 
-      throw new SpiderException(`Too many redirects while requesting ${request.url}`);
+      throw new SpiderException(
+        `Too many redirects while requesting ${request.url}`,
+      );
     } catch (error) {
       if (error instanceof SpiderException) {
         throw error;
@@ -304,7 +310,9 @@ function findHeader(
   name: string,
 ): string | undefined {
   const loweredName = name.toLowerCase();
-  const match = headers.find(([headerName]) => headerName.toLowerCase() === loweredName);
+  const match = headers.find(
+    ([headerName]) => headerName.toLowerCase() === loweredName,
+  );
   return match?.[1];
 }
 
@@ -336,7 +344,9 @@ function findHeaderName(
   name: string,
 ): string | undefined {
   const loweredName = name.toLowerCase();
-  return Object.keys(headers).find((headerName) => headerName.toLowerCase() === loweredName);
+  return Object.keys(headers).find(
+    (headerName) => headerName.toLowerCase() === loweredName,
+  );
 }
 
 function defaultCookiePath(pathname: string): string {

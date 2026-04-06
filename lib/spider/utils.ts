@@ -121,8 +121,12 @@ function parseTaskInfo(raw: any, label: string): SpiderTaskInfo {
     success: asNumber(task.success, 200),
     method: parseMethod(task.method),
     delay: asNumber(task.delay, 0),
-    payload: task.payload ? parsePayload(task.payload, `${label}.payload`) : undefined,
-    content: task.content ? parseParser(task.content, `${label}.content`) : undefined,
+    payload: task.payload
+      ? parsePayload(task.payload, `${label}.payload`)
+      : undefined,
+    content: task.content
+      ? parseParser(task.content, `${label}.content`)
+      : undefined,
     header: asOptionalArray(task.header)?.map((item, index) =>
       parseKeyPathPair(item, `${label}.header[${index}]`),
     ),
@@ -218,9 +222,7 @@ function parseValueType(raw: any): SpiderValueType {
   throw new SpiderException(`Unsupported value type: ${value}`);
 }
 
-function compactObject(
-  object: Record<string, any>,
-): Record<string, any> {
+function compactObject(object: Record<string, any>): Record<string, any> {
   return Object.fromEntries(
     Object.entries(object).filter(([, value]) => value !== undefined),
   );
@@ -230,10 +232,7 @@ function firstDefined<T>(...values: T[]): T | undefined {
   return values.find((value) => value !== undefined);
 }
 
-function asRecord(
-  value: any,
-  label: string,
-): Record<string, any> {
+function asRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new SpiderException(`Expected ${label} to be an object`);
   }

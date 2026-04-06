@@ -6,10 +6,7 @@ import type {
   NativeRPCService,
   NativeRPCServiceContext,
 } from "../types";
-import {
-  NativeRPCErrorType,
-  nativeRPCError,
-} from "../error";
+import { NativeRPCErrorType, nativeRPCError } from "../error";
 
 export class NativeRPCAppService implements NativeRPCService {
   readonly name = "app";
