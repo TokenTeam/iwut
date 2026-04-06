@@ -31,11 +31,11 @@ export class NativeRPCStudentService implements NativeRPCService {
     // TODO Fill out other information of profile
     return {
       hasProfile: userBind.isBound,
-      name: userBind.studentName || "",
-      studentId: userBind.studentId || "",
-      cardId: "123456",
-      college: "信息工程学院",
-      eduLevel: "本科",
+      name: userBind.studentName,
+      studentId: userBind.studentId,
+      cardId: userBind.cardId,
+      college: userBind.college,
+      eduLevel: userBind.eduLevel,
     };
   }
 }

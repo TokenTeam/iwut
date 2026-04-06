@@ -43,7 +43,24 @@ export default function BindScreen() {
     if(btn)btn.addEventListener('click',send);
     document.addEventListener('submit',send,true);
   }
+  function trackInfo() {
+    let name = document.getElementsByName('rdName')[0].value;
+    if (!name) {
+      setTimeout(trackInfo, 300);
+      return;
+    }
+    let msg = JSON.stringify({
+      type: 'info', 
+      name: name,
+      college: document.getElementsByName('rdUnit')[0].value,
+      studentId: document.getElementsByName('workCardNo')[0].value,
+      cardId: document.getElementsByName('rdid')[0].value.slice(4),
+      eduLevel: document.getElementsByName('rdSort5')[0].value
+    });
+    window.ReactNativeWebView.postMessage(msg);
+  }
   track();
+  trackInfo();
 })();true;`}
         onNavigationStateChange={(state: WebViewNavigation) => {
           if (isBound.current) return;
@@ -53,19 +70,14 @@ export default function BindScreen() {
           );
 
           if (!isLoginPage && !state.loading && pendingCredentials.current) {
-            isBound.current = true;
-            const { username, password } = pendingCredentials.current;
-
-            useUserBindStore.getState().bind(username, username, password);
-
-            Toast.show({
-              type: "success",
-              text1: "绑定成功",
-              text2: `已绑定账号 ${username}`,
-              position: "bottom",
-            });
-
-            router.back();
+            const isLibraryHome = state.url.includes("202.114.89.11/opac/reader/space");
+            const isInfoPage = state.url.includes("202.114.89.11/opac/reader/getReaderInfo");
+            if (!isLibraryHome && !isInfoPage) {
+              webview.current?.injectJavaScript(`window.location.href = "https://zhlgd.whut.edu.cn/tpass/login?service=http%3A%2F%2F202.114.89.11%2Fopac%2Fspecial%2FtoOpac";`);
+            } else if (isLibraryHome) {
+              webview.current?.injectJavaScript(`window.location.href = "http://202.114.89.11/opac/reader/getReaderInfo";`)
+            }
+            
           }
         }}
         onMessage={(event: { nativeEvent: { data: string } }) => {
@@ -76,6 +88,20 @@ export default function BindScreen() {
                 username: msg.username,
                 password: msg.password,
               };
+            } else if (msg.type === "info" && pendingCredentials.current) {
+              isBound.current = true;
+              const { username, password } = pendingCredentials.current;
+
+              useUserBindStore.getState().bind(username, msg.name, password, msg.cardId, msg.college, msg.eduLevel);
+
+              Toast.show({
+                type: "success",
+                text1: "绑定成功",
+                text2: `已绑定账号 ${username}`,
+                position: "bottom",
+              });
+
+              router.back();
             }
           } catch {}
         }}
