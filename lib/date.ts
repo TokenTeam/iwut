@@ -2,7 +2,7 @@ const MAX_WEEK = 20;
 
 export function getCurrentWeek(termStart: string): number {
   if (!termStart) return 1;
-  const start = new Date(termStart);
+  const start = new Date(termStart + "T00:00:00");
   const today = new Date();
   const week =
     Math.floor(
@@ -18,7 +18,7 @@ export function getCurrentDayOfWeek(): number {
 
 export function isVacation(termStart: string): boolean {
   if (!termStart) return false;
-  const start = new Date(termStart);
+  const start = new Date(termStart + "T00:00:00");
   const today = new Date();
   const week =
     Math.floor(
