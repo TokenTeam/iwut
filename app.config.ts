@@ -5,7 +5,7 @@ const IS_DEV = process.env.EXPO_PUBLIC_DEBUG === "1";
 const config: ExpoConfig = {
   name: "掌上吾理",
   slug: "iwut",
-  version: "0.0.0",
+  version: "0.0.1",
   runtimeVersion: {
     policy: "fingerprint",
   },
