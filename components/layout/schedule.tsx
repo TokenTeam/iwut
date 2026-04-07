@@ -24,24 +24,30 @@ export const DAY_LABELS = [
   "周日",
 ];
 
-const ALL_SECTIONS: { flex: number }[] = [
-  { flex: 2 }, // 0 早上 A: DM 1-2
-  { flex: 3 }, // 1 早上 B: DM 3-5
-  { flex: 2 }, // 2 中午:   DM 6-7
-  { flex: 3 }, // 3 下午 A: DM 8-10
-  { flex: 2 }, // 4 下午 B: DM 11-12
-  { flex: 4 }, // 5 晚上:   DM 13-16
+const ALL_GROUPS: number[][] = [
+  [1, 2],
+  [3, 4, 5],
+  [6, 7],
+  [8, 9, 10],
+  [11, 12],
+  [13],
+  [14, 15, 16],
 ];
 
-const ALL_SIDEBAR_GROUPS = [
-  { label: "早\n上", flex: 5 },
-  { label: "中\n午", flex: 2 },
-  { label: "下\n午", flex: 5 },
-  { label: "晚\n上", flex: 4 },
+const HIDDEN_GROUP_INDICES = [2, 5];
+
+const ALL_SIDEBAR_LABELS = [
+  { label: "早\n上", firstSection: 1, lastSection: 5 },
+  { label: "中\n午", firstSection: 6, lastSection: 7 },
+  { label: "下\n午", firstSection: 8, lastSection: 12 },
+  { label: "晚\n上", firstSection: 13, lastSection: 16 },
 ];
 
-const NOON_SECTION_INDEX = 2;
-const NOON_SIDEBAR_INDEX = 1;
+const COMPACT_SIDEBAR_LABELS = [
+  { label: "早\n上", firstSection: 1, lastSection: 5 },
+  { label: "下\n午", firstSection: 8, lastSection: 12 },
+  { label: "晚\n上", firstSection: 14, lastSection: 16 },
+];
 
 export const COURSE_COLORS = [
   "rgba(91,155,213,0.75)",
@@ -54,24 +60,14 @@ export const COURSE_COLORS = [
   "rgba(99,102,241,0.75)",
 ];
 
-const SECTION_MAP: Record<number, number> = {
-  1: 0,
-  2: 0,
-  3: 1,
-  4: 1,
-  5: 1,
-  6: 2,
-  7: 2,
-  8: 3,
-  9: 3,
-  10: 3,
-  11: 4,
-  12: 4,
-  13: 5,
-  14: 5,
-  15: 5,
-  16: 5,
-};
+const GAP_UNITS = 0;
+const HEADER_HEIGHT = 36;
+const SIDEBAR_WIDTH = 24;
+const PEEK_WIDTH = 20;
+
+function pct(n: number): `${number}%` {
+  return `${n}%` as `${number}%`;
+}
 
 function buildColorMap(courses: Course[]): Map<string, number> {
   const map = new Map<string, number>();
@@ -85,26 +81,52 @@ function buildColorMap(courses: Course[]): Map<string, number> {
   return map;
 }
 
-function buildGrid(
-  courses: Course[],
-  sectionCount: number,
-): (Course | null)[][] {
-  const table: Course[][][] = Array.from({ length: 7 }, () =>
-    Array.from({ length: sectionCount }, () => []),
-  );
+function buildDayCourses(courses: Course[]): Course[][] {
+  const days: Course[][] = Array.from({ length: 7 }, () => []);
   for (const c of courses) {
     const d = c.day - 1;
-    const s = SECTION_MAP[c.sectionStart];
-    if (d >= 0 && d < 7 && s !== undefined && s < sectionCount) {
-      table[d][s].push(c);
+    if (d >= 0 && d < 7) {
+      days[d].push(c);
     }
   }
-  return table.map((day) => day.map((cell) => cell[0] ?? null));
+  return days;
 }
 
-const HEADER_HEIGHT = 36;
-const SIDEBAR_WIDTH = 24;
-const PEEK_WIDTH = 20;
+interface SidebarLabel {
+  label: string;
+  firstSection: number;
+  lastSection: number;
+}
+
+interface LayoutInfo {
+  sectionTop: Record<number, number>;
+  sectionPct: number;
+  groups: number[][];
+  sidebarLabels: SidebarLabel[];
+}
+
+function computeLayout(
+  groups: number[][],
+  sidebarLabels: SidebarLabel[],
+): LayoutInfo {
+  const totalSections = groups.reduce((sum, g) => sum + g.length, 0);
+  const numGaps = groups.length - 1;
+  const totalUnits = totalSections + numGaps * GAP_UNITS;
+  const sectionPct = 100 / totalUnits;
+  const gapPct = GAP_UNITS * sectionPct;
+
+  const sectionTop: Record<number, number> = {};
+  let y = 0;
+  for (let gi = 0; gi < groups.length; gi++) {
+    if (gi > 0) y += gapPct;
+    for (const sec of groups[gi]) {
+      sectionTop[sec] = y;
+      y += sectionPct;
+    }
+  }
+
+  return { sectionTop, sectionPct, groups, sidebarLabels };
+}
 
 export function Schedule({
   courses,
@@ -124,29 +146,15 @@ export function Schedule({
   const scrollWeekend = useScheduleStore((s) => s.scrollWeekend);
   const showNoonCourse = useScheduleStore((s) => s.showNoonCourse);
 
-  const sections = useMemo(
-    () =>
-      showNoonCourse
-        ? ALL_SECTIONS
-        : ALL_SECTIONS.filter((_, i) => i !== NOON_SECTION_INDEX),
-    [showNoonCourse],
-  );
-
-  const sidebarGroups = useMemo(
-    () =>
-      showNoonCourse
-        ? ALL_SIDEBAR_GROUPS
-        : ALL_SIDEBAR_GROUPS.filter((_, i) => i !== NOON_SIDEBAR_INDEX),
-    [showNoonCourse],
-  );
-
-  const sectionIndices = useMemo(
-    () =>
-      showNoonCourse
-        ? ALL_SECTIONS.map((_, i) => i)
-        : ALL_SECTIONS.map((_, i) => i).filter((i) => i !== NOON_SECTION_INDEX),
-    [showNoonCourse],
-  );
+  const layout = useMemo(() => {
+    const groups = showNoonCourse
+      ? ALL_GROUPS
+      : ALL_GROUPS.filter((_, i) => !HIDDEN_GROUP_INDICES.includes(i));
+    const sidebarLabels = showNoonCourse
+      ? ALL_SIDEBAR_LABELS
+      : COMPACT_SIDEBAR_LABELS;
+    return computeLayout(groups, sidebarLabels);
+  }, [showNoonCourse]);
 
   const colorMap = useMemo(() => buildColorMap(courses), [courses]);
 
@@ -155,10 +163,7 @@ export function Schedule({
     [courses, week],
   );
 
-  const grid = useMemo(
-    () => buildGrid(weekCourses, ALL_SECTIONS.length),
-    [weekCourses],
-  );
+  const dayCourses = useMemo(() => buildDayCourses(weekCourses), [weekCourses]);
 
   const visibleCols = scrollWeekend ? 5 : 7;
   const availableWidth = screenWidth - SIDEBAR_WIDTH;
@@ -168,6 +173,8 @@ export function Schedule({
 
   const nameFontSize = scrollWeekend ? 12 : 10;
   const roomFontSize = scrollWeekend ? 10 : 9;
+
+  const emptyBg = isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)";
 
   const scrollRef = useCallback(
     (node: ScrollView | null) => {
@@ -180,6 +187,8 @@ export function Schedule({
 
   const dayColumns = Array.from({ length: 7 }, (_, dayIdx) => {
     const isToday = dayIdx + 1 === today;
+    const coursesForDay = dayCourses[dayIdx];
+
     return (
       <View key={dayIdx} style={{ width: colWidth }}>
         <View
@@ -200,26 +209,61 @@ export function Schedule({
           </Text>
         </View>
 
-        {sectionIndices.map((secIdx, renderIdx) => {
-          const course = grid[dayIdx][secIdx];
-          const bg = course
-            ? COURSE_COLORS[colorMap.get(course.name) ?? 0]
-            : undefined;
-
-          return (
-            <View
-              key={secIdx}
-              style={{ flex: sections[renderIdx].flex, padding: 2 }}
-            >
-              {course ? (
-                <Pressable
+        <View style={{ flex: 1 }}>
+          {layout.groups.map((group) => {
+            const topVal = layout.sectionTop[group[0]];
+            const heightVal =
+              layout.sectionTop[group[group.length - 1]] +
+              layout.sectionPct -
+              topVal;
+            return (
+              <View
+                key={group[0]}
+                style={{
+                  position: "absolute",
+                  top: pct(topVal),
+                  height: pct(heightVal),
+                  left: 0,
+                  right: 0,
+                }}
+              >
+                <View
                   style={{
                     flex: 1,
-                    backgroundColor: bg,
+                    margin: 2,
+                    backgroundColor: emptyBg,
                     borderRadius: 6,
-                    padding: 4,
-                    overflow: "hidden",
-                    flexDirection: "column",
+                  }}
+                />
+              </View>
+            );
+          })}
+
+          {coursesForDay
+            .filter(
+              (c) =>
+                layout.sectionTop[c.sectionStart] !== undefined &&
+                layout.sectionTop[c.sectionEnd] !== undefined,
+            )
+            .map((course, ci) => {
+              const topVal = layout.sectionTop[course.sectionStart];
+              const heightVal =
+                layout.sectionTop[course.sectionEnd] +
+                layout.sectionPct -
+                topVal;
+              const bg = COURSE_COLORS[colorMap.get(course.name) ?? 0];
+              const span = course.sectionEnd - course.sectionStart + 1;
+              const nameLines = 2 * span - 1;
+
+              return (
+                <Pressable
+                  key={`${course.name}-${course.sectionStart}-${ci}`}
+                  style={{
+                    position: "absolute",
+                    top: pct(topVal),
+                    height: pct(heightVal),
+                    left: 0,
+                    right: 0,
                   }}
                   onPress={() => {
                     haptic();
@@ -229,46 +273,48 @@ export function Schedule({
                   <View
                     style={{
                       flex: 1,
-                      minHeight: 0,
+                      margin: 2,
+                      backgroundColor: bg,
+                      borderRadius: 6,
+                      padding: 4,
                       overflow: "hidden",
+                      flexDirection: "column",
                     }}
                   >
-                    <Text
+                    <View
                       style={{
-                        fontSize: nameFontSize,
-                        fontWeight: "bold",
-                        color: "#fff",
-                        lineHeight: nameFontSize + 4,
+                        flex: 1,
+                        minHeight: 0,
+                        overflow: "hidden",
                       }}
                     >
-                      {course.name}
+                      <Text
+                        numberOfLines={nameLines}
+                        style={{
+                          fontSize: nameFontSize,
+                          fontWeight: "bold",
+                          color: "#fff",
+                          lineHeight: nameFontSize + 4,
+                        }}
+                      >
+                        {course.name}
+                      </Text>
+                    </View>
+                    <Text
+                      style={{
+                        fontSize: roomFontSize,
+                        color: "rgba(255,255,255,0.85)",
+                        flexShrink: 0,
+                        marginTop: 2,
+                      }}
+                    >
+                      {course.room}
                     </Text>
                   </View>
-                  <Text
-                    style={{
-                      fontSize: roomFontSize,
-                      color: "rgba(255,255,255,0.85)",
-                      flexShrink: 0,
-                      marginTop: 6,
-                    }}
-                  >
-                    {course.room}
-                  </Text>
                 </Pressable>
-              ) : (
-                <View
-                  style={{
-                    flex: 1,
-                    backgroundColor: isDark
-                      ? "rgba(255,255,255,0.03)"
-                      : "rgba(0,0,0,0.02)",
-                    borderRadius: 6,
-                  }}
-                />
-              )}
-            </View>
-          );
-        })}
+              );
+            })}
+        </View>
       </View>
     );
   });
@@ -282,27 +328,38 @@ export function Schedule({
       <View style={{ flex: 1, flexDirection: "row" }}>
         <View style={{ width: SIDEBAR_WIDTH }}>
           <View style={{ height: HEADER_HEIGHT }} />
-          {sidebarGroups.map((g) => (
-            <View
-              key={g.label}
-              style={{
-                flex: g.flex,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 11,
-                  color: isDark ? "#737373" : "#a3a3a3",
-                  textAlign: "center",
-                  lineHeight: 16,
-                }}
-              >
-                {g.label}
-              </Text>
-            </View>
-          ))}
+          <View style={{ flex: 1 }}>
+            {layout.sidebarLabels.map((sl) => {
+              const topVal = layout.sectionTop[sl.firstSection];
+              const heightVal =
+                layout.sectionTop[sl.lastSection] + layout.sectionPct - topVal;
+              return (
+                <View
+                  key={sl.label}
+                  style={{
+                    position: "absolute",
+                    top: pct(topVal),
+                    height: pct(heightVal),
+                    left: 0,
+                    right: 0,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      color: isDark ? "#737373" : "#a3a3a3",
+                      textAlign: "center",
+                      lineHeight: 16,
+                    }}
+                  >
+                    {sl.label}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
         </View>
 
         {scrollWeekend ? (
