@@ -1,6 +1,7 @@
 import type { ExpoConfig } from "expo/config";
 
-const IS_DEV = process.env.EXPO_PUBLIC_DEBUG === "1";
+// 仅在构建时生效，与 JS 层的 IS_DEV 无关
+const IS_DEV = process.env.EAS_BUILD_PROFILE === "development";
 
 const config: ExpoConfig = {
   name: "掌上吾理",
