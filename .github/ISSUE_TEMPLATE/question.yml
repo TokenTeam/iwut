@@ -1,0 +1,53 @@
+name: ❓ 问题咨询
+description: 询问使用问题或需要帮助
+title: "[Question] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        如果您在使用过程中遇到问题或需要帮助，请在这里提问。
+
+  - type: textarea
+    id: question
+    attributes:
+      label: 您的问题
+      description: 请详细描述您的问题
+      placeholder: 例如：校园网认证一直失败怎么办？
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: 设备与系统
+      description: 您使用的设备型号和系统版本
+      placeholder: 例如：iPhone 15 / iOS 18.2，Redmi K70 / Android 15
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 应用版本
+      description: 可在「关于」页面查看版本号
+      placeholder: 例如：0.1.1-patch.3
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 相关上下文
+      description: 提供任何可能有助于回答问题的额外信息（如截图、操作步骤等）
+      placeholder: 例如：我已经尝试了重新登录，但问题依然存在...
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: 确认
+      options:
+        - label: 我已将应用更新到最新版本
+          required: true
+        - label: 我已经搜索过现有的 Issues，确认这是一个新问题
+          required: true

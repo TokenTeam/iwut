@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🐛 Bug 报告
+    url: https://github.com/tokenteam/iwut/issues/new?template=bug_report.yml
+    about: 在 GitHub 上报告程序错误
+  - name: 💡 功能请求
+    url: https://github.com/tokenteam/iwut/issues/new?template=feature_request.yml
+    about: 在 GitHub 上提出新功能建议
+  - name: ❓ 问题咨询
+    url: https://github.com/tokenteam/iwut/issues/new?template=question.yml
+    about: 在 GitHub 上提问或寻求帮助
+  - name: 📖 官方网站
+    url: https://iwut.tokenteam.net
+    about: 查看官方网站了解更多信息
