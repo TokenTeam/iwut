@@ -6,7 +6,7 @@ const IS_DEV = process.env.EAS_BUILD_PROFILE === "development";
 const config: ExpoConfig = {
   name: "掌上吾理",
   slug: "iwut",
-  version: "0.1.1",
+  version: "0.1.2",
   runtimeVersion: {
     policy: "appVersion",
   },
