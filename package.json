@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
+    "@preeternal/react-native-cookie-manager": "^6.3.1",
     "@react-native-assets/slider": "^11.0.12",
     "@react-navigation/native": "^7.1.8",
     "@tailwindcss/postcss": "^4.2.2",

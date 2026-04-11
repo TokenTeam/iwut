@@ -1,4 +1,5 @@
 import * as SecureStore from "expo-secure-store";
+import CookieManager from "@preeternal/react-native-cookie-manager";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -50,6 +51,7 @@ export const useUserBindStore = create<UserBindStore>()(
 
       unbind: () => {
         SecureStore.deleteItemAsync("zhlgd_password");
+        CookieManager.clearAll(true);
         set({
           isBound: false,
           studentId: "",

@@ -1424,6 +1424,11 @@
   resolved "https://registry.npmmirror.com/@nolyfill/is-core-module/-/is-core-module-1.0.39.tgz#3dc35ba0f1e66b403c00b39344f870298ebb1c8e"
   integrity sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==
 
+"@preeternal/react-native-cookie-manager@^6.3.1":
+  version "6.3.1"
+  resolved "https://registry.npmmirror.com/@preeternal/react-native-cookie-manager/-/react-native-cookie-manager-6.3.1.tgz#0e7efb32f288f045292571c338b821034baf8192"
+  integrity sha512-AHFfce8zkRZKrEEIXI3rN+lT510iRAvSGTZ7w817LCr1PPTNY0MA7KPa70iUtrsxS2RfpXtIx2W3Cp5Pp01pBA==
+
 "@radix-ui/primitive@1.1.3":
   version "1.1.3"
   resolved "https://registry.npmmirror.com/@radix-ui/primitive/-/primitive-1.1.3.tgz#e2dbc13bdc5e4168f4334f75832d7bdd3e2de5ba"
