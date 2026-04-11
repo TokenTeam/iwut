@@ -33,6 +33,15 @@ export default function CalendarSettingsScreen() {
     return names.size;
   }, [courses]);
 
+  const deleteOldBg = async (uri: string | null) => {
+    if (!uri) return;
+    try {
+      const { File } = await import("expo-file-system/next");
+      const old = new File(uri);
+      if (old.exists) old.delete();
+    } catch {}
+  };
+
   const handlePickImage = async () => {
     const ImagePicker = await import("expo-image-picker");
     const { File, Paths } = await import("expo-file-system/next");
@@ -41,6 +50,7 @@ export default function CalendarSettingsScreen() {
       quality: 0.8,
     });
     if (result.canceled) return;
+    await deleteOldBg(backgroundImageUri);
     const source = new File(result.assets[0].uri);
     const dest = new File(Paths.document, `schedule-bg-${Date.now()}.jpg`);
     await source.copy(dest);
@@ -49,7 +59,8 @@ export default function CalendarSettingsScreen() {
     Toast.show({ type: "success", text1: "背景已设置", position: "bottom" });
   };
 
-  const handleRemoveBg = () => {
+  const handleRemoveBg = async () => {
+    await deleteOldBg(backgroundImageUri);
     setBackgroundImageUri(null);
     setShowBgPicker(false);
     Toast.show({ type: "success", text1: "背景已移除", position: "bottom" });
