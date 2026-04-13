@@ -1,22 +1,37 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   LayoutChangeEvent,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Pressable,
   ScrollView,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { DAY_LABELS } from "@/components/layout/schedule";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useHaptics } from "@/hooks/use-haptics";
+import {
+  getCurrentDayOfWeek,
+  getCurrentWeek,
+  getTomorrowDayOfWeek,
+  getTomorrowWeek,
+  isVacation,
+} from "@/lib/date";
 import {
   formatCourseSectionTimeRange,
   SECTION_TIMES,
 } from "@/services/course-time";
-import { getCurrentDayOfWeek, getCurrentWeek, isVacation } from "@/lib/date";
 import type { Course } from "@/store/course";
 import { useCourseStore } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
@@ -32,6 +47,8 @@ const GREETINGS: { start: number; end: number; title: string; sub: string }[] =
     { start: 19, end: 23, title: "晚上好", sub: "忙完了就早点休息" },
     { start: 23, end: 5, title: "夜深了", sub: "熬夜伤身，早点睡哦" },
   ];
+
+const CARD_GAP = 10;
 
 function isCourseFinished(course: Course): boolean {
   const now = new Date();
@@ -80,6 +97,8 @@ export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const router = useRouter();
+  const haptic = useHaptics();
+  const { width: screenWidth } = useWindowDimensions();
   const courses = useCourseStore((s) => s.courses);
   const termStart = useCourseStore((s) => s.termStart);
   const hasUpdate = useUpdateStore((s) => s.hasUpdate);
@@ -92,6 +111,8 @@ export default function HomeScreen() {
 
   const week = getCurrentWeek(termStart);
   const today = getCurrentDayOfWeek();
+  const tomorrowDay = getTomorrowDayOfWeek();
+  const tomorrowWeek = getTomorrowWeek(termStart);
 
   const todayCourses = useMemo(
     () =>
@@ -101,6 +122,19 @@ export default function HomeScreen() {
         )
         .sort((a, b) => a.sectionStart - b.sectionStart),
     [courses, today, week],
+  );
+
+  const tomorrowCourses = useMemo(
+    () =>
+      courses
+        .filter(
+          (c) =>
+            c.day === tomorrowDay &&
+            c.weekStart <= tomorrowWeek &&
+            c.weekEnd >= tomorrowWeek,
+        )
+        .sort((a, b) => a.sectionStart - b.sectionStart),
+    [courses, tomorrowDay, tomorrowWeek],
   );
 
   const paletteColors = colorPalette.colors;
@@ -122,26 +156,84 @@ export default function HomeScreen() {
     [todayCourses],
   );
 
-  const MAX_VISIBLE = 4;
-  const GAP = 10;
-  const cardHeights = useRef<number[]>([]);
-  const courseScrollRef = useRef<ScrollView>(null);
-  const didAutoScroll = useRef(false);
+  const allTodayFinished =
+    todayCourses.length > 0 && finishedCount === todayCourses.length;
+
+  const [activeTab, setActiveTab] = useState(() => (allTodayFinished ? 1 : 0));
+
+  const pagerRef = useRef<ScrollView>(null);
+  const scrollProgress = useSharedValue(allTodayFinished ? 1 : 0);
+  const didInitialScroll = useRef(false);
+
+  useEffect(() => {
+    if (allTodayFinished && !didInitialScroll.current) {
+      didInitialScroll.current = true;
+      requestAnimationFrame(() => {
+        pagerRef.current?.scrollTo({ x: screenWidth, animated: false });
+      });
+    }
+  }, [allTodayFinished, screenWidth]);
+
+  const handlePagerScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const progress = e.nativeEvent.contentOffset.x / screenWidth;
+      scrollProgress.value = Math.max(0, Math.min(1, progress));
+    },
+    [screenWidth, scrollProgress],
+  );
+
+  const handlePagerMomentumEnd = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const page = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
+      setActiveTab((prev) => {
+        if (prev !== page) haptic();
+        return page;
+      });
+    },
+    [screenWidth, haptic],
+  );
+
+  const switchTab = useCallback(
+    (tab: number) => {
+      haptic();
+      setActiveTab(tab);
+      scrollProgress.value = withTiming(tab, { duration: 280 });
+      pagerRef.current?.scrollTo({ x: tab * screenWidth, animated: true });
+    },
+    [screenWidth, scrollProgress, haptic],
+  );
+
+  const [tabWidths, setTabWidths] = useState<[number, number]>([0, 0]);
+  const handleTabLayout = useCallback((idx: number, e: LayoutChangeEvent) => {
+    const width = e.nativeEvent.layout.width;
+    setTabWidths((prev) => {
+      const next: [number, number] = [...prev];
+      next[idx] = width;
+      return next;
+    });
+  }, []);
+
+  const TAB_GAP = 20;
+  const underlineStyle = useAnimatedStyle(() => {
+    const p = scrollProgress.value;
+    const w0 = tabWidths[0] || 60;
+    const w1 = tabWidths[1] || 60;
+    const width = w0 + (w1 - w0) * p;
+    const x = p * (w0 + TAB_GAP);
+    return {
+      width,
+      transform: [{ translateX: x }],
+    };
+  });
 
   const firstUpcomingIdx = useMemo(
     () => todayCourses.findIndex((c) => !isCourseFinished(c)),
     [todayCourses],
   );
 
-  const maxHeight = useMemo(() => {
-    const heights = cardHeights.current;
-    if (heights.length < todayCourses.length) return undefined;
-    let total = 0;
-    for (let i = 0; i < Math.min(MAX_VISIBLE, heights.length); i++) {
-      total += heights[i] + (i > 0 ? GAP : 0);
-    }
-    return total || undefined;
-  }, [todayCourses.length]);
+  const courseScrollRef = useRef<ScrollView>(null);
+  const didAutoScroll = useRef(false);
+  const cardHeights = useRef<number[]>([]);
 
   const handleCardLayout = useCallback(
     (index: number, e: LayoutChangeEvent) => {
@@ -155,13 +247,26 @@ export default function HomeScreen() {
         didAutoScroll.current = true;
         let scrollY = 0;
         for (let i = 0; i < firstUpcomingIdx; i++) {
-          scrollY += (cardHeights.current[i] ?? 0) + GAP;
+          scrollY += (cardHeights.current[i] ?? 0) + CARD_GAP;
         }
         courseScrollRef.current?.scrollTo({ y: scrollY, animated: true });
       }
     },
     [todayCourses.length, firstUpcomingIdx],
   );
+
+  function getCourseColor(name: string) {
+    return (
+      courseColorOverrides[name] ??
+      colorPalette.overrides?.[name] ??
+      paletteColors[(colorMap.get(name) ?? 0) % paletteColors.length]
+    );
+  }
+
+  const tabs = [
+    { label: "今日", count: todayCourses.length },
+    { label: "明日", count: tomorrowCourses.length },
+  ];
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -170,7 +275,6 @@ export default function HomeScreen() {
         contentContainerStyle={{ paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* 问候 */}
         <View className="px-6 pb-2 pt-8">
           <View className="flex-row items-center justify-between">
             <Text
@@ -214,93 +318,201 @@ export default function HomeScreen() {
           <VacationState isDark={isDark} />
         ) : (
           <>
-            {/* 课程进度条 */}
-            <View className="mb-3 px-6">
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center">
-                  <Text className="text-lg font-semibold text-neutral-800 dark:text-neutral-100">
-                    今日课程
-                  </Text>
-                  {hasCourses && todayCourses.length > 0 && (
-                    <View className="ml-2 rounded-full bg-blue-500/10 px-2.5 py-0.5">
-                      <Text className="text-xs font-semibold text-blue-600 dark:text-blue-400">
-                        {todayCourses.length}
-                      </Text>
-                    </View>
-                  )}
+            <View style={{ paddingHorizontal: 24, marginBottom: 16 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <View style={{ flexDirection: "row", gap: TAB_GAP }}>
+                  {tabs.map((tab, i) => (
+                    <Pressable
+                      key={tab.label}
+                      onPress={() => switchTab(i)}
+                      onLayout={(e) => handleTabLayout(i, e)}
+                      style={{ paddingBottom: 8 }}
+                    >
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 18,
+                            fontWeight: activeTab === i ? "700" : "500",
+                            color:
+                              activeTab === i
+                                ? isDark
+                                  ? "#f5f5f5"
+                                  : "#171717"
+                                : isDark
+                                  ? "#525252"
+                                  : "#b5b5b5",
+                          }}
+                        >
+                          {tab.label}
+                        </Text>
+                        {hasCourses && tab.count > 0 && (
+                          <View
+                            style={{
+                              backgroundColor:
+                                activeTab === i
+                                  ? isDark
+                                    ? "rgba(59,130,246,0.15)"
+                                    : "rgba(59,130,246,0.1)"
+                                  : isDark
+                                    ? "rgba(255,255,255,0.05)"
+                                    : "rgba(0,0,0,0.03)",
+                              borderRadius: 99,
+                              paddingHorizontal: 7,
+                              paddingVertical: 1.5,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                fontWeight: "700",
+                                fontVariant: ["tabular-nums"],
+                                color:
+                                  activeTab === i
+                                    ? isDark
+                                      ? "#60a5fa"
+                                      : "#3b82f6"
+                                    : isDark
+                                      ? "#404040"
+                                      : "#c4c4c4",
+                              }}
+                            >
+                              {tab.count}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </Pressable>
+                  ))}
                 </View>
-                {hasCourses && todayCourses.length > 0 && finishedCount > 0 && (
-                  <Text className="text-xs text-neutral-400 dark:text-neutral-500">
-                    已完成 {finishedCount}/{todayCourses.length}
-                  </Text>
+
+                {activeTab === 0 &&
+                  hasCourses &&
+                  todayCourses.length > 0 &&
+                  finishedCount > 0 && (
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontVariant: ["tabular-nums"],
+                        color: isDark ? "#525252" : "#a3a3a3",
+                      }}
+                    >
+                      {finishedCount}/{todayCourses.length}
+                    </Text>
+                  )}
+              </View>
+
+              <View style={{ height: 2 }}>
+                <Animated.View
+                  style={[
+                    {
+                      height: 2,
+                      borderRadius: 1,
+                      backgroundColor: isDark
+                        ? "rgba(59,130,246,0.7)"
+                        : "#3b82f6",
+                    },
+                    underlineStyle,
+                  ]}
+                />
+              </View>
+            </View>
+
+            <ScrollView
+              ref={pagerRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={handlePagerScroll}
+              onMomentumScrollEnd={handlePagerMomentumEnd}
+              scrollEventThrottle={16}
+            >
+              <View style={{ width: screenWidth }}>
+                {hasCourses && todayCourses.length > 0 ? (
+                  <ScrollView
+                    ref={courseScrollRef}
+                    contentContainerStyle={{
+                      gap: CARD_GAP,
+                      paddingHorizontal: 24,
+                    }}
+                    showsVerticalScrollIndicator={false}
+                    nestedScrollEnabled
+                  >
+                    {todayCourses.map((course, i) => {
+                      const past = isCourseFinished(course);
+                      const countdown =
+                        !past && i === firstUpcomingIdx
+                          ? getCourseCountdown(course)
+                          : null;
+                      return (
+                        <View
+                          key={`today-${course.name}-${course.sectionStart}-${i}`}
+                          onLayout={(e) => handleCardLayout(i, e)}
+                        >
+                          <CourseCard
+                            course={course}
+                            color={getCourseColor(course.name)}
+                            past={past}
+                            countdown={countdown}
+                            isDark={isDark}
+                          />
+                        </View>
+                      );
+                    })}
+                  </ScrollView>
+                ) : (
+                  <EmptyState
+                    hasCourses={hasCourses}
+                    isDark={isDark}
+                    variant="today"
+                  />
                 )}
               </View>
 
-              {hasCourses && todayCourses.length > 0 && (
-                <View
-                  className="mt-2.5 overflow-hidden rounded-full"
-                  style={{
-                    height: 3,
-                    backgroundColor: isDark
-                      ? "rgba(255,255,255,0.06)"
-                      : "rgba(0,0,0,0.04)",
-                  }}
-                >
-                  <View
-                    style={{
-                      height: 3,
-                      width: `${(finishedCount / todayCourses.length) * 100}%`,
-                      backgroundColor: isDark
-                        ? "rgba(59,130,246,0.6)"
-                        : "rgba(59,130,246,0.5)",
-                      borderRadius: 99,
+              <View style={{ width: screenWidth }}>
+                {hasCourses && tomorrowCourses.length > 0 ? (
+                  <ScrollView
+                    contentContainerStyle={{
+                      gap: CARD_GAP,
+                      paddingHorizontal: 24,
                     }}
+                    showsVerticalScrollIndicator={false}
+                    nestedScrollEnabled
+                  >
+                    {tomorrowCourses.map((course, i) => (
+                      <View
+                        key={`tmr-${course.name}-${course.sectionStart}-${i}`}
+                      >
+                        <CourseCard
+                          course={course}
+                          color={getCourseColor(course.name)}
+                          past={false}
+                          countdown={null}
+                          isDark={isDark}
+                        />
+                      </View>
+                    ))}
+                  </ScrollView>
+                ) : (
+                  <EmptyState
+                    hasCourses={hasCourses}
+                    isDark={isDark}
+                    variant="tomorrow"
                   />
-                </View>
-              )}
-            </View>
-
-            {/* 课程列表 */}
-            {hasCourses && todayCourses.length > 0 ? (
-              <ScrollView
-                ref={courseScrollRef}
-                style={maxHeight ? { maxHeight } : undefined}
-                contentContainerStyle={{ gap: GAP, paddingHorizontal: 24 }}
-                showsVerticalScrollIndicator={false}
-                nestedScrollEnabled
-              >
-                {todayCourses.map((course, i) => {
-                  const past = isCourseFinished(course);
-                  const countdown =
-                    !past && i === firstUpcomingIdx
-                      ? getCourseCountdown(course)
-                      : null;
-                  return (
-                    <View
-                      key={`${course.name}-${course.sectionStart}-${i}`}
-                      onLayout={(e) => handleCardLayout(i, e)}
-                    >
-                      <CourseCard
-                        course={course}
-                        color={
-                          courseColorOverrides[course.name] ??
-                          colorPalette.overrides?.[course.name] ??
-                          paletteColors[
-                            (colorMap.get(course.name) ?? 0) %
-                              paletteColors.length
-                          ]
-                        }
-                        past={past}
-                        countdown={countdown}
-                        isDark={isDark}
-                      />
-                    </View>
-                  );
-                })}
-              </ScrollView>
-            ) : (
-              <EmptyState hasCourses={hasCourses} isDark={isDark} />
-            )}
+                )}
+              </View>
+            </ScrollView>
           </>
         )}
       </ScrollView>
@@ -452,10 +664,29 @@ function ChipInfo({
 function EmptyState({
   hasCourses,
   isDark,
+  variant = "today",
 }: {
   hasCourses: boolean;
   isDark: boolean;
+  variant?: "today" | "tomorrow";
 }) {
+  const isTomorrow = variant === "tomorrow";
+  const title = !hasCourses
+    ? "还没有课程"
+    : isTomorrow
+      ? "明天没有课程"
+      : "今天没有课程";
+  const sub = !hasCourses
+    ? "前往「课程」标签页导入你的课表"
+    : isTomorrow
+      ? "明天可以好好休息了"
+      : "好好享受空闲时光吧";
+  const iconName: React.ComponentProps<typeof Ionicons>["name"] = !hasCourses
+    ? "calendar-outline"
+    : isTomorrow
+      ? "moon-outline"
+      : "sunny-outline";
+
   return (
     <View
       style={{
@@ -478,7 +709,7 @@ function EmptyState({
         }}
       >
         <Ionicons
-          name={hasCourses ? "sunny-outline" : "calendar-outline"}
+          name={iconName}
           size={26}
           color={isDark ? "#525252" : "#a3a3a3"}
         />
@@ -490,7 +721,7 @@ function EmptyState({
           color: isDark ? "#a3a3a3" : "#737373",
         }}
       >
-        {hasCourses ? "今天没有课程" : "还没有课程"}
+        {title}
       </Text>
       <Text
         style={{
@@ -500,7 +731,7 @@ function EmptyState({
           lineHeight: 20,
         }}
       >
-        {hasCourses ? "好好享受空闲时光吧" : "前往「课程」标签页导入你的课表"}
+        {sub}
       </Text>
     </View>
   );
