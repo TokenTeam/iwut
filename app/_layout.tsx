@@ -1,3 +1,14 @@
+import * as Sentry from "@sentry/react-native";
+
+import { SENTRY_DSN } from "@/constants/api";
+
+Sentry.init({
+  dsn: SENTRY_DSN,
+  enableAutoSessionTracking: false,
+  tracesSampleRate: 0,
+  enabled: !__DEV__,
+});
+
 import { ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -17,7 +28,7 @@ export const unstable_settings = {
   anchor: "(tabs)",
 };
 
-export default function RootLayout() {
+function RootLayout() {
   const colorScheme = useColorScheme();
   const themeMode = useThemeStore((s) => s.themeMode);
   const isFirstMount = useRef(true);
@@ -50,3 +61,5 @@ export default function RootLayout() {
     </ThemeProvider>
   );
 }
+
+export default Sentry.wrap(RootLayout);

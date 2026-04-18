@@ -59,6 +59,7 @@ const config: ExpoConfig = {
         },
       },
     ],
+    "@sentry/react-native",
     "./plugins/with-gradle-props.js",
   ],
   experiments: {
