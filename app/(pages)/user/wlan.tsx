@@ -31,10 +31,12 @@ export default function WlanScreen() {
   const [inputUser, setInputUser] = useState("");
   const [inputPass, setInputPass] = useState("");
   const passwordRef = useRef<TextInput>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const openSheet = useCallback(() => {
     setInputUser(username);
     setInputPass("");
+    setShowPassword(false);
     setSheetVisible(true);
   }, [username]);
 
@@ -198,10 +200,20 @@ export default function WlanScreen() {
             placeholderTextColor={isDark ? "#525252" : "#d4d4d4"}
             value={inputPass}
             onChangeText={setInputPass}
-            secureTextEntry
+            secureTextEntry={!showPassword}
             returnKeyType="done"
             onSubmitEditing={handleSave}
           />
+          <Pressable
+            className="p-1"
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            <Feather
+              name={showPassword ? "eye" : "eye-off"}
+              size={18}
+              color={isDark ? "#737373" : "#a3a3a3"}
+            />
+          </Pressable>
         </View>
         <View className="mx-5 mb-2 flex-row gap-3">
           <Pressable
