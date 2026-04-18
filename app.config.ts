@@ -11,8 +11,13 @@ const config: ExpoConfig = {
     policy: "appVersion",
   },
   updates: {
-    url: "https://u.expo.dev/db91117d-c051-4555-a16b-7a996823672e",
+    url: "https://expo.tokenteam.net/api/updates/019da0ce-9cda-76dc-b440-0c6a45d38292/manifest",
     checkAutomatically: "ON_LOAD",
+    codeSigningCertificate: "./assets/certificate.pem",
+    codeSigningMetadata: {
+      keyid: "main",
+      alg: "rsa-v1_5-sha256",
+    },
   },
   orientation: "portrait",
   icon: "./assets/images/icon.png",
