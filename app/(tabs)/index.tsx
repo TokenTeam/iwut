@@ -272,7 +272,7 @@ export default function HomeScreen() {
     <SafeAreaView style={{ flex: 1 }}>
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 32 }}
+        contentContainerStyle={{ paddingBottom: 32, flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
       >
         <View className="px-6 pb-2 pt-8">
@@ -431,20 +431,23 @@ export default function HomeScreen() {
 
             <ScrollView
               ref={pagerRef}
+              style={{ flex: 1 }}
               horizontal
               pagingEnabled
               showsHorizontalScrollIndicator={false}
               onScroll={handlePagerScroll}
               onMomentumScrollEnd={handlePagerMomentumEnd}
               scrollEventThrottle={16}
+              contentContainerStyle={{ flexGrow: 1 }}
             >
-              <View style={{ width: screenWidth }}>
+              <View style={{ width: screenWidth, flex: 1 }}>
                 {hasCourses && todayCourses.length > 0 ? (
                   <ScrollView
                     ref={courseScrollRef}
                     contentContainerStyle={{
                       gap: CARD_GAP,
                       paddingHorizontal: 24,
+                      flexGrow: 1,
                     }}
                     showsVerticalScrollIndicator={false}
                     nestedScrollEnabled
@@ -480,12 +483,13 @@ export default function HomeScreen() {
                 )}
               </View>
 
-              <View style={{ width: screenWidth }}>
+              <View style={{ width: screenWidth, flex: 1 }}>
                 {hasCourses && tomorrowCourses.length > 0 ? (
                   <ScrollView
                     contentContainerStyle={{
                       gap: CARD_GAP,
                       paddingHorizontal: 24,
+                      flexGrow: 1,
                     }}
                     showsVerticalScrollIndicator={false}
                     nestedScrollEnabled
