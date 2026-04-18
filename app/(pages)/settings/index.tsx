@@ -6,6 +6,7 @@ import Toast from "react-native-toast-message";
 
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
+import { reportError } from "@/lib/report";
 import { useScheduleStore } from "@/store/schedule";
 import { useSettingsStore } from "@/store/settings";
 
@@ -46,7 +47,8 @@ export default function SettingsScreen() {
         text1: "缓存已清除",
         position: "bottom",
       });
-    } catch {
+    } catch (e) {
+      reportError(e, { module: "settings", action: "clear-cache" });
       Toast.show({
         type: "error",
         text1: "清除失败",

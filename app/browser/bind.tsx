@@ -1,3 +1,4 @@
+import { reportError } from "@/lib/report";
 import { useUserBindStore } from "@/store/user-bind";
 import { router, Stack } from "expo-router";
 import { useRef } from "react";
@@ -133,7 +134,9 @@ export default function BindScreen() {
 
         router.back();
       }
-    } catch {}
+    } catch (e) {
+      reportError(e, { module: "bind" });
+    }
   };
 
   return (

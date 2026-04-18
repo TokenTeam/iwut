@@ -7,6 +7,7 @@ import Toast from "react-native-toast-message";
 import { WebView, type WebViewNavigation } from "react-native-webview";
 
 import { useZhlgdAutoLogin } from "@/hooks/use-zhlgd-autologin";
+import { reportError } from "@/lib/report";
 import { getTermStart } from "@/services/get-course";
 import { Course, useCourseStore } from "@/store/course";
 
@@ -85,7 +86,8 @@ export default function MasterCourseScreen() {
             });
 
             router.back();
-          } catch {
+          } catch (e) {
+            reportError(e, { module: "course-master" });
             Toast.show({
               type: "error",
               text1: "导入失败",

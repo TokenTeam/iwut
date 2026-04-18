@@ -5,6 +5,7 @@ import Toast from "react-native-toast-message";
 import { WebView, type WebViewNavigation } from "react-native-webview";
 
 import { useZhlgdAutoLogin } from "@/hooks/use-zhlgd-autologin";
+import { reportError } from "@/lib/report";
 import { getTermStart } from "@/services/get-course";
 import { type Course, useCourseStore } from "@/store/course";
 
@@ -117,6 +118,7 @@ export default function BachelorCourseScreen() {
 
       if (msg.type === "error") {
         isImporting.current = false;
+        reportError(new Error(msg.message), { module: "course-bachelor" });
         Toast.show({
           type: "error",
           text1: "导入失败",
@@ -159,7 +161,8 @@ export default function BachelorCourseScreen() {
         });
         router.back();
       }
-    } catch {
+    } catch (e) {
+      reportError(e, { module: "course-bachelor" });
       isImporting.current = false;
     }
   };

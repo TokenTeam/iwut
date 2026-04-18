@@ -16,6 +16,7 @@ import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { reportError } from "@/lib/report";
 import { login } from "@/services/wlan";
 import { useWlanStore } from "@/store/wlan";
 
@@ -69,6 +70,7 @@ export default function WlanScreen() {
         position: "bottom",
       });
     } catch (e: any) {
+      reportError(e, { module: "wlan" });
       Toast.show({
         type: "error",
         text1: "连接失败",
