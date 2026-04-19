@@ -683,8 +683,8 @@ function EmptyState({
   const sub = !hasCourses
     ? "前往「课程」标签页导入你的课表"
     : isTomorrow
-      ? "明天可以好好休息了"
-      : "好好享受空闲时光吧";
+      ? "可以放松一下啦！"
+      : "好好享受空闲时光吧~";
   const iconName: React.ComponentProps<typeof Ionicons>["name"] = !hasCourses
     ? "calendar-outline"
     : isTomorrow

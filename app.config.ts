@@ -1,7 +1,9 @@
+import { execSync } from "child_process";
 import type { ExpoConfig } from "expo/config";
 
 // 仅在构建时生效，与 JS 层的 IS_DEV 无关
 const IS_DEV = process.env.EAS_BUILD_PROFILE === "development";
+const COMMIT = execSync("git rev-parse --short HEAD").toString().trim();
 
 const config: ExpoConfig = {
   name: IS_DEV ? "掌上吾理 Pro (Dev)" : "掌上吾理 Pro",
@@ -79,6 +81,7 @@ const config: ExpoConfig = {
     eas: {
       projectId: "db91117d-c051-4555-a16b-7a996823672e",
     },
+    commit: COMMIT,
   },
   owner: "tokenteam",
 };

@@ -1,4 +1,6 @@
-import { NATIVE_VERSION } from "@/constants/version";
+import Constants from "expo-constants";
+
+const version = Constants.expoConfig?.version;
 
 function compareVersions(a: string, b: string): number {
   const pa = a.split(".").map(Number);
@@ -20,7 +22,7 @@ export async function checkUpdate(): Promise<{
   ).then((res) => res.json());
 
   return {
-    hasUpdate: compareVersions(latestVersion, NATIVE_VERSION ?? "0.0.0") > 0,
+    hasUpdate: compareVersions(latestVersion, version ?? "0.0.0") > 0,
     latestVersion,
   };
 }

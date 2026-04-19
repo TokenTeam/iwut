@@ -1,4 +1,5 @@
 import * as Clipboard from "expo-clipboard";
+import Constants from "expo-constants";
 import { Image } from "expo-image";
 import { Stack } from "expo-router";
 import * as Updates from "expo-updates";
@@ -16,7 +17,6 @@ import Toast from "react-native-toast-message";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { IS_DEV } from "@/constants/is-dev";
 import { Colors } from "@/constants/theme";
-import { VERSION } from "@/constants/version";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useUpdateStore } from "@/store/update";
 
@@ -26,8 +26,8 @@ const uniLabel = require("@/assets/images/icon_uni_label.svg");
 export default function AboutScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
-  const version = `${VERSION}${IS_DEV ? " (Dev)" : ""}`;
-  const runtimeVersion = Updates.runtimeVersion ?? "N/A";
+  const version = Constants.expoConfig?.version ?? "N/A";
+  const commit = Constants.expoConfig?.extra?.commit ?? "unknown";
   const hasUpdate = useUpdateStore((s) => s.hasUpdate);
   const latestVersion = useUpdateStore((s) => s.latestVersion);
   const checking = useUpdateStore((s) => s.checking);
@@ -90,6 +90,7 @@ export default function AboutScreen() {
           </Text>
           <Text className="mt-1.5 text-sm text-neutral-400 dark:text-neutral-500">
             {version}
+            {IS_DEV ? " (Dev)" : ""}
           </Text>
         </View>
 
@@ -102,11 +103,11 @@ export default function AboutScreen() {
             onPress={() => copyToClipboard("版本号", version)}
           />
           <MenuItem
-            icon="memory"
-            label="Runtime"
-            value={runtimeVersion.slice(0, 20)}
+            icon="commit"
+            label="Commit"
+            value={commit}
             showArrow={false}
-            onPress={() => copyToClipboard("Runtime", runtimeVersion)}
+            onPress={() => copyToClipboard("Commit", commit)}
           />
         </MenuGroup>
 

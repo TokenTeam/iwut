@@ -9,6 +9,7 @@ Sentry.init({
   enabled: !__DEV__,
 });
 
+/* eslint-disable import/first */
 import { Feather, Ionicons } from "@expo/vector-icons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ThemeProvider } from "@react-navigation/native";
@@ -31,6 +32,7 @@ import { useThemeStore } from "@/store/theme";
 import { useUpdateStore } from "@/store/update";
 
 import "../global.css";
+/* eslint-enable import/first */
 
 export const unstable_settings = {
   anchor: "(tabs)",
