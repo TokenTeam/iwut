@@ -1,10 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Tabs } from "expo-router";
-import React, { type ComponentProps } from "react";
+import { Tabs, router } from "expo-router";
+import React, { type ComponentProps, useEffect } from "react";
 
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
+import { useSettingsStore } from "@/store/settings";
+
+let hasLaunched = false;
 
 const TAB_COLORS = {
   home: "#007AFF",
@@ -39,6 +42,15 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme === "dark" ? "dark" : "light"];
   const haptic = useHaptics();
+
+  useEffect(() => {
+    if (!hasLaunched) {
+      hasLaunched = true;
+      if (useSettingsStore.getState().openCourseOnLaunch) {
+        router.navigate("/course");
+      }
+    }
+  }, []);
 
   return (
     <Tabs

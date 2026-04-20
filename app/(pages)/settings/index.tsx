@@ -13,6 +13,10 @@ import { useSettingsStore } from "@/store/settings";
 export default function SettingsScreen() {
   const hapticFeedback = useSettingsStore((s) => s.hapticFeedback);
   const setHapticFeedback = useSettingsStore((s) => s.setHapticFeedback);
+  const openCourseOnLaunch = useSettingsStore((s) => s.openCourseOnLaunch);
+  const setOpenCourseOnLaunch = useSettingsStore(
+    (s) => s.setOpenCourseOnLaunch,
+  );
 
   const [clearVisible, setClearVisible] = useState(false);
   const [clearing, setClearing] = useState(false);
@@ -76,6 +80,18 @@ export default function SettingsScreen() {
               <Switch
                 value={hapticFeedback}
                 onValueChange={setHapticFeedback}
+              />
+            }
+          />
+          <MenuItem
+            icon="open-in-new"
+            iconBg="#34C759"
+            label="将课程页设为首页"
+            showArrow={false}
+            right={
+              <Switch
+                value={openCourseOnLaunch}
+                onValueChange={setOpenCourseOnLaunch}
               />
             }
           />
