@@ -1,6 +1,8 @@
 $:
   vscode:
-    - docker:
+    - runner:
+        cpus: 16
+      docker: 
         image: docker.cnb.cool/zhxycn/env:latest
       services:
         - vscode
@@ -22,7 +24,9 @@ main:
             yarn run lint
 
   web_trigger_job:
-    - docker:
+    - runner:
+        cpus: 16
+      docker:
         image: docker.cnb.cool/zhxycn/env:latest
       imports:
         - https://cnb.cool/TokenTeam/secrets/-/blob/main/expo.yml
