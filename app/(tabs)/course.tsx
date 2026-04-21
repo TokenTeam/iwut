@@ -1,8 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal, Pressable, Text, View } from "react-native";
 import Animated, {
   interpolate,
@@ -13,10 +12,15 @@ import Animated, {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Schedule } from "@/components/layout/schedule";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ScrollPicker } from "@/components/ui/scroll-picker";
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { getCurrentDayOfWeek, getCurrentWeek } from "@/lib/date";
-import { useCourseStore } from "@/store/course";
+import { GetCourse, type GetCourseHandle } from "@/services/get-course";
+import { type ImportType, useCourseStore } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 import { useUserBindStore } from "@/store/user-bind";
 
@@ -25,16 +29,25 @@ const MAX_WEEK = 20;
 export default function CourseScreen() {
   const courses = useCourseStore((store) => store.courses);
   const termStart = useCourseStore((store) => store.termStart);
+  const lastImportType = useCourseStore((s) => s.lastImportType);
   const isBound = useUserBindStore((store) => store.isBound);
   const backgroundImageUri = useScheduleStore((s) => s.backgroundImageUri);
   const [week, setWeek] = useState<number>(() => getCurrentWeek(termStart));
   const today = getCurrentDayOfWeek();
   const haptic = useHaptics();
-  const [showWeekPicker, setShowWeekPicker] = useState<boolean>(false);
+  const [showWeekPicker, setShowWeekPicker] = useState(false);
+  const [showTypePicker, setShowTypePicker] = useState(false);
+
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
+  const iconColor = Colors[isDark ? "dark" : "light"].icon;
+
+  const importerRef = useRef<GetCourseHandle>(null);
 
   useEffect(() => {
     if (termStart) setWeek(getCurrentWeek(termStart));
   }, [termStart]);
+
   const [fabOpen, setFabOpen] = useState(false);
   const fabProgress = useSharedValue(0);
 
@@ -44,33 +57,47 @@ export default function CourseScreen() {
 
   const bachelorFabStyle = useAnimatedStyle(() => ({
     transform: [
-      {
-        translateY: interpolate(fabProgress.value, [0, 1], [0, -70]),
-      },
+      { translateY: interpolate(fabProgress.value, [0, 1], [0, -70]) },
     ],
     opacity: fabProgress.value,
   }));
 
   const masterFabStyle = useAnimatedStyle(() => ({
     transform: [
-      {
-        translateY: interpolate(fabProgress.value, [0, 1], [0, -130]),
-      },
+      { translateY: interpolate(fabProgress.value, [0, 1], [0, -130]) },
     ],
     opacity: fabProgress.value,
   }));
 
   const fabButtonStyle = useAnimatedStyle(() => ({
     transform: [
-      {
-        rotate: `${interpolate(fabProgress.value, [0, 1], [0, 45])}deg`,
-      },
+      { rotate: `${interpolate(fabProgress.value, [0, 1], [0, 45])}deg` },
     ],
   }));
 
   const fabOverlayStyle = useAnimatedStyle(() => ({
     opacity: interpolate(fabProgress.value, [0, 1], [0, 0.15]),
   }));
+
+  const doImport = (type: ImportType) => {
+    setShowTypePicker(false);
+    setFabOpen(false);
+    importerRef.current?.startImport(type);
+  };
+
+  const handleRefreshPress = () => {
+    haptic();
+    if (lastImportType) {
+      doImport(lastImportType);
+    } else {
+      setShowTypePicker(true);
+    }
+  };
+
+  const handleRefreshLongPress = () => {
+    haptic();
+    setShowTypePicker(true);
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -90,7 +117,17 @@ export default function CourseScreen() {
       )}
       <SafeAreaView style={{ flex: 1 }}>
         <View className="h-12 w-full flex-row items-center px-3">
-          <View style={{ width: 48 }} />
+          {isBound && courses.some((c) => c.source === "imported") ? (
+            <Pressable
+              style={{ width: 48, alignItems: "center" }}
+              onPress={handleRefreshPress}
+              onLongPress={handleRefreshLongPress}
+            >
+              <Ionicons name="refresh" size={20} color={iconColor} />
+            </Pressable>
+          ) : (
+            <View style={{ width: 48 }} />
+          )}
 
           <View className="flex-1 flex-row items-center justify-center">
             <Pressable
@@ -107,9 +144,7 @@ export default function CourseScreen() {
 
             <Pressable
               className="w-20 items-center"
-              onPress={() => {
-                setShowWeekPicker(true);
-              }}
+              onPress={() => setShowWeekPicker(true)}
             >
               <Text className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
                 第 {week} 周
@@ -184,10 +219,7 @@ export default function CourseScreen() {
               </View>
               <Pressable
                 className="h-14 w-14 items-center justify-center rounded-full bg-purple-500"
-                onPress={() => {
-                  setFabOpen(false);
-                  router.push("/browser/course/master");
-                }}
+                onPress={() => doImport("master")}
               >
                 <Ionicons name="library" size={22} color="white" />
               </Pressable>
@@ -205,10 +237,7 @@ export default function CourseScreen() {
               </View>
               <Pressable
                 className="h-14 w-14 items-center justify-center rounded-full bg-green-500"
-                onPress={() => {
-                  setFabOpen(false);
-                  router.push("/browser/course/bachelor");
-                }}
+                onPress={() => doImport("bachelor")}
               >
                 <Ionicons name="school" size={22} color="white" />
               </Pressable>
@@ -249,15 +278,40 @@ export default function CourseScreen() {
                     (_, i) => `第 ${i + 1} 周`,
                   )}
                   selectedIndex={week - 1}
-                  onSelect={(i) => {
-                    setWeek(i + 1);
-                  }}
+                  onSelect={(i) => setWeek(i + 1)}
                 />
               </View>
             </View>
           </View>
         </Modal>
       </SafeAreaView>
+
+      <GetCourse ref={importerRef} />
+
+      <BottomSheet
+        visible={showTypePicker}
+        onClose={() => setShowTypePicker(false)}
+        title="选择导入类型"
+      >
+        <Pressable
+          className="flex-row items-center px-5 py-3.5 active:bg-neutral-100 dark:active:bg-neutral-700"
+          onPress={() => doImport("bachelor")}
+        >
+          <IconSymbol name="school" size={22} color={iconColor} />
+          <Text className="ml-3 flex-1 text-base text-neutral-800 dark:text-neutral-200">
+            本科生
+          </Text>
+        </Pressable>
+        <Pressable
+          className="flex-row items-center px-5 py-3.5 active:bg-neutral-100 dark:active:bg-neutral-700"
+          onPress={() => doImport("master")}
+        >
+          <IconSymbol name="menu-book" size={22} color={iconColor} />
+          <Text className="ml-3 flex-1 text-base text-neutral-800 dark:text-neutral-200">
+            研究生
+          </Text>
+        </Pressable>
+      </BottomSheet>
     </View>
   );
 }

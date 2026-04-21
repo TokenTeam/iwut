@@ -562,14 +562,12 @@ export function Schedule({
                   value={selected.room}
                   isDark={isDark}
                 />
-                {selected.teacher ? (
-                  <DetailRow
-                    icon="person-outline"
-                    label="教师"
-                    value={selected.teacher}
-                    isDark={isDark}
-                  />
-                ) : null}
+                <DetailRow
+                  icon="person-outline"
+                  label="教师"
+                  value={selected.teacher}
+                  isDark={isDark}
+                />
                 <DetailRow
                   icon="calendar-outline"
                   label="周次"

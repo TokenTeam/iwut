@@ -23,7 +23,13 @@ export default function ManageCourseScreen() {
   const uniqueCourses = useMemo(() => {
     const map = new Map<
       string,
-      { name: string; summary: string; count: number }
+      {
+        name: string;
+        teacher: string;
+        summary: string;
+        count: number;
+        imported: boolean;
+      }
     >();
     for (const c of courses) {
       if (map.has(c.name)) {
@@ -32,8 +38,10 @@ export default function ManageCourseScreen() {
       }
       map.set(c.name, {
         name: c.name,
+        teacher: c.teacher,
         summary: `${DAY_LABELS[c.day - 1]} 第${c.sectionStart}-${c.sectionEnd}节`,
         count: 1,
+        imported: c.source === "imported",
       });
     }
     return [...map.values()];
@@ -85,10 +93,20 @@ export default function ManageCourseScreen() {
                   }
                 >
                   <View className="flex-1">
-                    <Text className="text-base text-neutral-900 dark:text-neutral-100">
-                      {item.name}
-                    </Text>
+                    <View className="flex-row items-center">
+                      <Text className="text-base text-neutral-900 dark:text-neutral-100">
+                        {item.name}
+                      </Text>
+                      {item.imported && (
+                        <View className="ml-1.5 rounded bg-blue-100 px-1.5 py-0.5 dark:bg-blue-900/40">
+                          <Text className="text-[10px] font-medium text-blue-500 dark:text-blue-400">
+                            导入
+                          </Text>
+                        </View>
+                      )}
+                    </View>
                     <Text className="mt-0.5 text-xs text-neutral-400 dark:text-neutral-500">
+                      {item.teacher ? `${item.teacher} · ` : ""}
                       {item.summary}
                       {item.count > 1 ? ` 等 ${item.count} 个时段` : ""}
                     </Text>

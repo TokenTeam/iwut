@@ -3,6 +3,8 @@ import { persist } from "zustand/middleware";
 
 import { zustandStorage } from "@/lib/storage";
 
+export type ImportType = "bachelor" | "master";
+
 export interface Course {
   name: string; // 课程名
   room: string; // 教室
@@ -12,6 +14,7 @@ export interface Course {
   day: number; // 星期几
   sectionStart: number; // 开始节数
   sectionEnd: number; // 结束节数
+  source?: "imported" | "manual";
 }
 
 function coursesMatch(a: Course, b: Course): boolean {
@@ -28,8 +31,11 @@ function coursesMatch(a: Course, b: Course): boolean {
 interface CourseStore {
   courses: Course[];
   termStart: string;
+  lastImportType: ImportType | null;
+  setImportedCourses: (courses: Course[]) => void;
   setCourses: (courses: Course[]) => void;
   setTermStart: (termStart: string) => void;
+  setLastImportType: (type: ImportType) => void;
   addCourse: (course: Course) => void;
   removeCourse: (course: Course) => void;
   removeCoursesByName: (name: string) => void;
@@ -40,8 +46,18 @@ export const useCourseStore = create<CourseStore>()(
     (set, get) => ({
       courses: [],
       termStart: "",
+      lastImportType: null,
+      setImportedCourses: (imported: Course[]) => {
+        const manual = get().courses.filter((c) => c.source === "manual");
+        const tagged = imported.map((c) => ({
+          ...c,
+          source: "imported" as const,
+        }));
+        set({ courses: [...tagged, ...manual] });
+      },
       setCourses: (courses: Course[]) => set({ courses }),
       setTermStart: (termStart: string) => set({ termStart }),
+      setLastImportType: (type: ImportType) => set({ lastImportType: type }),
       addCourse: (course: Course) =>
         set({ courses: [...get().courses, course] }),
       removeCourse: (target: Course) =>

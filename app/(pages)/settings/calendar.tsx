@@ -38,7 +38,7 @@ export default function CalendarSettingsScreen() {
   const deleteOldBg = async (uri: string | null) => {
     if (!uri) return;
     try {
-      const { File } = await import("expo-file-system/next");
+      const { File } = await import("expo-file-system");
       const old = new File(uri);
       if (old.exists) old.delete();
     } catch {}
@@ -46,7 +46,7 @@ export default function CalendarSettingsScreen() {
 
   const handlePickImage = async () => {
     const ImagePicker = await import("expo-image-picker");
-    const { File, Paths } = await import("expo-file-system/next");
+    const { File, Paths } = await import("expo-file-system");
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       quality: 0.8,

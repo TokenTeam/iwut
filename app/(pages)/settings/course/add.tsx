@@ -106,12 +106,14 @@ export default function AddEditCourseScreen() {
   );
 
   const [name, setName] = useState("");
+  const [teacher, setTeacher] = useState("");
   const [slots, setSlots] = useState<TimeSlot[]>([createEmptySlot()]);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
 
   useEffect(() => {
     if (isEdit && existingRecords.length > 0) {
       setName(existingRecords[0].name);
+      setTeacher(existingRecords[0].teacher);
       setSlots(recordsToSlots(existingRecords));
       setExpandedIndex(null);
     }
@@ -206,12 +208,13 @@ export default function AddEditCourseScreen() {
         addCourse({
           name: trimmedName,
           room: slot.room.trim(),
-          teacher: "",
+          teacher: teacher.trim(),
           day: slot.day,
           weekStart: ws,
           weekEnd: we,
           sectionStart: slot.sectionStart,
           sectionEnd: slot.sectionEnd,
+          source: "manual",
         });
       }
     }
@@ -236,7 +239,6 @@ export default function AddEditCourseScreen() {
           contentContainerClassName="px-4 pt-4 pb-8"
           keyboardShouldPersistTaps="handled"
         >
-          {/* 课程名称 */}
           <View className="mb-4 overflow-hidden rounded-xl bg-white dark:bg-neutral-800">
             <View className="px-4 py-3">
               <Text
@@ -253,6 +255,28 @@ export default function AddEditCourseScreen() {
                 style={{
                   fontSize: 16,
                   color: isEdit ? placeholderColor : inputColor,
+                  backgroundColor: inputBg,
+                  borderRadius: 10,
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                }}
+              />
+            </View>
+            <View className="mx-4 border-b border-neutral-200 dark:border-neutral-700" />
+            <View className="px-4 py-3">
+              <Text
+                style={{ fontSize: 12, color: labelColor, marginBottom: 6 }}
+              >
+                教师
+              </Text>
+              <TextInput
+                value={teacher}
+                onChangeText={setTeacher}
+                placeholder="可选"
+                placeholderTextColor={placeholderColor}
+                style={{
+                  fontSize: 16,
+                  color: inputColor,
                   backgroundColor: inputBg,
                   borderRadius: 10,
                   paddingHorizontal: 14,
@@ -284,7 +308,6 @@ export default function AddEditCourseScreen() {
             />
           ))}
 
-          {/* 添加时段 */}
           <Pressable
             className="mb-4 flex-row items-center justify-center rounded-xl border border-dashed border-blue-400 py-3 active:bg-blue-50 dark:border-blue-600 dark:active:bg-neutral-800"
             onPress={addSlot}
@@ -295,7 +318,6 @@ export default function AddEditCourseScreen() {
             </Text>
           </Pressable>
 
-          {/* 保存 */}
           <Pressable
             onPress={handleSave}
             className="items-center rounded-xl bg-blue-500 py-3.5 active:bg-blue-600"
