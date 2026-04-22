@@ -90,7 +90,13 @@ const BACHELOR_FETCH_SCRIPT = `(async function() {
     log('parsed ' + courses.length + ' courses');
     window.ReactNativeWebView.postMessage(JSON.stringify({type:'courses', data: courses, termStart: termStart}));
   } catch(e) {
-    window.ReactNativeWebView.postMessage(JSON.stringify({type:'error', message: e.message || ''}));
+    window.ReactNativeWebView.postMessage(JSON.stringify({
+      type:'error',
+      message: (e && e.message) ? String(e.message) : '',
+      name: (e && e.name) ? String(e.name) : '',
+      stack: (e && e.stack) ? String(e.stack).substring(0, 1000) : '',
+      url: (typeof location !== 'undefined' && location.href) ? location.href : ''
+    }));
   }
 })(); true;`;
 
@@ -298,8 +304,15 @@ export const GetCourse = forwardRef<GetCourseHandle>(
         }
 
         if (msg?.type === "error") {
-          reportError(new Error(msg.message), {
+          const err = new Error(msg.message || "Load failed");
+          if (msg.name) err.name = String(msg.name);
+          if (msg.stack) err.stack = String(msg.stack);
+          reportError(err, {
             module: `course-${importType}`,
+            webviewErrorName: msg.name,
+            webviewErrorMessage: msg.message,
+            webviewErrorStack: msg.stack,
+            webviewUrl: msg.url,
           });
           finish(false, msg.message);
           return;
