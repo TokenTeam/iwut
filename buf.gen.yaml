@@ -1,0 +1,7 @@
+version: v2
+plugins:
+  - local: ["node", "lib/api/protoc-gen-http-client.mjs"]
+    out: .
+    opt: target=ts
+inputs:
+  - directory: packages/api-proto

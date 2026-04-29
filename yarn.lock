@@ -794,6 +794,76 @@
     "@babel/helper-string-parser" "^7.27.1"
     "@babel/helper-validator-identifier" "^7.28.5"
 
+"@bufbuild/buf-darwin-arm64@1.68.4":
+  version "1.68.4"
+  resolved "https://registry.npmmirror.com/@bufbuild/buf-darwin-arm64/-/buf-darwin-arm64-1.68.4.tgz#bfa1a1f6c2b7a976b2d0c15d28b51f0053f1b0c4"
+  integrity sha512-57VDmK/U8ysWLsydDy/UzQ4gxS8LZyBiAnq1WWk33aUCkHr1poDgAqdOSzjIlBqoe/Mx/+pbVk2/OuaiY8T6aQ==
+
+"@bufbuild/buf-darwin-x64@1.68.4":
+  version "1.68.4"
+  resolved "https://registry.npmmirror.com/@bufbuild/buf-darwin-x64/-/buf-darwin-x64-1.68.4.tgz#9a0762de5a09c5277b2dbecd0bf755d6148e88e5"
+  integrity sha512-B552Ke9CMDOIyCZGXqSeEej2+13B1PlesZj3j9DCQml86vVEJLVNw9JIUBRE47S31h0qx/Qzptm1N898gaaXTw==
+
+"@bufbuild/buf-linux-aarch64@1.68.4":
+  version "1.68.4"
+  resolved "https://registry.npmmirror.com/@bufbuild/buf-linux-aarch64/-/buf-linux-aarch64-1.68.4.tgz#d1c3e64cedd785ee45be5c3a905ff15f65e40ac7"
+  integrity sha512-bbe/EQ6vr5ytdoE/llICbp2jPzMDPnT0F0RwlE2rm1sU6crYNJQPOg+QG/NVabL8XimLooRZ1WgPEeZFyAW/hw==
+
+"@bufbuild/buf-linux-armv7@1.68.4":
+  version "1.68.4"
+  resolved "https://registry.npmmirror.com/@bufbuild/buf-linux-armv7/-/buf-linux-armv7-1.68.4.tgz#ef510c5ce13c380b9fb2d5dfd232379bec2a984b"
+  integrity sha512-Q1SHNEYYiEpz/IwIfBrdVvgd8VCQlPue6J6IzMWNPCjwhhZViQNAMXIo4Huvz0Xhrwe3shYbdEx6uj/tu49dug==
+
+"@bufbuild/buf-linux-x64@1.68.4":
+  version "1.68.4"
+  resolved "https://registry.npmmirror.com/@bufbuild/buf-linux-x64/-/buf-linux-x64-1.68.4.tgz#56918435d1651b4b235a5c4bc5b37fa680532c4a"
+  integrity sha512-Bo8OaMc76+s23xDZ96LhHunBJYdwTyDOdLOvjiebMQ6MTkcPU/B+ecIwJtRj1FGh9NWWRpT/YaroTpOPVNXG/Q==
+
+"@bufbuild/buf-win32-arm64@1.68.4":
+  version "1.68.4"
+  resolved "https://registry.npmmirror.com/@bufbuild/buf-win32-arm64/-/buf-win32-arm64-1.68.4.tgz#136dd14e23a1f11c0683cf9dbb55e06c4ba8a3ee"
+  integrity sha512-knbrAF8maJ+7GbsZ9Wp7GuZ72SEiBv/1/0vgZSgdzPn2VytciTM7HRGlsglk9sPTX18WlKZeOY/+pkJpC/RGRQ==
+
+"@bufbuild/buf-win32-x64@1.68.4":
+  version "1.68.4"
+  resolved "https://registry.npmmirror.com/@bufbuild/buf-win32-x64/-/buf-win32-x64-1.68.4.tgz#fa9fb6746da3875af9a798406ed3c063458cd77d"
+  integrity sha512-JnUSCPNtmdSWaj9mA7ioLC2y8kpvX91FEYwxk3VrNukWtctiMTbhbS9CwbUdZuHjJSvWDLdKIS75Iyj16ufplg==
+
+"@bufbuild/buf@^1.68.4":
+  version "1.68.4"
+  resolved "https://registry.npmmirror.com/@bufbuild/buf/-/buf-1.68.4.tgz#3185542563ef5be60fe0e1055fa64e13ee48808d"
+  integrity sha512-r+QG3mlQ1h4agDwYxnPz1AdVLubgt09sRLnnlLMj0MVUOWjdV92i/20ZmSxn6+thouGlpr2A+VKPgy8NShchrA==
+  optionalDependencies:
+    "@bufbuild/buf-darwin-arm64" "1.68.4"
+    "@bufbuild/buf-darwin-x64" "1.68.4"
+    "@bufbuild/buf-linux-aarch64" "1.68.4"
+    "@bufbuild/buf-linux-armv7" "1.68.4"
+    "@bufbuild/buf-linux-x64" "1.68.4"
+    "@bufbuild/buf-win32-arm64" "1.68.4"
+    "@bufbuild/buf-win32-x64" "1.68.4"
+
+"@bufbuild/protobuf@2.12.0", "@bufbuild/protobuf@^2.12.0":
+  version "2.12.0"
+  resolved "https://registry.npmmirror.com/@bufbuild/protobuf/-/protobuf-2.12.0.tgz#53225636a8fcebb2bd94998ad9d42f99f96add4d"
+  integrity sha512-B/XlCaFIP8LOwzo+bz5uFzATYokcwCKQcghqnlfwSmM5eX/qTkvDBnDPs+gXtX/RyjxJ4DRikECcPJbyALA8FA==
+
+"@bufbuild/protoc-gen-es@^2.12.0":
+  version "2.12.0"
+  resolved "https://registry.npmmirror.com/@bufbuild/protoc-gen-es/-/protoc-gen-es-2.12.0.tgz#a259bf4d2e288860771f9e50a054db4eab612dc1"
+  integrity sha512-d9htF6jEkSwPbp9d/vSmZOBF7eeG18AvTMKmVg4I23afnrQOxL2w3WOXa9TaufMCyu24QakEUb4vux8apI5e7A==
+  dependencies:
+    "@bufbuild/protobuf" "2.12.0"
+    "@bufbuild/protoplugin" "2.12.0"
+
+"@bufbuild/protoplugin@2.12.0", "@bufbuild/protoplugin@^2.12.0":
+  version "2.12.0"
+  resolved "https://registry.npmmirror.com/@bufbuild/protoplugin/-/protoplugin-2.12.0.tgz#9b6278c15cf0d782233c5b92f78269ef635f1751"
+  integrity sha512-ORlDITp8AFUXzIhLRoMCG+ud+D3MPKWb5HQXBoskMMnjeyEjE1H1qLonVNPyOr8lkx3xSfYUo8a0dvOZJVAzow==
+  dependencies:
+    "@bufbuild/protobuf" "2.12.0"
+    "@typescript/vfs" "^1.6.2"
+    typescript "5.4.5"
+
 "@egjs/hammerjs@^2.0.17":
   version "2.0.17"
   resolved "https://registry.npmmirror.com/@egjs/hammerjs/-/hammerjs-2.0.17.tgz#5dc02af75a6a06e4c2db0202cae38c9263895124"
@@ -2312,6 +2382,13 @@
   dependencies:
     "@typescript-eslint/types" "8.58.0"
     eslint-visitor-keys "^5.0.0"
+
+"@typescript/vfs@^1.6.2":
+  version "1.6.4"
+  resolved "https://registry.npmmirror.com/@typescript/vfs/-/vfs-1.6.4.tgz#7543a3bd961727eb51c8bdafc3ed5e0fb5f56dff"
+  integrity sha512-PJFXFS4ZJKiJ9Qiuix6Dz/OwEIqHD7Dme1UwZhTK11vR+5dqW2ACbdndWQexBzCx+CPuMe5WBYQWCsFyGlQLlQ==
+  dependencies:
+    debug "^4.4.3"
 
 "@ungap/structured-clone@^1.3.0":
   version "1.3.0"
@@ -6958,6 +7035,11 @@ typed-array-length@^1.0.7:
     is-typed-array "^1.1.13"
     possible-typed-array-names "^1.0.0"
     reflect.getprototypeof "^1.0.6"
+
+typescript@5.4.5:
+  version "5.4.5"
+  resolved "https://registry.npmmirror.com/typescript/-/typescript-5.4.5.tgz#42ccef2c571fdbd0f6718b1d1f5e6e5ef006f611"
+  integrity sha512-vcI4UpRgg81oIRUFwR0WSIHKt11nJ7SAVlYNIu+QpqeyXP+gpQJy/Z4+F0aGxSE4MqwjyXvW/TzgkLAx2AGHwQ==
 
 typescript@~5.9.2:
   version "5.9.3"

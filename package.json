@@ -5,10 +5,11 @@
   "private": true,
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "lint": "expo lint",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "gen:api": "buf generate"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -60,6 +61,10 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@bufbuild/buf": "^1.68.4",
+    "@bufbuild/protobuf": "^2.12.0",
+    "@bufbuild/protoc-gen-es": "^2.12.0",
+    "@bufbuild/protoplugin": "^2.12.0",
     "@types/react": "~19.2.10",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~55.0.0",

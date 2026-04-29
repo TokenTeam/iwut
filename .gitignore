@@ -1,5 +1,8 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
+# project files
+.idea
+
 # dependencies
 node_modules/
 
@@ -35,6 +38,9 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# generated API client
+lib/api/gen/
 
 app-example
 

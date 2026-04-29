@@ -1,0 +1,3 @@
+[submodule "packages/api-proto"]
+	path = packages/api-proto
+	url = https://github.com/tokenteam/iwut-api-proto.git
