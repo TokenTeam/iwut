@@ -1,9 +1,6 @@
 #!/bin/bash
 set -e
 
-export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
-[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-
 PROFILE="$1"
 
 if [ -z "$PROFILE" ]; then
@@ -11,11 +8,36 @@ if [ -z "$PROFILE" ]; then
   exit 1
 fi
 
-for cmd in java:openjdk-17-jdk unzip:unzip wget:wget; do
+for cmd in unzip:unzip wget:wget; do
   command -v "${cmd%%:*}" &> /dev/null || PKGS+=" ${cmd##*:}"
 done
 if [ -n "$PKGS" ]; then
   apt-get update && apt-get install -y $PKGS
+fi
+
+export SDKMAN_DIR="${SDKMAN_DIR:-$HOME/.sdkman}"
+[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ] && . "$SDKMAN_DIR/bin/sdkman-init.sh"
+
+if ! command -v java &> /dev/null; then
+  if [ ! -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]; then
+    curl -s "https://get.sdkman.io" | bash
+    . "$SDKMAN_DIR/bin/sdkman-init.sh"
+  fi
+  sdk install java 21.0.7-tem
+  export JAVA_HOME="$SDKMAN_DIR/candidates/java/current"
+  export PATH="$JAVA_HOME/bin:$PATH"
+else
+  java -version
+fi
+
+export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+if [ ! -s "$NVM_DIR/nvm.sh" ]; then
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/refs/heads/master/install.sh | bash
+fi
+. "$NVM_DIR/nvm.sh"
+
+if ! command -v node &> /dev/null; then
+  nvm install --lts
 fi
 
 export ANDROID_HOME=/opt/android-sdk
