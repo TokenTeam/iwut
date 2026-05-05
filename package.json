@@ -8,7 +8,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "lint": "expo lint",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@bacons/apple-targets": "^4.0.6",
@@ -69,6 +70,7 @@
     "eslint": "^9.25.0",
     "eslint-config-expo": "~55.0.0",
     "eslint-config-prettier": "^10.1.8",
+    "patch-package": "^8.0.1",
     "prettier": "^3.8.3",
     "typescript": "~5.9.2"
   },
