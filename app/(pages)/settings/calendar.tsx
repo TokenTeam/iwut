@@ -1,6 +1,12 @@
 import { Stack } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, Switch, Text } from "react-native";
+import {
+  Pressable,
+  ScrollView,
+  Switch,
+  Text,
+  useWindowDimensions,
+} from "react-native";
 import Toast from "react-native-toast-message";
 
 import { BottomSheet } from "@/components/ui/bottom-sheet";
@@ -11,7 +17,18 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useCourseStore } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 
+function isCropCancelled(error: unknown) {
+  const re = /cancell?ed/i;
+  if (error && typeof error === "object" && "code" in error) {
+    if (re.test(String((error as { code: unknown }).code))) return true;
+  }
+  if (error instanceof Error) return re.test(error.message);
+  if (typeof error === "string") return re.test(error);
+  return false;
+}
+
 export default function CalendarSettingsScreen() {
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
   const iconColor = Colors[isDark ? "dark" : "light"].icon;
@@ -48,19 +65,64 @@ export default function CalendarSettingsScreen() {
     // 先关闭 BottomSheet，避免 expo-image-picker 在 RN Modal上下文
     // 调用 .launch() 触发 unregistered ActivityResultLauncher
     setShowBgPicker(false);
-    const ImagePicker = await import("expo-image-picker");
-    const { File, Paths } = await import("expo-file-system");
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      quality: 0.8,
-    });
-    if (result.canceled) return;
-    await deleteOldBg(backgroundImageUri);
-    const source = new File(result.assets[0].uri);
-    const dest = new File(Paths.document, `schedule-bg-${Date.now()}.jpg`);
-    await source.copy(dest);
-    setBackgroundImageUri(dest.uri);
-    Toast.show({ type: "success", text1: "背景已设置", position: "bottom" });
+    let tempCroppedUri: string | null = null;
+    try {
+      const ImagePicker = await import("expo-image-picker");
+      const { File, Paths } = await import("expo-file-system");
+      const ExpoImageCropTool = (
+        await import("@bsky.app/expo-image-crop-tool")
+      ).default;
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        quality: 1,
+      });
+      if (result.canceled) return;
+
+      const asset = result.assets[0];
+      const cropped = await ExpoImageCropTool.openCropperAsync({
+        imageUri: asset.uri,
+        shape: "rectangle",
+        aspectRatio:
+          windowWidth > 0 && windowHeight > 0
+            ? windowWidth / windowHeight
+            : undefined,
+        format: "jpeg",
+        compressImageQuality: 0.85,
+        cancelButtonText: "取消",
+        doneButtonText: "完成",
+      });
+
+      tempCroppedUri = cropped.path;
+      const source = new File(cropped.path);
+
+      const dest = new File(Paths.document, `schedule-bg-${Date.now()}.jpg`);
+      await source.copy(dest);
+      await deleteOldBg(backgroundImageUri);
+
+      setBackgroundImageUri(dest.uri);
+      Toast.show({
+        type: "success",
+        text1: "背景已设置",
+        position: "bottom",
+      });
+    } catch (error) {
+      if (isCropCancelled(error)) return;
+      Toast.show({
+        type: "error",
+        text1: "背景设置失败",
+        text2: "图片裁剪或保存时出现问题",
+        position: "bottom",
+      });
+    } finally {
+      if (tempCroppedUri) {
+        try {
+          const { File } = await import("expo-file-system");
+          const temp = new File(tempCroppedUri);
+          if (temp.exists) temp.delete();
+        } catch {}
+      }
+    }
   };
 
   const handleRemoveBg = async () => {

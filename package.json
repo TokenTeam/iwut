@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@bacons/apple-targets": "^4.0.6",
+    "@bsky.app/expo-image-crop-tool": "^0.5.1",
     "@expo/vector-icons": "^15.0.2",
     "@preeternal/react-native-cookie-manager": "^6.3.2",
     "@react-native-assets/slider": "^11.0.12",
