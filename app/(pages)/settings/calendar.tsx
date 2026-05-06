@@ -1,6 +1,7 @@
 import { Stack } from "expo-router";
 import { useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   Switch,
@@ -14,8 +15,13 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import {
+  deleteAppCalendar,
+  syncCoursesToCalendar,
+} from "@/services/calendar-sync";
 import { useCourseStore } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
+import { useSettingsStore } from "@/store/settings";
 
 function isCropCancelled(error: unknown) {
   const re = /cancell?ed/i;
@@ -44,13 +50,48 @@ export default function CalendarSettingsScreen() {
   );
 
   const courses = useCourseStore((s) => s.courses);
+  const calendarSync = useSettingsStore((s) => s.calendarSync);
+  const setCalendarSync = useSettingsStore((s) => s.setCalendarSync);
 
   const [showBgPicker, setShowBgPicker] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const courseCount = useMemo(() => {
     const names = new Set(courses.map((c) => c.name));
     return names.size;
   }, [courses]);
+
+  const handleCalendarSyncToggle = async (value: boolean) => {
+    if (value) {
+      setSyncing(true);
+      const result = await syncCoursesToCalendar();
+      setSyncing(false);
+      if (result.success) {
+        setCalendarSync(true);
+        Toast.show({
+          type: "success",
+          text1: "已同步到系统日历",
+          text2: `共写入 ${result.count} 条课程数据`,
+          position: "bottom",
+        });
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "同步失败",
+          text2: result.error,
+          position: "bottom",
+        });
+      }
+    } else {
+      await deleteAppCalendar();
+      setCalendarSync(false);
+      Toast.show({
+        type: "success",
+        text1: "已从系统日历移除",
+        position: "bottom",
+      });
+    }
+  };
 
   const deleteOldBg = async (uri: string | null) => {
     if (!uri) return;
@@ -69,9 +110,8 @@ export default function CalendarSettingsScreen() {
     try {
       const ImagePicker = await import("expo-image-picker");
       const { File, Paths } = await import("expo-file-system");
-      const ExpoImageCropTool = (
-        await import("@bsky.app/expo-image-crop-tool")
-      ).default;
+      const ExpoImageCropTool = (await import("@bsky.app/expo-image-crop-tool"))
+        .default;
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
@@ -165,6 +205,25 @@ export default function CalendarSettingsScreen() {
             label="显示中课"
             showArrow={false}
             right={<Switch value={showMidday} onValueChange={setShowMidday} />}
+          />
+        </MenuGroup>
+
+        <MenuGroup title="同步">
+          <MenuItem
+            icon="event"
+            iconBg="#FF9500"
+            label="同步到系统日历"
+            showArrow={false}
+            right={
+              syncing ? (
+                <ActivityIndicator size="small" />
+              ) : (
+                <Switch
+                  value={calendarSync}
+                  onValueChange={handleCalendarSyncToggle}
+                />
+              )
+            }
           />
         </MenuGroup>
 
