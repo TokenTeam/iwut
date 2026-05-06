@@ -272,6 +272,31 @@ export const GetCourse = forwardRef<GetCourseHandle>(
       }
     }, []);
 
+    useEffect(() => {
+      if (!importing) return;
+      const timeout = setTimeout(() => {
+        if (!injected.current) {
+          finish(false, "加载超时，请检查网络连接并重试");
+        }
+      }, 30000);
+      return () => clearTimeout(timeout);
+    }, [importing, finish]);
+
+    const handleError = useCallback(
+      (syntheticEvent: {
+        nativeEvent: { description: string; url?: string; code?: number };
+      }) => {
+        const { description, url, code } = syntheticEvent.nativeEvent;
+        reportError(new Error(description), {
+          module: `course-${importType}`,
+          webviewUrl: url,
+          webviewCode: code,
+        });
+        finish(false, "请检查网络连接并重试");
+      },
+      [importType, finish],
+    );
+
     const handleLoadEnd = useCallback(
       (e: { nativeEvent: { url: string } }) => {
         autoLoginOnLoadEnd(e);
@@ -484,6 +509,8 @@ export const GetCourse = forwardRef<GetCourseHandle>(
               originWhitelist={["*"]}
               webviewDebuggingEnabled={IS_DEV}
               onLoadEnd={handleLoadEnd}
+              onError={handleError}
+              onHttpError={handleError}
               onMessage={handleMessage}
               ref={webview}
             />
