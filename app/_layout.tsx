@@ -36,6 +36,7 @@ import Toast from "react-native-toast-message";
 
 import { Themes } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { syncCoursesToCalendar } from "@/services/calendar-sync";
 import {
   initNotificationChannel,
   registerBackgroundRefresh,
@@ -44,6 +45,7 @@ import {
 } from "@/services/course-notification";
 import { syncWidgetData } from "@/services/widget-sync";
 import { useCourseStore } from "@/store/course";
+import { useSettingsStore } from "@/store/settings";
 import { useThemeStore } from "@/store/theme";
 import { useUpdateStore } from "@/store/update";
 
@@ -108,6 +110,9 @@ function RootLayout() {
       ) {
         syncWidgetData().catch(() => {});
         scheduleWeeklyReminders().catch(() => {});
+        if (useSettingsStore.getState().calendarSync) {
+          syncCoursesToCalendar().catch(() => {});
+        }
       }
     });
     return unsub;

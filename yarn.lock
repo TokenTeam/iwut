@@ -3873,6 +3873,11 @@ expo-build-properties@~55.0.13:
     resolve-from "^5.0.0"
     semver "^7.6.0"
 
+expo-calendar@~55.0.14:
+  version "55.0.14"
+  resolved "https://mirrors.cloud.tencent.com/npm/expo-calendar/-/expo-calendar-55.0.14.tgz#a5dfd435384e7085190ace7b9621676b6bc6e94b"
+  integrity sha512-DndwzRNrjyjaMRY9ob/X8TdptLcpckVMGnv8rMjABH2jMWToeLElgq7lttytCTAoablZfVLowcizdD+GwSqNzw==
+
 expo-clipboard@~55.0.13:
   version "55.0.13"
   resolved "https://mirrors.cloud.tencent.com/npm/expo-clipboard/-/expo-clipboard-55.0.13.tgz#29e9920bf3b22fe80378f438aa9929e7cbcd289c"
