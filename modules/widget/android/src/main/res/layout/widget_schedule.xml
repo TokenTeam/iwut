@@ -56,9 +56,11 @@
 
     <RelativeLayout
         android:id="@+id/course_group"
-        android:layout_width="240dp"
+        android:layout_width="0dp"
         android:layout_height="match_parent"
+        android:layout_toEndOf="@id/info_group"
         android:layout_alignParentEnd="true"
+        android:layout_marginStart="10dp"
         android:layout_marginEnd="@dimen/widget_padding_horizontal">
 
         <RelativeLayout
@@ -269,8 +271,9 @@
 
     <RelativeLayout
         android:id="@+id/all_done_group"
-        android:layout_width="240dp"
+        android:layout_width="0dp"
         android:layout_height="match_parent"
+        android:layout_toEndOf="@id/info_group"
         android:layout_alignParentEnd="true"
         android:visibility="gone">
 
