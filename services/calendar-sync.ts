@@ -149,6 +149,14 @@ function createEventsForCourse(
     const startDate = buildEventDate(monday, course.day, startTime[0]);
     const endDate = buildEventDate(monday, course.day, endTime[1]);
 
+    if (
+      isNaN(startDate.getTime()) ||
+      isNaN(endDate.getTime()) ||
+      startDate >= endDate
+    ) {
+      continue;
+    }
+
     events.push({
       title: course.name,
       location: formatLocation(course.room),
