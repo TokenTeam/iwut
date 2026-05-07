@@ -10,7 +10,8 @@ Sentry.init({
   enableAutoSessionTracking: false,
   tracesSampleRate: 0,
   enabled: !__DEV__,
-  dist: (Constants.expoConfig?.extra?.commit as string | undefined) ?? "unknown",
+  dist:
+    (Constants.expoConfig?.extra?.commit as string | undefined) ?? "unknown",
 });
 
 FileLogger.configure({

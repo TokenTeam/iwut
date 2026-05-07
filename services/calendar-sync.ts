@@ -113,15 +113,36 @@ export async function syncCoursesToCalendar(): Promise<{
 
     const calendarId = await createAppCalendar();
 
+    if (Platform.OS === "android") {
+      await new Promise((r) => setTimeout(r, 200));
+    }
+
     let count = 0;
+    let reported = false;
     for (const course of courses) {
       const events = createEventsForCourse(course, termStart);
       for (const eventData of events) {
-        await Calendar.createEventAsync(calendarId, eventData);
-        count++;
+        try {
+          await Calendar.createEventAsync(calendarId, eventData);
+          count++;
+        } catch (e) {
+          if (!reported) {
+            // 避免重复上报
+            reported = true;
+            reportError(e, {
+              module: "calendar-sync",
+              course: course.name,
+              day: course.day,
+              section: `${course.sectionStart}-${course.sectionEnd}`,
+            });
+          }
+        }
       }
     }
 
+    if (count === 0 && reported) {
+      return { success: false, count: 0, error: "事件写入失败" };
+    }
     return { success: true, count };
   } catch (e) {
     reportError(e, { module: "calendar-sync" });
@@ -160,8 +181,10 @@ function createEventsForCourse(
     events.push({
       title: course.name,
       location: formatLocation(course.room),
-      startDate,
-      endDate,
+      // 传递毫秒时间戳而非 Date 对象，原生层直接作为 Long/Double 使用，
+      // 避免 ISO 字符串经 SimpleDateFormat 解析在部分 OEM 设备上丢失 DTSTART
+      startDate: startDate.getTime() as unknown as Date,
+      endDate: endDate.getTime() as unknown as Date,
       alarms: [{ relativeOffset: -15 }],
       notes: course.teacher ? `教师: ${course.teacher}` : undefined,
       timeZone: "Asia/Shanghai",
