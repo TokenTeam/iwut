@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/react-native";
+import Constants from "expo-constants";
 import { FileLogger } from "react-native-file-logger";
 
 import { SENTRY_DSN } from "@/constants/api";
@@ -9,6 +10,7 @@ Sentry.init({
   enableAutoSessionTracking: false,
   tracesSampleRate: 0,
   enabled: !__DEV__,
+  dist: (Constants.expoConfig?.extra?.commit as string | undefined) ?? "unknown",
 });
 
 FileLogger.configure({
