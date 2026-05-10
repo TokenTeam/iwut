@@ -17,12 +17,29 @@ export async function checkUpdate(): Promise<{
   hasUpdate: boolean;
   latestVersion: string;
 }> {
-  const { version: latestVersion } = await fetch(
-    "https://cdn.jsdmirror.com/cnb/TokenTeam/iwut@main/package.json",
-  ).then((res) => res.json());
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
 
-  return {
-    hasUpdate: compareVersions(latestVersion, version ?? "0.0.0") > 0,
-    latestVersion,
-  };
+  try {
+    const { version: latestVersion } = await fetch(
+      "https://cdn.jsdmirror.com/cnb/TokenTeam/iwut@main/package.json",
+      { signal: controller.signal },
+    ).then((res) => res.json());
+
+    return {
+      hasUpdate: compareVersions(latestVersion, version ?? "0.0.0") > 0,
+      latestVersion,
+    };
+  } catch (err) {
+    if (
+      (err instanceof DOMException && err.name === "AbortError") ||
+      err instanceof TypeError
+    ) {
+      return { hasUpdate: false, latestVersion: version ?? "0.0.0" };
+    }
+
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 }
