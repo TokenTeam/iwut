@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Modal, Pressable, Text, View } from "react-native";
 import Animated, {
@@ -196,6 +197,87 @@ export default function CourseScreen() {
           today={week === getCurrentWeek(termStart) ? today : undefined}
           termStart={termStart}
         />
+
+        {!isBound && (
+          <View
+            style={{
+              position: "absolute",
+              top: 48,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: isDark
+                ? "rgba(0,0,0,0.65)"
+                : "rgba(255,255,255,0.75)",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 12,
+            }}
+          >
+            <View
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 28,
+                backgroundColor: isDark
+                  ? "rgba(255,255,255,0.06)"
+                  : "rgba(0,0,0,0.04)",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Ionicons
+                name="person-circle-outline"
+                size={26}
+                color={isDark ? "#525252" : "#a3a3a3"}
+              />
+            </View>
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: "600",
+                color: isDark ? "#a3a3a3" : "#737373",
+              }}
+            >
+              请先绑定智慧理工大账号
+            </Text>
+            <Text
+              style={{
+                fontSize: 13,
+                color: isDark ? "#525252" : "#a3a3a3",
+                textAlign: "center",
+                paddingHorizontal: 40,
+                lineHeight: 20,
+              }}
+            >
+              绑定后可自动从教务系统导入课表
+            </Text>
+            <Pressable
+              style={({ pressed }) => ({
+                marginTop: 4,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 2,
+                opacity: pressed ? 0.5 : 1,
+              })}
+              onPress={() => {
+                haptic();
+                router.navigate("/(tabs)/user");
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: "#3b82f6",
+                  fontWeight: "500",
+                }}
+              >
+                前往「我的」绑定
+              </Text>
+              <Ionicons name="chevron-forward" size={13} color="#3b82f6" />
+            </Pressable>
+          </View>
+        )}
 
         {isBound && courses.length === 0 && (
           <>
