@@ -9,8 +9,8 @@ $version = (Get-Content "$root\package.json" -Raw | ConvertFrom-Json).version
 
 if (Test-Path $dist) { Remove-Item $dist -Recurse -Force }
 
-npx expo export --platform ios --platform android --output-dir dist
-cmd /c "npx expo config --type public --json > dist\expoConfig.json"
+bun expo export --platform ios --platform android --output-dir dist
+bun expo config --type public --json | Set-Content dist\expoConfig.json
 
 Push-Location $dist
 try {

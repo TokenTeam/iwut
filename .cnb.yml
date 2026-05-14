@@ -6,6 +6,7 @@ $:
         image: docker.cnb.cool/zhxycn/env:latest
         volumes:
           - /opt/android-sdk:copy-on-write
+          - /root/.bun/install/cache:copy-on-write
       services:
         - vscode
         - docker
@@ -19,14 +20,14 @@ main:
     - docker:
         image: docker.cnb.cool/zhxycn/env:latest
         volumes:
-          - /root/.yarn:copy-on-write
+          - /root/.bun/install/cache:copy-on-write
           - node_modules:copy-on-write
       stages:
         - script: |
-            export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
-            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-            yarn install --frozen-lockfile
-            yarn run lint
+            export BUN_INSTALL="$HOME/.bun"
+            export PATH="$BUN_INSTALL/bin:$PATH"
+            bun install --frozen-lockfile
+            bun run lint
 
 "**":
   web_trigger_job:
@@ -37,7 +38,7 @@ main:
         volumes:
           - /opt/android-sdk:copy-on-write
           - /root/.gradle:copy-on-write
-          - /root/.yarn:copy-on-write
+          - /root/.bun/install/cache:copy-on-write
           - node_modules:copy-on-write
       imports:
         - https://cnb.cool/TokenTeam/secrets/-/blob/main/expo.yml

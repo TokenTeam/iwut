@@ -93,6 +93,7 @@ const config: ExpoConfig = {
     "expo-background-task",
     "@bacons/apple-targets",
     "./plugins/with-gradle-props.js",
+    "./plugins/with-gradle-wrapper.js",
   ],
   experiments: {
     typedRoutes: true,

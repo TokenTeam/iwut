@@ -40,6 +40,12 @@ if ! command -v node &> /dev/null; then
   nvm install --lts
 fi
 
+if ! command -v bun &> /dev/null; then
+  curl -fsSL https://bun.sh/install | bash
+  export BUN_INSTALL="$HOME/.bun"
+  export PATH="$BUN_INSTALL/bin:$PATH"
+fi
+
 export ANDROID_HOME=/opt/android-sdk
 export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
 
@@ -61,10 +67,10 @@ if [ ! -d "$ANDROID_HOME/platforms/android-36" ]; then
 fi
 
 if ! command -v eas &> /dev/null; then
-  npm install -g eas-cli
+  bun install -g eas-cli
 fi
 
-yarn install --frozen-lockfile
+bun install --frozen-lockfile
 
 rm -rf "${TMPDIR:-/tmp}/metro-cache" "${TMPDIR:-/tmp}"/haste-map-*
 
