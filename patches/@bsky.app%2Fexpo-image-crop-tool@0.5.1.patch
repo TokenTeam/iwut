@@ -1,0 +1,15 @@
+diff --git a/ios/ExpoImageCropTool.podspec b/ios/ExpoImageCropTool.podspec
+index 8e9d24e68ffa82f67cec603c191bcfa5b7786327..4e7cc5ae49de9aa008069fa6a552e7b117c62db7 100644
+--- a/ios/ExpoImageCropTool.podspec
++++ b/ios/ExpoImageCropTool.podspec
+@@ -11,8 +11,8 @@ Pod::Spec.new do |s|
+   s.author         = package['author']
+   s.homepage       = package['homepage']
+   s.platforms      = {
+-    :ios => '15.1',
+-    :tvos => '15.1'
++    :ios => '16.4',
++    :tvos => '16.4'
+   }
+   s.swift_version  = '5.4'
+   s.source         = { git: 'https://github.com/bluesky-social/expo-image-crop-tool' }
