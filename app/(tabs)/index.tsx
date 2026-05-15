@@ -19,6 +19,7 @@ import Animated, {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { DAY_LABELS } from "@/components/layout/schedule";
+import { AnnouncementBanner } from "@/components/ui/announcement-banner";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import {
@@ -28,10 +29,12 @@ import {
   getTomorrowWeek,
   isVacation,
 } from "@/lib/date";
+import { filterActiveAnnouncements } from "@/services/announcements";
 import {
   formatCourseSectionTimeRange,
   SECTION_TIMES,
 } from "@/services/course-time";
+import { useAnnouncementStore } from "@/store/announcements";
 import type { Course } from "@/store/course";
 import { useCourseStore } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
@@ -104,6 +107,13 @@ export default function HomeScreen() {
   const hasUpdate = useUpdateStore((s) => s.hasUpdate);
   const colorPalette = useScheduleStore((s) => s.colorPalette);
   const courseColorOverrides = useScheduleStore((s) => s.courseColorOverrides);
+  const announcements = useAnnouncementStore((s) => s.announcements);
+  const dismissedIds = useAnnouncementStore((s) => s.dismissedIds);
+
+  const activeAnnouncements = useMemo(
+    () => filterActiveAnnouncements(announcements, dismissedIds),
+    [announcements, dismissedIds],
+  );
 
   const greeting = getGreeting();
   const vacation = isVacation(termStart);
@@ -311,6 +321,11 @@ export default function HomeScreen() {
             </Text>
           </View>
         </View>
+
+        <AnnouncementBanner
+          announcements={activeAnnouncements}
+          isDark={isDark}
+        />
 
         <View className="mx-6 my-5 h-px bg-neutral-100 dark:bg-neutral-800/60" />
 
