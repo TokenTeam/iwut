@@ -40,10 +40,10 @@ if ! command -v node &> /dev/null; then
   nvm install --lts
 fi
 
+export BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
+export PATH="$BUN_INSTALL/bin:$PATH"
 if ! command -v bun &> /dev/null; then
   curl -fsSL https://bun.sh/install | bash
-  export BUN_INSTALL="$HOME/.bun"
-  export PATH="$BUN_INSTALL/bin:$PATH"
 fi
 
 export ANDROID_HOME=/opt/android-sdk
