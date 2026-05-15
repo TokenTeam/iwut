@@ -17,7 +17,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import Toast from "react-native-toast-message";
-import { WebView } from "react-native-webview";
+import { WebView, type WebViewMessageEvent } from "react-native-webview";
 
 import { IS_DEV } from "@/constants/is-dev";
 import { useZhlgdAutoLogin } from "@/hooks/use-zhlgd-autologin";
@@ -211,7 +211,17 @@ export const GetCourse = forwardRef<GetCourseHandle>(
     const [importType, setImportType] = useState<ImportType>("bachelor");
     const webview = useRef<WebView>(null);
     const injected = useRef(false);
-    const { onLoadEnd: autoLoginOnLoadEnd } = useZhlgdAutoLogin(webview);
+    const finishRef = useRef<(success: boolean, message?: string) => void>(
+      () => {},
+    );
+    const {
+      onLoadEnd: autoLoginOnLoadEnd,
+      onMessage: autoLoginOnMessage,
+      sms,
+      smsNode,
+    } = useZhlgdAutoLogin(webview, {
+      onCancel: () => finishRef.current(false, "已取消短信验证"),
+    });
 
     useImperativeHandle(ref, () => ({
       startImport(type: ImportType) {
@@ -271,16 +281,17 @@ export const GetCourse = forwardRef<GetCourseHandle>(
         });
       }
     }, []);
+    finishRef.current = finish;
 
     useEffect(() => {
-      if (!importing) return;
+      if (!importing || sms.visible) return;
       const timeout = setTimeout(() => {
         if (!injected.current) {
           finish(false, "加载超时，请检查网络连接并重试");
         }
       }, 30000);
       return () => clearTimeout(timeout);
-    }, [importing, finish]);
+    }, [importing, sms.visible, finish]);
 
     const handleError = useCallback(
       (syntheticEvent: {
@@ -325,7 +336,9 @@ export const GetCourse = forwardRef<GetCourseHandle>(
     );
 
     const handleMessage = useCallback(
-      (event: { nativeEvent: { data: string } }) => {
+      (event: WebViewMessageEvent) => {
+        if (autoLoginOnMessage(event)) return;
+
         let msg: any;
         try {
           msg = JSON.parse(event.nativeEvent.data);
@@ -408,7 +421,7 @@ export const GetCourse = forwardRef<GetCourseHandle>(
           finish(true);
         }
       },
-      [importType, finish],
+      [importType, finish, autoLoginOnMessage],
     );
 
     if (!importing) return null;
@@ -515,6 +528,7 @@ export const GetCourse = forwardRef<GetCourseHandle>(
               ref={webview}
             />
           </View>
+          {smsNode}
         </View>
       </Modal>
     );

@@ -187,6 +187,7 @@ export default function HomeScreen() {
   const handlePagerScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const progress = e.nativeEvent.contentOffset.x / screenWidth;
+      // eslint-disable-next-line react-hooks/immutability
       scrollProgress.value = Math.max(0, Math.min(1, progress));
     },
     [screenWidth, scrollProgress],
@@ -207,6 +208,7 @@ export default function HomeScreen() {
     (tab: number) => {
       haptic();
       setActiveTab(tab);
+      // eslint-disable-next-line react-hooks/immutability
       scrollProgress.value = withTiming(tab, { duration: 280 });
       pagerRef.current?.scrollTo({ x: tab * screenWidth, animated: true });
     },

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { RangeSlider } from "@react-native-assets/slider";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   KeyboardAvoidingView,
   LayoutAnimation,
@@ -105,19 +105,20 @@ export default function AddEditCourseScreen() {
     [editName, courses],
   );
 
-  const [name, setName] = useState("");
-  const [teacher, setTeacher] = useState("");
-  const [slots, setSlots] = useState<TimeSlot[]>([createEmptySlot()]);
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
-
-  useEffect(() => {
-    if (isEdit && existingRecords.length > 0) {
-      setName(existingRecords[0].name);
-      setTeacher(existingRecords[0].teacher);
-      setSlots(recordsToSlots(existingRecords));
-      setExpandedIndex(null);
-    }
-  }, [isEdit, existingRecords]);
+  const [name, setName] = useState(() =>
+    isEdit && existingRecords.length > 0 ? existingRecords[0].name : "",
+  );
+  const [teacher, setTeacher] = useState(() =>
+    isEdit && existingRecords.length > 0 ? existingRecords[0].teacher : "",
+  );
+  const [slots, setSlots] = useState<TimeSlot[]>(() =>
+    isEdit && existingRecords.length > 0
+      ? recordsToSlots(existingRecords)
+      : [createEmptySlot()],
+  );
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(() =>
+    isEdit && existingRecords.length > 0 ? null : 0,
+  );
 
   const toggleExpand = useCallback((index: number) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);

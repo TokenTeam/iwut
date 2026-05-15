@@ -19,7 +19,11 @@ export default function BrowserScreen() {
   const navigation = useNavigation();
   const webview = useRef<WebView>(null);
   const rpcBridge = useRef<NativeRPCBridge>(new NativeRPCBridge());
-  const { onLoadEnd: autoLoginOnLoadEnd } = useZhlgdAutoLogin(webview);
+  const {
+    onLoadEnd: autoLoginOnLoadEnd,
+    onMessage: autoLoginOnMessage,
+    smsNode,
+  } = useZhlgdAutoLogin(webview);
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: uri.split("/").pop() });
@@ -32,6 +36,8 @@ export default function BrowserScreen() {
   };
 
   const onMessage = async (event: WebViewMessageEvent) => {
+    if (autoLoginOnMessage(event)) return;
+
     const response = await rpcBridge.current.handleRawMessage(
       event.nativeEvent.data,
       { pageUrl: event.nativeEvent.url },
@@ -60,6 +66,7 @@ export default function BrowserScreen() {
         onLoadEnd={autoLoginOnLoadEnd}
         onMessage={onMessage}
       />
+      {smsNode}
     </View>
   );
 }

@@ -9,6 +9,7 @@ import {
   ScrollView,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -89,6 +90,7 @@ function openWebApp(uri: string) {
 export default function FunctionScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { height } = useWindowDimensions();
   const [showBrowser, setShowBrowser] = useState(false);
   const [uri, setUri] = useState("");
 
@@ -163,7 +165,8 @@ export default function FunctionScreen() {
             behavior={Platform.OS === "ios" ? "padding" : undefined}
           >
             <Pressable
-              className="flex-1 justify-center bg-black/40"
+              className="flex-1 bg-black/40"
+              style={{ paddingTop: height * 0.3 }}
               onPress={() => setShowBrowser(false)}
             >
               <Pressable

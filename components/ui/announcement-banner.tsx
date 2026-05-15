@@ -51,9 +51,13 @@ export function AnnouncementBanner({
   }, [activeIdx]);
 
   const idsKey = announcements.map((a) => a.id).join("|");
-  useEffect(() => {
+  const [prevIdsKey, setPrevIdsKey] = useState(idsKey);
+  if (prevIdsKey !== idsKey) {
+    setPrevIdsKey(idsKey);
     setActiveIdx(0);
-    activeIdxRef.current = 0;
+  }
+
+  useEffect(() => {
     expandedIdsRef.current = new Set();
     if (width > 0) {
       scrollRef.current?.scrollTo({ x: 0, animated: false });

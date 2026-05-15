@@ -13,7 +13,8 @@ function UserCard() {
   const router = useRouter();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
-  const { isBound, studentId, studentName, unbind } = useUserBindStore();
+  const { isBound, studentId, studentName, college, eduLevel, unbind } =
+    useUserBindStore();
   const [unbindVisible, setUnbindVisible] = useState(false);
 
   if (!isBound) {
@@ -51,31 +52,42 @@ function UserCard() {
 
   return (
     <>
-      <View className="mb-4 rounded-2xl bg-white px-4 py-5 dark:bg-neutral-800">
+      <View className="mb-4 rounded-2xl bg-white px-5 py-5 dark:bg-neutral-800">
         <View className="flex-row items-center">
           <View
-            className="h-12 w-12 items-center justify-center rounded-full"
-            style={{ backgroundColor: isDark ? "#14532d" : "#dcfce7" }}
+            className="h-14 w-14 items-center justify-center rounded-full"
+            style={{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" }}
           >
             <MaterialIcons
               name="person"
-              size={24}
-              color={isDark ? "#4ade80" : "#16a34a"}
+              size={28}
+              color={isDark ? "#60a5fa" : "#3b82f6"}
             />
           </View>
-          <View className="ml-3 flex-1">
-            <Text className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
-              {studentName}
+          <View className="ml-4 flex-1">
+            <Text numberOfLines={1}>
+              <Text className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                {studentName}
+              </Text>
+              <Text className="text-xs text-neutral-400 dark:text-neutral-500">
+                {"   " + studentId}
+              </Text>
             </Text>
-            <Text className="mt-0.5 text-sm text-neutral-400 dark:text-neutral-500">
-              {studentId}
-            </Text>
+            {(eduLevel || college) && (
+              <Text
+                className="mt-1 text-sm text-neutral-500 dark:text-neutral-400"
+                numberOfLines={1}
+              >
+                {[eduLevel, college].filter(Boolean).join(" · ")}
+              </Text>
+            )}
           </View>
           <Pressable
-            className="rounded-lg px-3 py-1.5 active:bg-neutral-100 dark:active:bg-neutral-700"
+            className="ml-2 h-9 w-9 items-center justify-center rounded-full active:bg-red-50 dark:active:bg-red-950"
             onPress={() => setUnbindVisible(true)}
+            hitSlop={8}
           >
-            <Text className="text-sm text-red-500">解绑</Text>
+            <MaterialIcons name="logout" size={20} color="#ef4444" />
           </Pressable>
         </View>
       </View>

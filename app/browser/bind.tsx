@@ -7,19 +7,17 @@ import { View } from "react-native";
 import Toast from "react-native-toast-message";
 import { WebView, type WebViewNavigation } from "react-native-webview";
 
-const LIBRARY_HOST = "202.114.89.11";
+const TALENT_HOST = "talent.whut.edu.cn";
 const CAS_LOGIN = "zhlgd.whut.edu.cn/tpass/login";
-const LIBRARY_CAS_URL =
-  "https://zhlgd.whut.edu.cn/tpass/login?service=http%3A%2F%2F202.114.89.11%2Fopac%2Fspecial%2FtoOpac";
-const READER_INFO_URL = `http://${LIBRARY_HOST}/opac/reader/getReaderInfo`;
+const TALENT_ROOT_URL = `https://${TALENT_HOST}/`;
+const TALENT_APP_PATH = "/information-center/center/index.html?appId=2";
+const TALENT_CAS_URL = `https://zhlgd.whut.edu.cn/tpass/login?service=${encodeURIComponent(
+  TALENT_ROOT_URL,
+)}`;
 
 const INJECTED_JS = `(function(){
   function simplifyLogin(){
-    var pwdTab=document.querySelector('#password_login');
-    if(!pwdTab){setTimeout(simplifyLogin,200);return;}
-
-    pwdTab.click();
-
+    if(!document.head){setTimeout(simplifyLogin,100);return;}
     var css=document.createElement('style');
     css.textContent=
       '.login_banner{display:none!important}'+
@@ -33,6 +31,17 @@ const INJECTED_JS = `(function(){
       '#footer,.footer-login{display:none!important}'+
       '.content_login_box{float:none!important;margin:0 auto!important}';
     document.head.appendChild(css);
+
+    var tries=0;
+    function ensureAccountTab(){
+      if(document.querySelector('#PM1'))return;
+      var u=document.querySelector('#un');
+      if(u && u.offsetParent!==null)return;
+      var tab=document.querySelector('#password_login');
+      if(tab){try{tab.click();}catch(e){}}
+      if(++tries<20)setTimeout(ensureAccountTab,200);
+    }
+    ensureAccountTab();
   }
 
   function track(){
@@ -54,26 +63,88 @@ const INJECTED_JS = `(function(){
     if(btn)btn.addEventListener('click',send);
     document.addEventListener('submit',send,true);
   }
-  function trackInfo(){
-    try{
-      var el=document.getElementsByName('rdName')[0];
-      if(!el||!el.value){setTimeout(trackInfo,300);return;}
-      window.ReactNativeWebView.postMessage(JSON.stringify({
-        type:'info',
-        name:el.value,
-        college:(document.getElementsByName('rdUnit')[0]||{}).value||'',
-        studentId:(document.getElementsByName('workCardNo')[0]||{}).value||'',
-        cardId:((document.getElementsByName('rdid')[0]||{}).value||'').slice(4),
-        eduLevel:(document.getElementsByName('rdSort5')[0]||{}).value||''
-      }));
-    }catch(e){setTimeout(trackInfo,300);}
+  function ensureAppEntry(){
+    if(location.hostname!=='talent.whut.edu.cn')return false;
+    if(location.pathname.indexOf('/information-center/center/')===0)return false;
+    if(window.__talentRedirected)return false;
+    window.__talentRedirected=true;
+    try{location.replace('${TALENT_APP_PATH}');}catch(_){location.href='${TALENT_APP_PATH}';}
+    return true;
+  }
+  function fetchTalentInfo(){
+    if(location.hostname!=='talent.whut.edu.cn')return;
+    if(window.__talentInfoSent)return;
+    window.__talentTries=(window.__talentTries||0)+1;
+    var giveUp=window.__talentTries>=8;
+    function retry(){
+      if(giveUp)return false;
+      setTimeout(fetchTalentInfo,1000);
+      return true;
+    }
+    function getJson(url,opts){
+      return fetch(url, Object.assign({credentials:'include',headers:{'accept':'application/json'}}, opts||{}))
+        .then(function(r){return r.json();});
+    }
+    function pick(arr,code){
+      if(!arr||!arr.length)return '';
+      for(var i=0;i<arr.length;i++){
+        if(arr[i].fieldCode===code)return String(arr[i].fieldValue==null?'':arr[i].fieldValue);
+      }
+      return '';
+    }
+    getJson('/information-center/xd/user/getLoginUserNew/2').then(function(u){
+      if(!u||u.code!==0||!u.data||!u.data.sn){retry();return;}
+      var sn=String(u.data.sn);
+      var name=u.data.name||'';
+      Promise.all([
+        getJson('/information-center/xd/user/findStudentInfoWechat/'+encodeURIComponent(sn)).catch(function(){return null;}),
+        getJson('/information-center/xd/commons/getColleges').catch(function(){return null;}),
+        getJson('/information-center/xd/commons/getDictionByName/'+encodeURIComponent('\u5b66\u751f\u7c7b\u578b')).catch(function(){return null;})
+      ]).then(function(rs){
+        var stu=rs[0];
+        if(!giveUp && (!stu||stu.status!==true||!stu.data||!stu.data.expandField)){
+          retry();return;
+        }
+        var cardId='',college='',eduLevel='';
+        try{
+          var ef=(stu&&stu.data&&stu.data.expandField)||{};
+          var xj=ef['\u5b66\u7c4d\u4fe1\u606f']||[];
+          cardId=pick(ef['\u57fa\u672c\u4fe1\u606f'],'card_no');
+          var eduCode=pick(xj,'education_code');
+          var eduDict=(rs[2]&&(rs[2].data||rs[2]))||[];
+          if(eduCode&&Array.isArray(eduDict)){
+            for(var j=0;j<eduDict.length;j++){
+              if(eduDict[j].code===eduCode){eduLevel=eduDict[j].name||'';break;}
+            }
+          }
+          var collegeCode=pick(xj,'college_code');
+          var colleges=(rs[1]&&(rs[1].data||rs[1]))||[];
+          if(collegeCode&&Array.isArray(colleges)){
+            for(var i=0;i<colleges.length;i++){
+              if(colleges[i].sn===collegeCode){college=colleges[i].name||'';break;}
+            }
+          }
+        }catch(e){}
+        window.__talentInfoSent=true;
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type:'info',
+          name:name,
+          studentId:sn,
+          cardId:cardId,
+          college:college,
+          eduLevel:eduLevel
+        }));
+      });
+    }).catch(function(){retry();});
   }
 
   if(/tpass\\/login/.test(window.location.href)){
     simplifyLogin();
   }
-  track();
-  trackInfo();
+  if(!ensureAppEntry()){
+    track();
+    fetchTalentInfo();
+  }
 })();true;`;
 
 export default function BindScreen() {
@@ -91,14 +162,10 @@ export default function BindScreen() {
     const isLoginPage = state.url.includes(CAS_LOGIN);
     if (isLoginPage || !pendingCredentials.current) return;
 
-    const isOnLibrary = state.url.includes(LIBRARY_HOST);
-    if (!isOnLibrary) {
+    const isOnTalent = state.url.includes(TALENT_HOST);
+    if (!isOnTalent) {
       webview.current?.injectJavaScript(
-        `window.location.href="${LIBRARY_CAS_URL}";`,
-      );
-    } else if (state.url.includes("/opac/reader/space") && !state.loading) {
-      webview.current?.injectJavaScript(
-        `window.location.href="${READER_INFO_URL}";`,
+        `window.location.href="${TALENT_CAS_URL}";`,
       );
     }
   };
@@ -149,6 +216,9 @@ export default function BindScreen() {
         source={{ uri: "https://zhlgd.whut.edu.cn/tpass/login" }}
         style={{ flex: 1 }}
         javaScriptEnabled
+        domStorageEnabled
+        thirdPartyCookiesEnabled
+        sharedCookiesEnabled
         originWhitelist={["*"]}
         webviewDebuggingEnabled={IS_DEV}
         injectedJavaScript={INJECTED_JS}

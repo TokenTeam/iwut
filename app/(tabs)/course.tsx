@@ -45,9 +45,11 @@ export default function CourseScreen() {
 
   const importerRef = useRef<GetCourseHandle>(null);
 
-  useEffect(() => {
+  const [prevTermStart, setPrevTermStart] = useState(termStart);
+  if (termStart !== prevTermStart) {
+    setPrevTermStart(termStart);
     if (termStart) setWeek(getCurrentWeek(termStart));
-  }, [termStart]);
+  }
 
   const [fabOpen, setFabOpen] = useState(false);
   const fabProgress = useSharedValue(0);
