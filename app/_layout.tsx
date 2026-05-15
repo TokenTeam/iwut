@@ -47,6 +47,7 @@ import {
   showUpcomingLiveActivity,
 } from "@/services/course-notification";
 import { syncWidgetData } from "@/services/widget-sync";
+import { useAnnouncementStore } from "@/store/announcements";
 import { useCourseStore } from "@/store/course";
 import { useSettingsStore } from "@/store/settings";
 import { useThemeStore } from "@/store/theme";
@@ -85,6 +86,7 @@ function RootLayout() {
 
   useEffect(() => {
     useUpdateStore.getState().check();
+    useAnnouncementStore.getState().fetch();
   }, []);
 
   useEffect(() => {
@@ -95,11 +97,12 @@ function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (Platform.OS !== "ios") return;
     const sub = AppState.addEventListener("change", (state) => {
-      if (state === "active") {
+      if (state !== "active") return;
+      if (Platform.OS === "ios") {
         showUpcomingLiveActivity().catch(() => {});
       }
+      useAnnouncementStore.getState().fetch();
     });
     return () => sub.remove();
   }, []);

@@ -1,0 +1,138 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/TokenTeam/iwut/main/schemas/announcements.schema.json",
+  "title": "iwut Announcements",
+  "description": "iwut 主页公告位的远程配置文件结构。内容仓库见 https://github.com/TokenTeam/iwut-config",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "announcements"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "version": {
+      "type": "integer",
+      "description": "协议版本号；字段语义发生不兼容变化时 +1。老客户端遇到不认识的 version 应放弃解析",
+      "const": 1
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "文件最后更新时间（ISO 8601 / UTC），便于排查 CDN 缓存。客户端不依赖此字段做业务判断"
+    },
+    "announcements": {
+      "type": "array",
+      "description": "公告列表，允许空数组（表示当前无公告）",
+      "items": { "$ref": "#/definitions/announcement" }
+    }
+  },
+  "definitions": {
+    "announcement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "title"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "稳定且唯一的 ID（kebab-case），用作客户端「已关闭公告」持久化 key。一旦发布请勿修改",
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "type": {
+          "type": "string",
+          "description": "公告类型，驱动客户端图标与强调色",
+          "enum": ["info", "warning", "event", "maintenance"]
+        },
+        "title": {
+          "type": "string",
+          "description": "主标题，建议 ≤ 20 个汉字以避免在窄屏被截断",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "body": {
+          "type": ["string", "null"],
+          "description": "正文 / 详细描述，可省略。客户端默认折叠为单行，点击卡片展开查看全文",
+          "maxLength": 200
+        },
+        "link": {
+          "description": "点击公告时的跳转目标；省略或为 null 表示不可点击",
+          "oneOf": [{ "type": "null" }, { "$ref": "#/definitions/link" }]
+        },
+        "startAt": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "生效起始时间（ISO 8601）；null 或省略表示不限起始"
+        },
+        "endAt": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "生效截止时间（ISO 8601）；null 或省略表示不限截止"
+        },
+        "priority": {
+          "type": "integer",
+          "description": "优先级，越大越靠前；默认 0。多条同时生效时客户端按此降序排序",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 0
+        },
+        "dismissible": {
+          "type": "boolean",
+          "description": "用户能否手动关闭；默认 true。重大维护通告建议设为 false",
+          "default": true
+        },
+        "minVersion": {
+          "type": ["string", "null"],
+          "description": "最低 app 版本（含），如 \"1.2.0\"；null 或省略表示不限",
+          "pattern": "^\\d+(\\.\\d+){0,2}$"
+        },
+        "maxVersion": {
+          "type": ["string", "null"],
+          "description": "最高 app 版本（含），如 \"2.0.0\"；null 或省略表示不限",
+          "pattern": "^\\d+(\\.\\d+){0,2}$"
+        },
+        "platforms": {
+          "type": "array",
+          "description": "限定生效平台；省略或为空表示全平台",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["ios", "android", "web"]
+          }
+        }
+      }
+    },
+    "link": {
+      "type": "object",
+      "description": "跳转目标。internal = 应用内路由（router.push），external = 外部链接（Linking.openURL）",
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "required": ["kind", "url"],
+          "properties": {
+            "kind": { "const": "internal" },
+            "url": {
+              "type": "string",
+              "description": "应用内路由路径，必须以 / 开头，如 \"/about\" 或 \"/wlan\"",
+              "pattern": "^/"
+            }
+          }
+        },
+        {
+          "additionalProperties": false,
+          "required": ["kind", "url"],
+          "properties": {
+            "kind": { "const": "external" },
+            "url": {
+              "type": "string",
+              "description": "外部 URL，必须为 http:// 或 https://",
+              "format": "uri",
+              "pattern": "^https?://"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
