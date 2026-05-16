@@ -4,12 +4,14 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import Toast from "react-native-toast-message";
 
+import { getDayLabels } from "@/components/layout/schedule";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
-import { DAY_LABELS } from "@/components/layout/schedule";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useT } from "@/lib/i18n";
 import { useCourseStore } from "@/store/course";
 
 export default function ManageCourseScreen() {
+  const t = useT();
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
 
@@ -21,6 +23,7 @@ export default function ManageCourseScreen() {
   const [clearVisible, setClearVisible] = useState(false);
 
   const uniqueCourses = useMemo(() => {
+    const dayLabels = getDayLabels();
     const map = new Map<
       string,
       {
@@ -39,13 +42,17 @@ export default function ManageCourseScreen() {
       map.set(c.name, {
         name: c.name,
         teacher: c.teacher,
-        summary: `${DAY_LABELS[c.day - 1]} 第${c.sectionStart}-${c.sectionEnd}节`,
+        summary: t("courseManage.summaryWithDay", {
+          weekday: dayLabels[c.day - 1],
+          start: c.sectionStart,
+          end: c.sectionEnd,
+        }),
         count: 1,
         imported: c.source === "imported",
       });
     }
     return [...map.values()];
-  }, [courses]);
+  }, [courses, t]);
 
   const handleDelete = (name: string) => setDeleteTarget(name);
 
@@ -54,7 +61,7 @@ export default function ManageCourseScreen() {
     removeCoursesByName(deleteTarget);
     Toast.show({
       type: "success",
-      text1: `已删除「${deleteTarget}」`,
+      text1: t("courseManage.deleted", { name: deleteTarget }),
       position: "bottom",
     });
     setDeleteTarget(null);
@@ -62,7 +69,7 @@ export default function ManageCourseScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: "课程管理" }} />
+      <Stack.Screen options={{ title: t("courseManage.title") }} />
       <ScrollView
         className="flex-1 bg-neutral-100 dark:bg-neutral-900"
         contentContainerClassName="px-4 pt-4 pb-8"
@@ -73,7 +80,7 @@ export default function ManageCourseScreen() {
         >
           <Ionicons name="add" size={20} color="#fff" />
           <Text className="ml-1 text-base font-semibold text-white">
-            添加课程
+            {t("courseManage.addCourse")}
           </Text>
         </Pressable>
 
@@ -100,7 +107,7 @@ export default function ManageCourseScreen() {
                       {item.imported && (
                         <View className="ml-1.5 rounded bg-blue-100 px-1.5 py-0.5 dark:bg-blue-900/40">
                           <Text className="text-[10px] font-medium text-blue-500 dark:text-blue-400">
-                            导入
+                            {t("courseManage.importedTag")}
                           </Text>
                         </View>
                       )}
@@ -108,7 +115,9 @@ export default function ManageCourseScreen() {
                     <Text className="mt-0.5 text-xs text-neutral-400 dark:text-neutral-500">
                       {item.teacher ? `${item.teacher} · ` : ""}
                       {item.summary}
-                      {item.count > 1 ? ` 等 ${item.count} 个时段` : ""}
+                      {item.count > 1
+                        ? t("courseManage.moreSlots", { n: item.count })
+                        : ""}
                     </Text>
                   </View>
                   <Pressable
@@ -135,7 +144,7 @@ export default function ManageCourseScreen() {
               color={isDark ? "#404040" : "#d4d4d4"}
             />
             <Text className="mt-3 text-sm text-neutral-400 dark:text-neutral-500">
-              暂无课程，点击上方按钮添加
+              {t("courseManage.noCoursesHint")}
             </Text>
           </View>
         )}
@@ -145,7 +154,9 @@ export default function ManageCourseScreen() {
             className="mt-4 items-center rounded-xl bg-white py-3.5 active:bg-neutral-50 dark:bg-neutral-800 dark:active:bg-neutral-700"
             onPress={() => setClearVisible(true)}
           >
-            <Text className="text-sm font-medium text-red-500">清空课表</Text>
+            <Text className="text-sm font-medium text-red-500">
+              {t("courseManage.clearAll")}
+            </Text>
           </Pressable>
         )}
       </ScrollView>
@@ -153,9 +164,11 @@ export default function ManageCourseScreen() {
       <ConfirmSheet
         visible={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}
-        title="删除课程"
-        description={`确定要删除「${deleteTarget}」的所有时段吗？`}
-        confirmText="删除"
+        title={t("courseManage.deleteCourseTitle")}
+        description={t("courseManage.deleteCourseDesc", {
+          name: deleteTarget ?? "",
+        })}
+        confirmText={t("common.delete")}
         destructive
         onConfirm={confirmDelete}
       />
@@ -163,16 +176,16 @@ export default function ManageCourseScreen() {
       <ConfirmSheet
         visible={clearVisible}
         onClose={() => setClearVisible(false)}
-        title="清空课表"
-        description="确定要删除所有课程吗？此操作不可恢复。"
-        confirmText="清空"
+        title={t("courseManage.clearAllTitle")}
+        description={t("courseManage.clearAllDesc")}
+        confirmText={t("courseManage.clearAllConfirm")}
         destructive
         onConfirm={() => {
           setCourses([]);
           setClearVisible(false);
           Toast.show({
             type: "success",
-            text1: "课表已清空",
+            text1: t("courseManage.cleared"),
             position: "bottom",
           });
         }}

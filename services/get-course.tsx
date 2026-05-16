@@ -21,6 +21,7 @@ import { WebView, type WebViewMessageEvent } from "react-native-webview";
 
 import { IS_DEV } from "@/constants/is-dev";
 import { useZhlgdAutoLogin } from "@/hooks/use-zhlgd-autologin";
+import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
 import { syncWidgetData } from "@/services/widget-sync";
 import { type Course, type ImportType, useCourseStore } from "@/store/course";
@@ -30,7 +31,15 @@ const BACHELOR_LOGIN_URL =
   "https://zhlgd.whut.edu.cn/tpass/login?service=https%3A%2F%2Fjwxt.whut.edu.cn%2Fjwapp%2Fsys%2Fhomeapp%2Findex.do%3FforceCas%3D1";
 const BACHELOR_HOME_PREFIX = "https://jwxt.whut.edu.cn/jwapp/sys/homeapp/";
 
-const BACHELOR_FETCH_SCRIPT = `(async function() {
+function jsString(s: string): string {
+  return JSON.stringify(s);
+}
+
+function buildBachelorFetchScript(messages: {
+  fetchUserFailed: string;
+  noTermData: string;
+}): string {
+  return `(async function() {
   var log = function(s){ window.ReactNativeWebView.postMessage(JSON.stringify({type:'debug', message:s})); };
   try {
     log('script started, url=' + location.href);
@@ -46,7 +55,7 @@ const BACHELOR_FETCH_SCRIPT = `(async function() {
     var term = (ud.welcomeInfo && ud.welcomeInfo.xnxqdm) || '';
     log('user=' + xh + ' term=' + term);
     if (!xh || !term) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({type:'error', message:'获取用户信息失败'}));
+      window.ReactNativeWebView.postMessage(JSON.stringify({type:'error', message:${jsString(messages.fetchUserFailed)}}));
       return;
     }
     var resp = await fetch('/jwapp/sys/kcbcxby/modules/xskcb/cxxskcb.do', {
@@ -63,7 +72,7 @@ const BACHELOR_FETCH_SCRIPT = `(async function() {
     var data = JSON.parse(text);
     var rows = data.datas && data.datas.cxxskcb && data.datas.cxxskcb.rows;
     if (!rows || !rows.length) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({type:'error', message:'当前学期(' + term + ')无课程数据'}));
+      window.ReactNativeWebView.postMessage(JSON.stringify({type:'error', message:${jsString(messages.noTermData)}.replace('{term}', term)}));
       return;
     }
     var courses = [];
@@ -102,6 +111,7 @@ const BACHELOR_FETCH_SCRIPT = `(async function() {
     }));
   }
 })(); true;`;
+}
 
 // 研究生
 const MASTER_LOGIN_URL =
@@ -207,6 +217,7 @@ export interface GetCourseHandle {
 
 export const GetCourse = forwardRef<GetCourseHandle>(
   function GetCourse(_, ref) {
+    const t = useT();
     const [importing, setImporting] = useState(false);
     const [importType, setImportType] = useState<ImportType>("bachelor");
     const webview = useRef<WebView>(null);
@@ -220,7 +231,7 @@ export const GetCourse = forwardRef<GetCourseHandle>(
       sms,
       smsNode,
     } = useZhlgdAutoLogin(webview, {
-      onCancel: () => finishRef.current(false, "已取消短信验证"),
+      onCancel: () => finishRef.current(false, t("course.smsCancelled")),
     });
 
     useImperativeHandle(ref, () => ({
@@ -262,36 +273,39 @@ export const GetCourse = forwardRef<GetCourseHandle>(
       opacity: interpolate(ripple.value, [0, 0.4, 1], [0.4, 0.15, 0]),
     }));
 
-    const finish = useCallback((success: boolean, message?: string) => {
-      setImporting(false);
-      injected.current = false;
-      if (success) {
-        Toast.show({
-          type: "success",
-          text1: "导入成功",
-          text2: "好耶！",
-          position: "bottom",
-        });
-      } else {
-        Toast.show({
-          type: "error",
-          text1: "导入失败",
-          text2: message || "请检查网络连接并重试",
-          position: "bottom",
-        });
-      }
-    }, []);
+    const finish = useCallback(
+      (success: boolean, message?: string) => {
+        setImporting(false);
+        injected.current = false;
+        if (success) {
+          Toast.show({
+            type: "success",
+            text1: t("course.importSuccess"),
+            text2: t("course.importSuccessSub"),
+            position: "bottom",
+          });
+        } else {
+          Toast.show({
+            type: "error",
+            text1: t("course.importFail"),
+            text2: message || t("course.importFailSub"),
+            position: "bottom",
+          });
+        }
+      },
+      [t],
+    );
     finishRef.current = finish;
 
     useEffect(() => {
       if (!importing || sms.visible) return;
       const timeout = setTimeout(() => {
         if (!injected.current) {
-          finish(false, "加载超时，请检查网络连接并重试");
+          finish(false, t("course.importTimeout"));
         }
       }, 30000);
       return () => clearTimeout(timeout);
-    }, [importing, sms.visible, finish]);
+    }, [importing, sms.visible, finish, t]);
 
     const handleError = useCallback(
       (syntheticEvent: {
@@ -303,9 +317,9 @@ export const GetCourse = forwardRef<GetCourseHandle>(
           webviewUrl: url,
           webviewCode: code,
         });
-        finish(false, "请检查网络连接并重试");
+        finish(false, t("course.importFailSub"));
       },
-      [importType, finish],
+      [importType, finish, t],
     );
 
     const handleLoadEnd = useCallback(
@@ -317,8 +331,12 @@ export const GetCourse = forwardRef<GetCourseHandle>(
 
         if (importType === "bachelor" && url.startsWith(BACHELOR_HOME_PREFIX)) {
           injected.current = true;
+          const script = buildBachelorFetchScript({
+            fetchUserFailed: t("course.fetchUserFailed"),
+            noTermData: t("course.noTermData"),
+          });
           setTimeout(() => {
-            webview.current?.injectJavaScript(BACHELOR_FETCH_SCRIPT);
+            webview.current?.injectJavaScript(script);
           }, 1500);
         }
 
@@ -332,7 +350,7 @@ export const GetCourse = forwardRef<GetCourseHandle>(
           }, 3000);
         }
       },
-      [autoLoginOnLoadEnd, importType],
+      [autoLoginOnLoadEnd, importType, t],
     );
 
     const handleMessage = useCallback(
@@ -383,7 +401,7 @@ export const GetCourse = forwardRef<GetCourseHandle>(
           }));
 
           if (courses.length === 0) {
-            finish(false, "课表数据解析失败");
+            finish(false, t("course.parseFailed"));
             return;
           }
 
@@ -410,7 +428,7 @@ export const GetCourse = forwardRef<GetCourseHandle>(
           }));
 
           if (courses.length === 0) {
-            finish(false, "课表数据解析失败");
+            finish(false, t("course.parseFailed"));
             return;
           }
 
@@ -421,7 +439,7 @@ export const GetCourse = forwardRef<GetCourseHandle>(
           finish(true);
         }
       },
-      [importType, finish, autoLoginOnMessage],
+      [importType, finish, autoLoginOnMessage, t],
     );
 
     if (!importing) return null;
@@ -490,7 +508,7 @@ export const GetCourse = forwardRef<GetCourseHandle>(
                   color: "#1f2937",
                 }}
               >
-                正在导入
+                {t("course.importing")}
               </Text>
               <Text
                 style={{
@@ -499,7 +517,7 @@ export const GetCourse = forwardRef<GetCourseHandle>(
                   color: "#9ca3af",
                 }}
               >
-                头抬起，坐和放宽...
+                {t("course.importingSub")}
               </Text>
             </View>
           </View>

@@ -5,7 +5,9 @@ struct CourseInfoView: View {
     let isToday: Bool
 
     private var tagText: String {
-        isToday ? "今天" : "明天"
+        isToday
+            ? WidgetStrings.localized("widget.today")
+            : WidgetStrings.localized("widget.tomorrow")
     }
 
     var body: some View {
@@ -30,7 +32,9 @@ struct CourseInfoView: View {
             }
 
             HStack(alignment: .bottom, spacing: 0) {
-                Text(course.room.isEmpty ? "暂无教室信息" : course.room)
+                Text(course.room.isEmpty
+                    ? WidgetStrings.localized("widget.noRoom")
+                    : course.room)
                     .font(.system(size: 12))
                     .lineLimit(2)
                     .foregroundColor(Color("TextSecondary"))

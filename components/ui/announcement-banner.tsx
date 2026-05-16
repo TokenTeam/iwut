@@ -13,6 +13,7 @@ import {
 import Animated, { LinearTransition } from "react-native-reanimated";
 
 import { useHaptics } from "@/hooks/use-haptics";
+import { useT } from "@/lib/i18n";
 import type { Announcement, AnnouncementType } from "@/services/announcements";
 import { useAnnouncementStore } from "@/store/announcements";
 
@@ -143,6 +144,7 @@ function AnnouncementCard({
   isDark: boolean;
   onExpandedChange: (id: string, expanded: boolean) => void;
 }) {
+  const t = useT();
   const router = useRouter();
   const haptic = useHaptics();
   const dismiss = useAnnouncementStore((s) => s.dismiss);
@@ -267,7 +269,7 @@ function AnnouncementCard({
                   color: typeStyle.color,
                 }}
               >
-                查看详情
+                {t("announcement.viewDetail")}
               </Text>
               <Ionicons
                 name="chevron-forward"

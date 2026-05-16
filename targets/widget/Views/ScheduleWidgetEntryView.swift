@@ -16,21 +16,27 @@ struct ScheduleWidgetEntryView: View {
         let tomorrowCount = entry.tomorrowCourses.count
 
         if upcomingCount == 0 && tomorrowCount == 0 {
-            return "今天和明天都没有课啦～"
+            return WidgetStrings.localized("widget.bothDone")
         }
 
         let todayPart: String
         if upcomingCount == 0 {
-            todayPart = "今天没有课啦，"
+            todayPart = WidgetStrings.localized("widget.todayDone")
         } else {
-            todayPart = "今天还有\(upcomingCount)节课，"
+            let key = upcomingCount == 1
+                ? "widget.todayRemaining.one"
+                : "widget.todayRemaining.other"
+            todayPart = String(format: WidgetStrings.localized(key), upcomingCount)
         }
 
         let tomorrowPart: String
         if tomorrowCount == 0 {
-            tomorrowPart = "明天没有课啦～"
+            tomorrowPart = WidgetStrings.localized("widget.tomorrowDone")
         } else {
-            tomorrowPart = "明天还有\(tomorrowCount)节课"
+            let key = tomorrowCount == 1
+                ? "widget.tomorrowRemaining.one"
+                : "widget.tomorrowRemaining.other"
+            tomorrowPart = String(format: WidgetStrings.localized(key), tomorrowCount)
         }
 
         return todayPart + tomorrowPart
@@ -62,7 +68,7 @@ struct ScheduleWidgetEntryView: View {
                     }
 
                     if displayCourses.count == 1 {
-                        Text("没有更多课啦～")
+                        Text(WidgetStrings.localized("widget.noMore"))
                             .foregroundColor(Color("TextPrimary"))
                             .font(.system(size: 12))
                             .padding(.top, 8)

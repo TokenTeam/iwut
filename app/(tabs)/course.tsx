@@ -20,6 +20,7 @@ import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { getCurrentDayOfWeek, getCurrentWeek } from "@/lib/date";
+import { useT } from "@/lib/i18n";
 import { GetCourse, type GetCourseHandle } from "@/services/get-course";
 import { type ImportType, useCourseStore } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
@@ -28,6 +29,7 @@ import { useUserBindStore } from "@/store/user-bind";
 const MAX_WEEK = 20;
 
 export default function CourseScreen() {
+  const t = useT();
   const courses = useCourseStore((store) => store.courses);
   const termStart = useCourseStore((store) => store.termStart);
   const lastImportType = useCourseStore((s) => s.lastImportType);
@@ -150,7 +152,7 @@ export default function CourseScreen() {
               onPress={() => setShowWeekPicker(true)}
             >
               <Text className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                第 {week} 周
+                {t("common.weekN", { n: week })}
               </Text>
             </Pressable>
 
@@ -188,7 +190,10 @@ export default function CourseScreen() {
                 marginTop: 1,
               }}
             >
-              {`${new Date().getMonth() + 1}月${new Date().getDate()}日`}
+              {t("common.monthDay", {
+                m: new Date().getMonth() + 1,
+                d: new Date().getDate(),
+              })}
             </Text>
           </Pressable>
         </View>
@@ -241,7 +246,7 @@ export default function CourseScreen() {
                 color: isDark ? "#a3a3a3" : "#737373",
               }}
             >
-              请先绑定智慧理工大账号
+              {t("course.needBindTitle")}
             </Text>
             <Text
               style={{
@@ -252,7 +257,7 @@ export default function CourseScreen() {
                 lineHeight: 20,
               }}
             >
-              绑定后可自动从教务系统导入课表
+              {t("course.needBindSub")}
             </Text>
             <Pressable
               style={({ pressed }) => ({
@@ -274,7 +279,7 @@ export default function CourseScreen() {
                   fontWeight: "500",
                 }}
               >
-                前往「我的」绑定
+                {t("course.goBind")}
               </Text>
               <Ionicons name="chevron-forward" size={13} color="#3b82f6" />
             </Pressable>
@@ -298,7 +303,7 @@ export default function CourseScreen() {
             >
               <View className="mr-3 rounded-lg bg-white px-3 py-1.5 dark:bg-neutral-700">
                 <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
-                  研究生
+                  {t("course.master")}
                 </Text>
               </View>
               <Pressable
@@ -316,7 +321,7 @@ export default function CourseScreen() {
             >
               <View className="mr-3 rounded-lg bg-white px-3 py-1.5 dark:bg-neutral-700">
                 <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
-                  本科生
+                  {t("course.bachelor")}
                 </Text>
               </View>
               <Pressable
@@ -357,9 +362,8 @@ export default function CourseScreen() {
             <View className="rounded-t-2xl overflow-hidden">
               <View className="bg-white pb-8 pt-5 dark:bg-neutral-800">
                 <ScrollPicker
-                  items={Array.from(
-                    { length: MAX_WEEK },
-                    (_, i) => `第 ${i + 1} 周`,
+                  items={Array.from({ length: MAX_WEEK }, (_, i) =>
+                    t("common.weekN", { n: i + 1 }),
                   )}
                   selectedIndex={week - 1}
                   onSelect={(i) => setWeek(i + 1)}
@@ -375,7 +379,7 @@ export default function CourseScreen() {
       <BottomSheet
         visible={showTypePicker}
         onClose={() => setShowTypePicker(false)}
-        title="选择导入类型"
+        title={t("course.selectImportType")}
       >
         <Pressable
           className="flex-row items-center px-5 py-3.5 active:bg-neutral-100 dark:active:bg-neutral-700"
@@ -383,7 +387,7 @@ export default function CourseScreen() {
         >
           <IconSymbol name="school" size={22} color={iconColor} />
           <Text className="ml-3 flex-1 text-base text-neutral-800 dark:text-neutral-200">
-            本科生
+            {t("course.bachelor")}
           </Text>
         </Pressable>
         <Pressable
@@ -392,7 +396,7 @@ export default function CourseScreen() {
         >
           <IconSymbol name="menu-book" size={22} color={iconColor} />
           <Text className="ml-3 flex-1 text-base text-neutral-800 dark:text-neutral-200">
-            研究生
+            {t("course.master")}
           </Text>
         </Pressable>
       </BottomSheet>

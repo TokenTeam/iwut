@@ -1,0 +1,9 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "iWUT",
+    "NSLocationWhenInUseUsageDescription": "Used to read current Wi-Fi info while you are on campus so the app can sign you in to the campus network."
+  },
+  "android": {
+    "app_name": "iWUT"
+  }
+}

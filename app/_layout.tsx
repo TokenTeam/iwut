@@ -21,6 +21,7 @@ FileLogger.configure({
 });
 
 /* eslint-disable import/first */
+import "@/lib/i18n/bootstrap";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ThemeProvider } from "expo-router/react-navigation";
@@ -39,6 +40,7 @@ import Toast from "react-native-toast-message";
 
 import { Themes } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { refreshSystemLocale } from "@/lib/i18n";
 import { syncCoursesToCalendar } from "@/services/calendar-sync";
 import {
   initNotificationChannel,
@@ -101,6 +103,11 @@ function RootLayout() {
       if (state !== "active") return;
       if (Platform.OS === "ios") {
         showUpcomingLiveActivity().catch(() => {});
+      }
+      // On Android the app keeps running across system-language changes, so
+      // re-resolve the device locale whenever we come back to the foreground.
+      if (Platform.OS === "android") {
+        refreshSystemLocale();
       }
       useAnnouncementStore.getState().fetch();
     });

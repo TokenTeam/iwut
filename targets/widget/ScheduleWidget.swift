@@ -15,8 +15,12 @@ struct ScheduleWidget: Widget {
             }
         }
         .safeContentMarginsDisabled()
-        .configurationDisplayName("课程表")
-        .description("今天有什么课？看这里就够啦～")
+        // configurationDisplayName / description show in the system widget
+        // gallery and cannot read App Group preferences (the widget is not
+        // instantiated yet). Resolve via standard bundle lookup so they
+        // follow the device locale instead.
+        .configurationDisplayName(LocalizedStringKey("widget.displayName"))
+        .description(LocalizedStringKey("widget.description"))
         .supportedFamilies([.systemMedium])
     }
 }

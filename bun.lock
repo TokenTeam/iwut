@@ -28,6 +28,7 @@
         "expo-insights": "~56.0.9",
         "expo-linear-gradient": "~56.0.4",
         "expo-linking": "~56.0.8",
+        "expo-localization": "~56.0.4",
         "expo-router": "~56.2.1",
         "expo-secure-store": "~56.0.3",
         "expo-sharing": "~56.0.9",
@@ -946,6 +947,8 @@
 
     "expo-linking": ["expo-linking@56.0.8", "https://mirrors.cloud.tencent.com/npm/expo-linking/-/expo-linking-56.0.8.tgz", { "dependencies": { "expo-constants": "~56.0.11", "invariant": "^2.2.4" }, "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-g+jpXN6hucgjE/jT4N5LoW65pOMLTSSZbLbS+jyqGeKHyaK1NkpNZtzc/VyPxXJAGHTOCquSPL/EtmyZ0i0+lA=="],
 
+    "expo-localization": ["expo-localization@56.0.4", "https://mirrors.cloud.tencent.com/npm/expo-localization/-/expo-localization-56.0.4.tgz", { "dependencies": { "rtl-detect": "^1.0.2" }, "peerDependencies": { "expo": "*", "react": "*" } }, "sha512-hBK2uj7mhMGtPlWPCt19+OPi+tzyweofcUWkrBypcosHGhPT+nbFdfPMdluWMpHx8ERWDOCh3zrx+yTXZ8eHBQ=="],
+
     "expo-manifests": ["expo-manifests@56.0.3", "http://mirrors.cloud.tencent.com/npm/expo-manifests/-/expo-manifests-56.0.3.tgz", { "dependencies": { "expo-json-utils": "~56.0.0" }, "peerDependencies": { "expo": "*" } }, "sha512-V14njZK/GQzWhYiwshA24LZr9dtg2hk+PuKSkpODbqoAB/+Z/okmQXBrUuk2x5fziW0U1XL77PpWxKN/jqc+Yw=="],
 
     "expo-modules-autolinking": ["expo-modules-autolinking@56.0.7", "https://mirrors.cloud.tencent.com/npm/expo-modules-autolinking/-/expo-modules-autolinking-56.0.7.tgz", { "dependencies": { "@expo/require-utils": "^56.1.1", "@expo/spawn-async": "^1.7.2", "chalk": "^4.1.0", "commander": "^7.2.0" }, "bin": { "expo-modules-autolinking": "bin/expo-modules-autolinking.js" } }, "sha512-LkCIPi/w3JDcGl6OEKDWVKu7hVRnTjwT7dz6C6jVWUW6AtDCMo+tQb95Xu2ps+9YsdZw9jIzsHk4RiJpsVXCig=="],
@@ -1529,6 +1532,8 @@
     "resolve-workspace-root": ["resolve-workspace-root@2.0.1", "http://mirrors.cloud.tencent.com/npm/resolve-workspace-root/-/resolve-workspace-root-2.0.1.tgz", {}, "sha512-nR23LHAvaI6aHtMg6RWoaHpdR4D881Nydkzi2CixINyg9T00KgaJdJI6Vwty+Ps8WLxZHuxsS0BseWjxSA4C+w=="],
 
     "restore-cursor": ["restore-cursor@2.0.0", "http://mirrors.cloud.tencent.com/npm/restore-cursor/-/restore-cursor-2.0.0.tgz", { "dependencies": { "onetime": "^2.0.0", "signal-exit": "^3.0.2" } }, "sha512-6IzJLuGi4+R14vwagDHX+JrXmPVtPpn4mffDJ1UdR7/Edm87fl6yi8mMBIVvFtJaNTUvjughmW4hwLhRG7gC1Q=="],
+
+    "rtl-detect": ["rtl-detect@1.1.2", "https://mirrors.cloud.tencent.com/npm/rtl-detect/-/rtl-detect-1.1.2.tgz", {}, "sha512-PGMBq03+TTG/p/cRB7HCLKJ1MgDIi07+QU1faSjiYRfmY5UsAttV9Hs08jDAHVwcOwmVLcSJkpwyfXszVjWfIQ=="],
 
     "safe-array-concat": ["safe-array-concat@1.1.4", "http://mirrors.cloud.tencent.com/npm/safe-array-concat/-/safe-array-concat-1.1.4.tgz", { "dependencies": { "call-bind": "^1.0.9", "call-bound": "^1.0.4", "get-intrinsic": "^1.3.0", "has-symbols": "^1.1.0", "isarray": "^2.0.5" } }, "sha512-wtZlHyOje6OZTGqAoaDKxFkgRtkF9CnHAVnCHKfuj200wAgL+bSJhdsCD2l0Qx/2ekEXjPWcyKkfGb5CPboslg=="],
 

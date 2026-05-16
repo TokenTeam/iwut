@@ -12,19 +12,24 @@ import {
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { getTermWeekDayNumbers, getTermWeekMonthLabel } from "@/lib/date";
+import { t, useT } from "@/lib/i18n";
 import { formatCourseSectionTimeRange } from "@/services/course-time";
 import type { Course } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 
-export const DAY_LABELS = [
-  "周一",
-  "周二",
-  "周三",
-  "周四",
-  "周五",
-  "周六",
-  "周日",
-];
+const DAY_KEYS = [
+  "schedule.weekday.mon",
+  "schedule.weekday.tue",
+  "schedule.weekday.wed",
+  "schedule.weekday.thu",
+  "schedule.weekday.fri",
+  "schedule.weekday.sat",
+  "schedule.weekday.sun",
+] as const;
+
+export function getDayLabels(): string[] {
+  return DAY_KEYS.map((k) => t(k));
+}
 
 interface SidebarLabel {
   label: string;
@@ -41,14 +46,6 @@ const SECTION_GROUPS_FULL: number[][] = [
   [14, 15, 16],
 ];
 
-const SIDEBAR_LABELS_FULL: SidebarLabel[] = [
-  { label: "上\n午", firstSection: 1, lastSection: 5 },
-  { label: "中\n课", firstSection: 6, lastSection: 7 },
-  { label: "下\n午", firstSection: 8, lastSection: 12 },
-  { label: "晚\n课", firstSection: 13, lastSection: 13 },
-  { label: "晚\n上", firstSection: 14, lastSection: 16 },
-];
-
 const SECTION_GROUPS_COMPACT: number[][] = [
   [1, 2],
   [3, 4, 5],
@@ -56,11 +53,35 @@ const SECTION_GROUPS_COMPACT: number[][] = [
   [14, 15, 16],
 ];
 
-const SIDEBAR_LABELS_COMPACT: SidebarLabel[] = [
-  { label: "上\n午", firstSection: 1, lastSection: 5 },
-  { label: "下\n午", firstSection: 8, lastSection: 12 },
-  { label: "晚\n上", firstSection: 14, lastSection: 16 },
-];
+function getSidebarLabelsFull(): SidebarLabel[] {
+  return [
+    { label: t("schedule.sidebar.morning"), firstSection: 1, lastSection: 5 },
+    { label: t("schedule.sidebar.midday"), firstSection: 6, lastSection: 7 },
+    {
+      label: t("schedule.sidebar.afternoon"),
+      firstSection: 8,
+      lastSection: 12,
+    },
+    {
+      label: t("schedule.sidebar.eveningEarly"),
+      firstSection: 13,
+      lastSection: 13,
+    },
+    { label: t("schedule.sidebar.night"), firstSection: 14, lastSection: 16 },
+  ];
+}
+
+function getSidebarLabelsCompact(): SidebarLabel[] {
+  return [
+    { label: t("schedule.sidebar.morning"), firstSection: 1, lastSection: 5 },
+    {
+      label: t("schedule.sidebar.afternoon"),
+      firstSection: 8,
+      lastSection: 12,
+    },
+    { label: t("schedule.sidebar.night"), firstSection: 14, lastSection: 16 },
+  ];
+}
 
 const GAP_UNITS = 0;
 const HEADER_HEIGHT = 36;
@@ -151,6 +172,7 @@ export function Schedule({
   today?: number;
   termStart?: string;
 }>) {
+  const localT = useT();
   const { width: screenWidth } = useWindowDimensions();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -165,12 +187,16 @@ export function Schedule({
   const paletteColors = colorPalette.colors;
   const hasBgImage = !!backgroundImageUri;
 
+  const dayLabels = useMemo(() => DAY_KEYS.map((k) => localT(k)), [localT]);
+  const monthLabelSuffix = localT("common.monthSuffix");
+
   const layout = useMemo(
     () =>
       showMidday
-        ? computeLayout(SECTION_GROUPS_FULL, SIDEBAR_LABELS_FULL)
-        : computeLayout(SECTION_GROUPS_COMPACT, SIDEBAR_LABELS_COMPACT),
-    [showMidday],
+        ? computeLayout(SECTION_GROUPS_FULL, getSidebarLabelsFull())
+        : computeLayout(SECTION_GROUPS_COMPACT, getSidebarLabelsCompact()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [showMidday, localT],
   );
 
   const colorMap = useMemo(
@@ -253,7 +279,7 @@ export function Schedule({
                   color: isToday ? "#fff" : isDark ? "#d4d4d4" : "#525252",
                 }}
               >
-                {DAY_LABELS[dayIdx]}
+                {dayLabels[dayIdx]}
               </Text>
               <Text
                 style={{
@@ -274,7 +300,7 @@ export function Schedule({
                 color: isToday ? "#3b82f6" : isDark ? "#d4d4d4" : "#525252",
               }}
             >
-              {DAY_LABELS[dayIdx]}
+              {dayLabels[dayIdx]}
             </Text>
           )}
         </View>
@@ -423,16 +449,18 @@ export function Schedule({
                 >
                   {monthLabel.split("\n")[0]}
                 </Text>
-                <Text
-                  style={{
-                    fontSize: 8,
-                    lineHeight: 10,
-                    textAlign: "center",
-                    color: isDark ? "#a3a3a3" : "#737373",
-                  }}
-                >
-                  月
-                </Text>
+                {monthLabelSuffix ? (
+                  <Text
+                    style={{
+                      fontSize: 8,
+                      lineHeight: 10,
+                      textAlign: "center",
+                      color: isDark ? "#a3a3a3" : "#737373",
+                    }}
+                  >
+                    {monthLabelSuffix}
+                  </Text>
+                ) : null}
               </View>
             ) : null}
           </View>
@@ -550,38 +578,48 @@ export function Schedule({
                     marginTop: 6,
                   }}
                 >
-                  {DAY_LABELS[selected.day - 1]} · 第 {selected.sectionStart}-
-                  {selected.sectionEnd} 节
+                  {localT("schedule.weekdayWithSection", {
+                    weekday: dayLabels[selected.day - 1],
+                    start: selected.sectionStart,
+                    end: selected.sectionEnd,
+                  })}
                 </Text>
               </View>
 
               <View style={{ padding: 20, gap: 14 }}>
                 <DetailRow
                   icon="location-outline"
-                  label="教室"
+                  label={localT("schedule.room")}
                   value={selected.room}
                   isDark={isDark}
                 />
                 <DetailRow
                   icon="person-outline"
-                  label="教师"
+                  label={localT("schedule.teacher")}
                   value={selected.teacher}
                   isDark={isDark}
                 />
                 <DetailRow
                   icon="calendar-outline"
-                  label="周次"
-                  value={`第 ${selected.weekStart}-${selected.weekEnd} 周`}
+                  label={localT("schedule.weeks")}
+                  value={localT("schedule.weeksValue", {
+                    start: selected.weekStart,
+                    end: selected.weekEnd,
+                  })}
                   isDark={isDark}
                 />
                 <DetailRow
                   icon="time-outline"
-                  label="时间"
+                  label={localT("schedule.time")}
                   value={
                     formatCourseSectionTimeRange(
                       selected.sectionStart,
                       selected.sectionEnd,
-                    ) || `第 ${selected.sectionStart}-${selected.sectionEnd} 节`
+                    ) ||
+                    localT("schedule.sectionRange", {
+                      start: selected.sectionStart,
+                      end: selected.sectionEnd,
+                    })
                   }
                   isDark={isDark}
                 />

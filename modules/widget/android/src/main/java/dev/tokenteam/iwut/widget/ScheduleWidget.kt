@@ -50,10 +50,12 @@ class ScheduleWidget : AppWidgetProvider() {
         ) {
             val views = RemoteViews(context.packageName, R.layout.widget_schedule)
             val data = ScheduleData.load(context)
+            val ctx = ScheduleData.localizedContext(context)
 
             if (data == null || data.termStart.isEmpty()) {
                 views.setViewVisibility(R.id.course_group, View.GONE)
                 views.setViewVisibility(R.id.all_done_group, View.VISIBLE)
+                views.setTextViewText(R.id.tv_all_done, ctx.getString(R.string.widget_all_done))
                 setOnClickAction(context, views)
                 appWidgetManager.updateAppWidget(appWidgetId, views)
                 return
@@ -64,9 +66,9 @@ class ScheduleWidget : AppWidgetProvider() {
             val tomorrowDay = ScheduleData.getTomorrowDayOfWeek()
             val tomorrowWeek = ScheduleData.getTomorrowWeek(data.termStart)
 
-            views.setTextViewText(R.id.tv_week, ScheduleData.getWeekStr(week))
-            views.setTextViewText(R.id.tv_date, ScheduleData.getDateStr())
-            views.setTextViewText(R.id.tv_day_of_week, ScheduleData.getDayOfWeekStr(today))
+            views.setTextViewText(R.id.tv_week, ScheduleData.getWeekStr(ctx, week))
+            views.setTextViewText(R.id.tv_date, ScheduleData.getDateStr(ctx))
+            views.setTextViewText(R.id.tv_day_of_week, ScheduleData.getDayOfWeekStr(ctx, today))
 
             val now = Calendar.getInstance()
             val nowMin = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
@@ -89,6 +91,7 @@ class ScheduleWidget : AppWidgetProvider() {
             if (combined.isEmpty()) {
                 views.setViewVisibility(R.id.course_group, View.GONE)
                 views.setViewVisibility(R.id.all_done_group, View.VISIBLE)
+                views.setTextViewText(R.id.tv_all_done, ctx.getString(R.string.widget_all_done))
                 appWidgetManager.updateAppWidget(appWidgetId, views)
                 return
             }
@@ -96,10 +99,13 @@ class ScheduleWidget : AppWidgetProvider() {
             views.setViewVisibility(R.id.course_group, View.VISIBLE)
             views.setViewVisibility(R.id.all_done_group, View.GONE)
 
+            val todayLabel = ctx.getString(R.string.widget_today)
+            val tomorrowLabel = ctx.getString(R.string.widget_tomorrow)
+
             val (c1, c1IsToday) = combined[0]
             views.setViewVisibility(R.id.course_row_1, View.VISIBLE)
             views.setTextViewText(R.id.course_1_name, c1.name)
-            views.setTextViewText(R.id.course_1_tag, if (c1IsToday) "今天" else "明天")
+            views.setTextViewText(R.id.course_1_tag, if (c1IsToday) todayLabel else tomorrowLabel)
             views.setTextViewText(R.id.course_1_room, c1.room)
             views.setTextViewText(R.id.course_1_time, "${c1.startTime}-${c1.endTime}")
 
@@ -108,24 +114,39 @@ class ScheduleWidget : AppWidgetProvider() {
                 views.setViewVisibility(R.id.course_row_2, View.VISIBLE)
                 views.setViewVisibility(R.id.tv_no_more, View.GONE)
                 views.setTextViewText(R.id.course_2_name, c2.name)
-                views.setTextViewText(R.id.course_2_tag, if (c2IsToday) "今天" else "明天")
+                views.setTextViewText(R.id.course_2_tag, if (c2IsToday) todayLabel else tomorrowLabel)
                 views.setTextViewText(R.id.course_2_room, c2.room)
                 views.setTextViewText(R.id.course_2_time, "${c2.startTime}-${c2.endTime}")
             } else {
                 views.setViewVisibility(R.id.course_row_2, View.GONE)
                 views.setViewVisibility(R.id.tv_no_more, View.VISIBLE)
+                views.setTextViewText(R.id.tv_no_more, ctx.getString(R.string.widget_no_more))
             }
 
-            val hintText: String
-            if (upcomingToday.isEmpty() && tomorrowCourses.isEmpty()) {
-                hintText = "今天和明天都没有课啦～"
-            } else {
-                val todayHint =
-                    if (upcomingToday.isEmpty()) "今天没有课啦，" else "今天还有${upcomingToday.size}节课，"
-                val tomorrowHint =
-                    if (tomorrowCourses.isEmpty()) "明天没有课啦～" else "明天还有${tomorrowCourses.size}节课"
-                hintText = todayHint + tomorrowHint
-            }
+            val hintText: String =
+                if (upcomingToday.isEmpty() && tomorrowCourses.isEmpty()) {
+                    ctx.getString(R.string.widget_both_done)
+                } else {
+                    val todayHint = if (upcomingToday.isEmpty()) {
+                        ctx.getString(R.string.widget_today_done)
+                    } else {
+                        ctx.resources.getQuantityString(
+                            R.plurals.widget_today_remaining,
+                            upcomingToday.size,
+                            upcomingToday.size,
+                        )
+                    }
+                    val tomorrowHint = if (tomorrowCourses.isEmpty()) {
+                        ctx.getString(R.string.widget_tomorrow_done)
+                    } else {
+                        ctx.resources.getQuantityString(
+                            R.plurals.widget_tomorrow_remaining,
+                            tomorrowCourses.size,
+                            tomorrowCourses.size,
+                        )
+                    }
+                    todayHint + tomorrowHint
+                }
             views.setViewVisibility(R.id.tv_course_hint, View.VISIBLE)
             views.setTextViewText(R.id.tv_course_hint, hintText)
 

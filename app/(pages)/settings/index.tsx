@@ -24,6 +24,7 @@ import Toast from "react-native-toast-message";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
+import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
 import {
   registerBackgroundRefresh,
@@ -36,6 +37,7 @@ import { useSettingsStore } from "@/store/settings";
 const REMINDER_PRESETS = [15, 30, 60];
 
 export default function SettingsScreen() {
+  const t = useT();
   const hapticFeedback = useSettingsStore((s) => s.hapticFeedback);
   const setHapticFeedback = useSettingsStore((s) => s.setHapticFeedback);
   const openCourseOnLaunch = useSettingsStore((s) => s.openCourseOnLaunch);
@@ -87,7 +89,7 @@ export default function SettingsScreen() {
     if (!val || val < 1 || val > 120) {
       Toast.show({
         type: "error",
-        text1: "请输入 1-120 之间的数字",
+        text1: t("settings.reminderRangeError"),
         position: "bottom",
       });
       return;
@@ -121,14 +123,14 @@ export default function SettingsScreen() {
 
       Toast.show({
         type: "success",
-        text1: "缓存已清除",
+        text1: t("settings.cacheCleared"),
         position: "bottom",
       });
     } catch (e) {
       reportError(e, { module: "settings", action: "clear-cache" });
       Toast.show({
         type: "error",
-        text1: "清除失败",
+        text1: t("settings.clearCacheFailed"),
         position: "bottom",
       });
     } finally {
@@ -145,7 +147,7 @@ export default function SettingsScreen() {
       if (paths.length === 0) {
         Toast.show({
           type: "info",
-          text1: "暂无日志",
+          text1: t("settings.exportNoLog"),
           position: "bottom",
         });
         return;
@@ -183,13 +185,13 @@ export default function SettingsScreen() {
       await Sharing.shareAsync(zipFile.uri, {
         UTI: "public.zip-archive",
         mimeType: "application/zip",
-        dialogTitle: "导出日志",
+        dialogTitle: t("settings.exportDialogTitle"),
       });
     } catch (e) {
       reportError(e, { module: "settings", action: "export-logs" });
       Toast.show({
         type: "error",
-        text1: "导出失败",
+        text1: t("settings.exportFailed"),
         position: "bottom",
       });
     } finally {
@@ -199,16 +201,16 @@ export default function SettingsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: "通用设置" }} />
+      <Stack.Screen options={{ title: t("settings.generalTitle") }} />
       <ScrollView
         className="flex-1 bg-neutral-100 dark:bg-neutral-900"
         contentContainerClassName="px-4 pt-4"
       >
-        <MenuGroup title="交互">
+        <MenuGroup title={t("settings.interaction")}>
           <MenuItem
             icon="vibration"
             iconBg="#AF52DE"
-            label="触感反馈"
+            label={t("settings.haptic")}
             showArrow={false}
             right={
               <Switch
@@ -220,7 +222,7 @@ export default function SettingsScreen() {
           <MenuItem
             icon="open-in-new"
             iconBg="#34C759"
-            label="将课程页设为首页"
+            label={t("settings.openCourseOnLaunch")}
             showArrow={false}
             right={
               <Switch
@@ -231,11 +233,11 @@ export default function SettingsScreen() {
           />
         </MenuGroup>
 
-        <MenuGroup title="通知">
+        <MenuGroup title={t("settings.notification")}>
           <MenuItem
             icon="notifications-active"
             iconBg="#FF9500"
-            label="课前提醒"
+            label={t("settings.courseReminder")}
             showArrow={false}
             right={
               <Switch
@@ -248,11 +250,11 @@ export default function SettingsScreen() {
             <MenuItem
               icon="schedule"
               iconBg="#5856D6"
-              label="提醒时间"
+              label={t("settings.reminderTime")}
               showArrow
               right={
                 <Text className="text-sm text-neutral-500">
-                  提前 {reminderMinutes} 分钟
+                  {t("settings.reminderTimeMins", { n: reminderMinutes })}
                 </Text>
               }
               onPress={() => setReminderSheetVisible(true)}
@@ -260,11 +262,11 @@ export default function SettingsScreen() {
           )}
         </MenuGroup>
 
-        <MenuGroup title="存储">
+        <MenuGroup title={t("settings.storage")}>
           <MenuItem
             icon="delete-outline"
             iconBg="#FF3B30"
-            label="清除缓存"
+            label={t("settings.clearCache")}
             showArrow={false}
             right={clearing ? <ActivityIndicator size="small" /> : undefined}
             onPress={() => setClearVisible(true)}
@@ -272,7 +274,7 @@ export default function SettingsScreen() {
           <MenuItem
             icon="description"
             iconBg="#007AFF"
-            label="导出日志"
+            label={t("settings.exportLogs")}
             showArrow={false}
             right={exporting ? <ActivityIndicator size="small" /> : undefined}
             onPress={handleExportLogs}
@@ -283,9 +285,9 @@ export default function SettingsScreen() {
       <ConfirmSheet
         visible={clearVisible}
         onClose={() => setClearVisible(false)}
-        title="清除缓存"
-        description="将清除缓存和临时数据，不会影响已保存的内容。"
-        confirmText="清除"
+        title={t("settings.clearCacheTitle")}
+        description={t("settings.clearCacheDesc")}
+        confirmText={t("settings.clearCacheConfirm")}
         destructive
         onConfirm={handleClearCache}
       />
@@ -293,21 +295,21 @@ export default function SettingsScreen() {
       <BottomSheet
         visible={reminderSheetVisible}
         onClose={() => setReminderSheetVisible(false)}
-        title="提醒时间"
+        title={t("settings.reminderTime")}
       >
         {REMINDER_PRESETS.map((mins) => (
           <MenuItem
             key={mins}
             icon={reminderMinutes === mins ? "check" : "radio-button-unchecked"}
             iconBg={reminderMinutes === mins ? "#34C759" : "#C7C7CC"}
-            label={`提前 ${mins} 分钟`}
+            label={t("settings.reminderTimeMins", { n: mins })}
             showArrow={false}
             onPress={() => handleReminderMinutesChange(mins)}
           />
         ))}
         <View className="flex-row items-center px-4 py-3">
           <Text className="text-base text-neutral-900 dark:text-neutral-100">
-            自定义
+            {t("settings.custom")}
           </Text>
           <TextInput
             ref={customInputRef}
@@ -325,14 +327,16 @@ export default function SettingsScreen() {
             }}
             keyboardType="number-pad"
             maxLength={3}
-            placeholder="1-120"
+            placeholder={t("settings.customPlaceholder")}
             placeholderTextColor="#9CA3AF"
             value={customMinutes}
             onChangeText={setCustomMinutes}
             onSubmitEditing={handleCustomMinutesSubmit}
             returnKeyType="done"
           />
-          <Text className="text-base text-neutral-500">分钟</Text>
+          <Text className="text-base text-neutral-500">
+            {t("common.minutes")}
+          </Text>
           <Pressable
             style={{
               marginLeft: 8,

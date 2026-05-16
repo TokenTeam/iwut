@@ -1,4 +1,5 @@
 import { IS_DEV } from "@/constants/is-dev";
+import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
 import { useUserBindStore } from "@/store/user-bind";
 import { router, Stack } from "expo-router";
@@ -148,6 +149,7 @@ const INJECTED_JS = `(function(){
 })();true;`;
 
 export default function BindScreen() {
+  const t = useT();
   const webview = useRef<WebView>(null);
   const pendingCredentials = useRef<{
     username: string;
@@ -195,8 +197,8 @@ export default function BindScreen() {
 
         Toast.show({
           type: "success",
-          text1: "绑定成功",
-          text2: `已绑定账号 ${username}`,
+          text1: t("user.bindSuccess"),
+          text2: t("user.bindSuccessSub", { username }),
           position: "bottom",
         });
 
@@ -209,7 +211,7 @@ export default function BindScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Stack.Screen options={{ title: "智慧理工大绑定" }} />
+      <Stack.Screen options={{ title: t("user.bindScreenTitle") }} />
 
       <WebView
         ref={webview}

@@ -7,9 +7,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useT } from "@/lib/i18n";
 import { useUserBindStore } from "@/store/user-bind";
 
 function UserCard() {
+  const t = useT();
   const router = useRouter();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
@@ -35,10 +37,10 @@ function UserCard() {
         </View>
         <View className="ml-3 flex-1">
           <Text className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
-            绑定智慧理工大
+            {t("user.bindTitle")}
           </Text>
           <Text className="mt-0.5 text-sm text-neutral-400 dark:text-neutral-500">
-            绑定后可自动登录校园服务
+            {t("user.bindSubtitle")}
           </Text>
         </View>
         <MaterialIcons
@@ -94,9 +96,9 @@ function UserCard() {
       <ConfirmSheet
         visible={unbindVisible}
         onClose={() => setUnbindVisible(false)}
-        title="解除绑定"
-        description="确定要解除智慧理工大账号绑定吗？"
-        confirmText="解绑"
+        title={t("user.unbindTitle")}
+        description={t("user.unbindDesc")}
+        confirmText={t("user.unbind")}
         destructive
         onConfirm={() => {
           unbind();
@@ -108,6 +110,7 @@ function UserCard() {
 }
 
 export default function UserScreen() {
+  const t = useT();
   return (
     <View className="flex-1 bg-neutral-100 dark:bg-neutral-900">
       <SafeAreaView style={{ flex: 1 }}>
@@ -117,36 +120,41 @@ export default function UserScreen() {
           showsVerticalScrollIndicator={false}
         >
           <UserCard />
-          <MenuGroup title="工具">
+          <MenuGroup title={t("user.menuTools")}>
             <MenuItem
               icon="wifi"
               iconBg="#007AFF"
-              label="校园网连接"
+              label={t("user.menuWlan")}
               href="/user/wlan"
             />
           </MenuGroup>
-          <MenuGroup title="设置">
+          <MenuGroup title={t("user.menuSettings")}>
             <MenuItem
               icon="settings"
               iconBg="#8E8E93"
-              label="通用"
+              label={t("user.menuGeneral")}
               href="/settings"
             />
             <MenuItem
               icon="palette"
               iconBg="#5856D6"
-              label="外观"
+              label={t("user.menuAppearance")}
               href="/settings/appearance"
             />
             <MenuItem
               icon="calendar-today"
               iconBg="#34C759"
-              label="课表"
+              label={t("user.menuSchedule")}
               href="/settings/calendar"
             />
           </MenuGroup>
-          <MenuGroup title="其他">
-            <MenuItem icon="info" iconBg="#007AFF" label="关于" href="/about" />
+          <MenuGroup title={t("user.menuOther")}>
+            <MenuItem
+              icon="info"
+              iconBg="#007AFF"
+              label={t("user.menuAbout")}
+              href="/about"
+            />
           </MenuGroup>
         </ScrollView>
       </SafeAreaView>

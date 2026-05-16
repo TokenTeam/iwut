@@ -11,6 +11,8 @@ import {
   View,
 } from "react-native";
 
+import { useT } from "@/lib/i18n";
+
 export function SmsPrompt({
   visible,
   phoneTail,
@@ -28,6 +30,7 @@ export function SmsPrompt({
   onSubmit: () => void;
   onCancel: () => void;
 }>) {
+  const t = useT();
   const canSubmit = code.trim().length > 0 && !submitting;
   const { height } = useWindowDimensions();
 
@@ -58,13 +61,13 @@ export function SmsPrompt({
                 color="#3b82f6"
               />
               <Text className="text-base font-semibold text-neutral-800 dark:text-neutral-100">
-                短信验证码
+                {t("sms.title")}
               </Text>
             </View>
             <Text className="mb-4 text-sm text-neutral-500 dark:text-neutral-400">
               {phoneTail
-                ? `验证码已发送至手机尾号 ${phoneTail}`
-                : "请输入收到的短信验证码"}
+                ? t("sms.sentTo", { tail: phoneTail })
+                : t("sms.enterCode")}
             </Text>
             <View className="h-12 flex-row items-center rounded-2xl border border-neutral-200 bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-700/50">
               <TextInput
@@ -83,7 +86,7 @@ export function SmsPrompt({
                 autoComplete="one-time-code"
                 maxLength={6}
                 returnKeyType="go"
-                placeholder="6位数字"
+                placeholder={t("sms.placeholder")}
                 placeholderTextColor="#a3a3a3"
                 onSubmitEditing={onSubmit}
               />

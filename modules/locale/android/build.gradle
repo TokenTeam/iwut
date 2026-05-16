@@ -1,0 +1,18 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'dev.tokenteam.iwut'
+
+expoModule {
+  canBePublished = false
+}
+
+android {
+  namespace "dev.tokenteam.iwut.locale"
+}
+
+dependencies {
+  implementation "androidx.appcompat:appcompat:1.7.0"
+}

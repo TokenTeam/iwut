@@ -1,5 +1,7 @@
 import { Pressable, Text, View } from "react-native";
 
+import { useT } from "@/lib/i18n";
+
 import { BottomSheet } from "./bottom-sheet";
 
 export function ConfirmSheet({
@@ -7,8 +9,8 @@ export function ConfirmSheet({
   onClose,
   title,
   description,
-  confirmText = "确认",
-  cancelText = "取消",
+  confirmText,
+  cancelText,
   destructive = false,
   onConfirm,
 }: Readonly<{
@@ -21,6 +23,9 @@ export function ConfirmSheet({
   destructive?: boolean;
   onConfirm: () => void;
 }>) {
+  const t = useT();
+  const resolvedConfirmText = confirmText ?? t("common.confirm");
+  const resolvedCancelText = cancelText ?? t("common.cancel");
   return (
     <BottomSheet visible={visible} onClose={onClose} title={title}>
       <Text className="px-5 pb-4 text-sm text-neutral-500 dark:text-neutral-400">
@@ -32,7 +37,7 @@ export function ConfirmSheet({
           onPress={onClose}
         >
           <Text className="text-base font-medium text-neutral-600 dark:text-neutral-300">
-            {cancelText}
+            {resolvedCancelText}
           </Text>
         </Pressable>
         <Pressable
@@ -44,7 +49,7 @@ export function ConfirmSheet({
           onPress={onConfirm}
         >
           <Text className="text-base font-medium text-white">
-            {confirmText}
+            {resolvedConfirmText}
           </Text>
         </Pressable>
       </View>
