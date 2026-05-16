@@ -249,7 +249,7 @@
             android:layout_below="@id/course_row_1"
             android:layout_marginTop="17dp"
             android:layout_marginStart="5dp"
-            android:text="@string/widget_no_more_course"
+            android:text="@string/widget_no_more"
             android:textColor="@color/widget_schedule_text_primary"
             android:textSize="@dimen/widget_all_done_text_size"
             android:visibility="gone"
@@ -283,7 +283,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="5dp"
             android:layout_marginTop="16dp"
-            android:text="@string/widget_all_courses_done"
+            android:text="@string/widget_all_done"
             android:textColor="@color/widget_schedule_text_primary"
             android:textSize="@dimen/widget_all_done_text_size"
             tools:ignore="SpUsage" />

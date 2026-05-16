@@ -1,5 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="widget_all_courses_done">没有更多课啦，放松一下吧～</string>
-    <string name="widget_no_more_course">没有更多课啦～</string>
+    <string name="widget_all_done">没有更多课啦，放松一下吧～</string>
+    <string name="widget_no_more">没有更多课啦～</string>
+    <string name="widget_today">今天</string>
+    <string name="widget_tomorrow">明天</string>
+    <string name="widget_both_done">今天和明天都没有课啦～</string>
+    <string name="widget_today_done">今天没有课啦，</string>
+    <plurals name="widget_today_remaining">
+        <item quantity="other">今天还有%d节课，</item>
+    </plurals>
+    <string name="widget_tomorrow_done">明天没有课啦～</string>
+    <plurals name="widget_tomorrow_remaining">
+        <item quantity="other">明天还有%d节课</item>
+    </plurals>
+    <string-array name="widget_weekdays">
+        <item></item>
+        <item>周一</item>
+        <item>周二</item>
+        <item>周三</item>
+        <item>周四</item>
+        <item>周五</item>
+        <item>周六</item>
+        <item>周日</item>
+    </string-array>
+    <string name="widget_week_n">第%d周</string>
+    <string name="widget_month_day">%1$d月%2$d日</string>
 </resources>

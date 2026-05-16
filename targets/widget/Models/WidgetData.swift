@@ -28,8 +28,6 @@ struct ScheduleWidgetData: Codable {
 }
 
 struct ScheduleHelper {
-    private static let dayNames = ["", "周一", "周二", "周三", "周四", "周五", "周六", "周日"]
-
     static func currentWeek(termStart: String) -> Int {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
@@ -60,19 +58,18 @@ struct ScheduleHelper {
     }
 
     static func weekStr(week: Int) -> String {
-        "第\(week)周"
+        String(format: WidgetStrings.localized("widget.weekDisplay"), week)
     }
 
     static func dateStr(for date: Date = .now) -> String {
         let cal = Calendar.current
         let month = cal.component(.month, from: date)
         let day = cal.component(.day, from: date)
-        return "\(month)月\(day)日"
+        return String(format: WidgetStrings.localized("widget.monthDay"), month, day)
     }
 
     static func dayOfWeekStr(day: Int) -> String {
-        guard day >= 1 && day <= 7 else { return "" }
-        return dayNames[day]
+        WidgetStrings.dayOfWeek(day)
     }
 
     static func parseTimeToMinutes(_ time: String) -> Int {

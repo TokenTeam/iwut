@@ -21,7 +21,7 @@ struct ScheduleEntry: TimelineEntry {
     }
 
     var weekStr: String {
-        guard let data = data else { return "第-周" }
+        guard let data = data else { return WidgetStrings.localized("widget.weekUnknown") }
         return ScheduleHelper.weekStr(week: ScheduleHelper.currentWeek(termStart: data.termStart))
     }
 

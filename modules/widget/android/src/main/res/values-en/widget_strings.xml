@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_all_done">All done — enjoy your break!</string>
+    <string name="widget_no_more">No more classes</string>
+    <string name="widget_today">Today</string>
+    <string name="widget_tomorrow">Tomorrow</string>
+    <string name="widget_both_done">No classes today or tomorrow — enjoy!</string>
+    <string name="widget_today_done">No classes left today, </string>
+    <plurals name="widget_today_remaining">
+        <item quantity="one">%d class left today, </item>
+        <item quantity="other">%d classes left today, </item>
+    </plurals>
+    <string name="widget_tomorrow_done">No classes tomorrow</string>
+    <plurals name="widget_tomorrow_remaining">
+        <item quantity="one">%d class tomorrow</item>
+        <item quantity="other">%d classes tomorrow</item>
+    </plurals>
+    <string-array name="widget_weekdays">
+        <item></item>
+        <item>Mon</item>
+        <item>Tue</item>
+        <item>Wed</item>
+        <item>Thu</item>
+        <item>Fri</item>
+        <item>Sat</item>
+        <item>Sun</item>
+    </string-array>
+    <string name="widget_week_n">Week %d</string>
+    <string name="widget_month_day">%1$d/%2$d</string>
+</resources>

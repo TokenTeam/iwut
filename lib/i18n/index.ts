@@ -1,6 +1,8 @@
 import { getLocales } from "expo-localization";
 import { useSyncExternalStore } from "react";
 
+import { getSystemLanguageTag } from "@/modules/locale";
+
 import enJson from "./locales/en.json";
 import zhJson from "./locales/zh.json";
 
@@ -39,6 +41,18 @@ const dicts: Record<ResolvedLang, Dict> = {
 };
 
 function resolveSystem(): ResolvedLang {
+  // Prefer the native module which reads the *device-level* locale via
+  // `Resources.getSystem()` / CFPreferences global domain. This bypasses our
+  // own per-app override and is the only way to correctly resolve "follow
+  // system" right after switching away from an explicit language.
+  try {
+    const nativeTag = getSystemLanguageTag();
+    if (nativeTag) {
+      return nativeTag.toLowerCase().startsWith("zh") ? "zh" : "en";
+    }
+  } catch {
+    // Fall through to the expo-localization based path below.
+  }
   try {
     const code = getLocales().at(0)?.languageCode ?? "zh";
     return code === "zh" ? "zh" : "en";
