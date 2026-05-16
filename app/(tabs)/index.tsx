@@ -18,7 +18,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { DAY_LABELS } from "@/components/layout/schedule";
+import { getDayLabels } from "@/components/layout/schedule";
 import { AnnouncementBanner } from "@/components/ui/announcement-banner";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -29,6 +29,7 @@ import {
   getTomorrowWeek,
   isVacation,
 } from "@/lib/date";
+import { type TKey, useT } from "@/lib/i18n";
 import { filterActiveAnnouncements } from "@/services/announcements";
 import {
   formatCourseSectionTimeRange,
@@ -40,18 +41,61 @@ import { useCourseStore } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 import { useUpdateStore } from "@/store/update";
 
-const GREETINGS: { start: number; end: number; title: string; sub: string }[] =
-  [
-    { start: 5, end: 8, title: "早安", sub: "新的一天，从此刻开始" },
-    { start: 8, end: 11, title: "上午好", sub: "今天也要元气满满" },
-    { start: 11, end: 13, title: "午安", sub: "记得好好吃饭哦" },
-    { start: 13, end: 17, title: "下午好", sub: "继续加油" },
-    { start: 17, end: 19, title: "傍晚了", sub: "忙碌了一天，辛苦啦" },
-    { start: 19, end: 23, title: "晚上好", sub: "忙完了就早点休息" },
-    { start: 23, end: 5, title: "夜深了", sub: "熬夜伤身，早点睡哦" },
-  ];
+type GreetingSlot = {
+  start: number;
+  end: number;
+  titleKey: TKey;
+  subKey: TKey;
+};
+
+const GREETING_SLOTS: GreetingSlot[] = [
+  {
+    start: 5,
+    end: 8,
+    titleKey: "home.greetEarlyMorning",
+    subKey: "home.greetEarlyMorningSub",
+  },
+  {
+    start: 8,
+    end: 11,
+    titleKey: "home.greetMorning",
+    subKey: "home.greetMorningSub",
+  },
+  {
+    start: 11,
+    end: 13,
+    titleKey: "home.greetNoon",
+    subKey: "home.greetNoonSub",
+  },
+  {
+    start: 13,
+    end: 17,
+    titleKey: "home.greetAfternoon",
+    subKey: "home.greetAfternoonSub",
+  },
+  {
+    start: 17,
+    end: 19,
+    titleKey: "home.greetEvening",
+    subKey: "home.greetEveningSub",
+  },
+  {
+    start: 19,
+    end: 23,
+    titleKey: "home.greetNight",
+    subKey: "home.greetNightSub",
+  },
+  {
+    start: 23,
+    end: 5,
+    titleKey: "home.greetLateNight",
+    subKey: "home.greetLateNightSub",
+  },
+];
 
 const CARD_GAP = 10;
+
+type Countdown = { kind: "start" | "end"; mins: number };
 
 function isCourseFinished(course: Course): boolean {
   const now = new Date();
@@ -59,7 +103,7 @@ function isCourseFinished(course: Course): boolean {
   return nowMin > (SECTION_TIMES[course.sectionEnd]?.[3] ?? 0);
 }
 
-function getCourseCountdown(course: Course): string | null {
+function getCourseCountdown(course: Course): Countdown | null {
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const startMin = SECTION_TIMES[course.sectionStart]?.[2] ?? 0;
@@ -68,35 +112,23 @@ function getCourseCountdown(course: Course): string | null {
   if (nowMin > endMin) return null;
   if (nowMin < startMin) {
     const diff = startMin - nowMin;
-    return diff <= 60 ? `${diff} 分钟后开始` : null;
+    return diff <= 60 ? { kind: "start", mins: diff } : null;
   }
-  const remaining = endMin - nowMin;
-  return `${remaining} 分钟后结束`;
+  return { kind: "end", mins: endMin - nowMin };
 }
 
-function getGreeting() {
+function getGreetingSlot(): GreetingSlot {
   const hour = new Date().getHours();
-  const match = GREETINGS.find((g) =>
+  const match = GREETING_SLOTS.find((g) =>
     g.start < g.end
       ? hour >= g.start && hour < g.end
       : hour >= g.start || hour < g.end,
   );
-  return match ?? GREETINGS[0];
-}
-
-function getDateContext(termStart: string, vacation: boolean) {
-  const now = new Date();
-  const day = getCurrentDayOfWeek();
-  const month = now.getMonth() + 1;
-  const date = now.getDate();
-  if (vacation) {
-    return `假期中 · ${DAY_LABELS[day - 1]} · ${month}月${date}日`;
-  }
-  const week = getCurrentWeek(termStart);
-  return `第 ${week} 周 · ${DAY_LABELS[day - 1]} · ${month}月${date}日`;
+  return match ?? GREETING_SLOTS[0];
 }
 
 export default function HomeScreen() {
+  const t = useT();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const router = useRouter();
@@ -115,9 +147,30 @@ export default function HomeScreen() {
     [announcements, dismissedIds],
   );
 
-  const greeting = getGreeting();
+  const greetingSlot = getGreetingSlot();
+  const greeting = {
+    title: t(greetingSlot.titleKey),
+    sub: t(greetingSlot.subKey),
+  };
   const vacation = isVacation(termStart);
-  const dateContext = getDateContext(termStart, vacation);
+
+  const now = new Date();
+  const dayIdx = getCurrentDayOfWeek();
+  const dayLabels = getDayLabels();
+  const month = now.getMonth() + 1;
+  const date = now.getDate();
+  const dateContext = vacation
+    ? t("home.vacationContext", {
+        weekday: dayLabels[dayIdx - 1],
+        m: month,
+        d: date,
+      })
+    : t("home.weekContext", {
+        week: getCurrentWeek(termStart),
+        weekday: dayLabels[dayIdx - 1],
+        m: month,
+        d: date,
+      });
 
   const week = getCurrentWeek(termStart);
   const today = getCurrentDayOfWeek();
@@ -276,8 +329,8 @@ export default function HomeScreen() {
   }
 
   const tabs = [
-    { label: "今日", count: todayCourses.length },
-    { label: "明日", count: tomorrowCourses.length },
+    { label: t("home.tabToday"), count: todayCourses.length },
+    { label: t("home.tabTomorrow"), count: tomorrowCourses.length },
   ];
 
   return (
@@ -485,6 +538,16 @@ export default function HomeScreen() {
                             color={getCourseColor(course.name)}
                             past={past}
                             countdown={countdown}
+                            countdownText={
+                              countdown
+                                ? t(
+                                    countdown.kind === "start"
+                                      ? "home.countdownStartIn"
+                                      : "home.countdownEndIn",
+                                    { n: countdown.mins },
+                                  )
+                                : null
+                            }
                             isDark={isDark}
                           />
                         </View>
@@ -520,6 +583,7 @@ export default function HomeScreen() {
                           color={getCourseColor(course.name)}
                           past={false}
                           countdown={null}
+                          countdownText={null}
                           isDark={isDark}
                         />
                       </View>
@@ -546,12 +610,14 @@ function CourseCard({
   color,
   past,
   countdown,
+  countdownText,
   isDark,
 }: {
   course: Course;
   color: string;
   past: boolean;
-  countdown: string | null;
+  countdown: Countdown | null;
+  countdownText: string | null;
   isDark: boolean;
 }) {
   const barColor = past
@@ -612,13 +678,14 @@ function CourseCard({
           >
             {course.name}
           </Text>
-          {countdown && (
+          {countdown && countdownText && (
             <View
               style={{
                 marginLeft: 8,
-                backgroundColor: countdown.includes("结束")
-                  ? "rgba(234,179,8,0.12)"
-                  : "rgba(59,130,246,0.12)",
+                backgroundColor:
+                  countdown.kind === "end"
+                    ? "rgba(234,179,8,0.12)"
+                    : "rgba(59,130,246,0.12)",
                 borderRadius: 6,
                 paddingHorizontal: 6,
                 paddingVertical: 2,
@@ -628,10 +695,10 @@ function CourseCard({
                 style={{
                   fontSize: 11,
                   fontWeight: "600",
-                  color: countdown.includes("结束") ? "#ca8a04" : "#3b82f6",
+                  color: countdown.kind === "end" ? "#ca8a04" : "#3b82f6",
                 }}
               >
-                {countdown}
+                {countdownText}
               </Text>
             </View>
           )}
@@ -691,17 +758,18 @@ function EmptyState({
   isDark: boolean;
   variant?: "today" | "tomorrow";
 }) {
+  const t = useT();
   const isTomorrow = variant === "tomorrow";
   const title = !hasCourses
-    ? "还没有课程"
+    ? t("home.emptyNoCourses")
     : isTomorrow
-      ? "明天没有课程"
-      : "今天没有课程";
+      ? t("home.emptyTomorrowNone")
+      : t("home.emptyTodayNone");
   const sub = !hasCourses
-    ? "前往「课程」标签页导入你的课表"
+    ? t("home.emptyNoCoursesSub")
     : isTomorrow
-      ? "可以放松一下啦！"
-      : "好好享受空闲时光吧~";
+      ? t("home.emptyTomorrowNoneSub")
+      : t("home.emptyTodayNoneSub");
   const iconName: React.ComponentProps<typeof Ionicons>["name"] = !hasCourses
     ? "calendar-outline"
     : isTomorrow
@@ -759,6 +827,7 @@ function EmptyState({
 }
 
 function VacationState({ isDark }: { isDark: boolean }) {
+  const t = useT();
   return (
     <View
       style={{
@@ -793,7 +862,7 @@ function VacationState({ isDark }: { isDark: boolean }) {
           color: isDark ? "#a3a3a3" : "#737373",
         }}
       >
-        假期中
+        {t("home.vacationTitle")}
       </Text>
       <Text
         style={{
@@ -803,7 +872,7 @@ function VacationState({ isDark }: { isDark: boolean }) {
           lineHeight: 20,
         }}
       >
-        假期愉快~
+        {t("home.vacationSub")}
       </Text>
     </View>
   );

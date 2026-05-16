@@ -2,11 +2,16 @@ import * as Calendar from "expo-calendar";
 import { Platform } from "react-native";
 
 import { getTermWeekMonday } from "@/lib/date";
+import { t } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
 import { SECTION_TIMES } from "@/services/course-time";
 import { type Course, useCourseStore } from "@/store/course";
 
-const CALENDAR_TITLE = "掌上吾理-我的课表";
+// Calendar entries are re-created on every sync, so we use the current locale
+// at sync time rather than caching a value at module load.
+function getCalendarTitle(): string {
+  return t("calSync.title");
+}
 const CALENDAR_COLOR = "#007AFF";
 
 export async function requestCalendarPermission(): Promise<boolean> {
@@ -18,20 +23,24 @@ async function findAppCalendar(): Promise<string | null> {
   const calendars = await Calendar.getCalendarsAsync(
     Calendar.EntityTypes.EVENT,
   );
-  const found = calendars.find((c) => c.title === CALENDAR_TITLE);
+  // Match by either the current locale's title or the legacy zh title so we
+  // can clean up stale calendars after a language switch.
+  const candidates = new Set([t("calSync.title"), "掌上吾理-我的课表"]);
+  const found = calendars.find((c) => candidates.has(c.title ?? ""));
   return found?.id ?? null;
 }
 
 async function createAppCalendar(): Promise<string> {
+  const title = getCalendarTitle();
   if (Platform.OS === "ios") {
     const defaultCalendar = await Calendar.getDefaultCalendarAsync();
     const id = await Calendar.createCalendarAsync({
-      title: CALENDAR_TITLE,
+      title,
       color: CALENDAR_COLOR,
       entityType: Calendar.EntityTypes.EVENT,
       sourceId: defaultCalendar.source.id,
       source: defaultCalendar.source,
-      name: CALENDAR_TITLE,
+      name: title,
       ownerAccount: "personal",
       accessLevel: Calendar.CalendarAccessLevel.OWNER,
     });
@@ -47,7 +56,7 @@ async function createAppCalendar(): Promise<string> {
   )?.source;
 
   const id = await Calendar.createCalendarAsync({
-    title: CALENDAR_TITLE,
+    title,
     color: CALENDAR_COLOR,
     entityType: Calendar.EntityTypes.EVENT,
     sourceId: localSource?.id,
@@ -55,10 +64,10 @@ async function createAppCalendar(): Promise<string> {
       localSource ??
       ({
         isLocalAccount: true,
-        name: CALENDAR_TITLE,
+        name: title,
         type: Calendar.SourceType?.LOCAL ?? ("LOCAL" as Calendar.SourceType),
       } as Calendar.Source),
-    name: CALENDAR_TITLE,
+    name: title,
     ownerAccount: "personal",
     accessLevel: Calendar.CalendarAccessLevel.OWNER,
   });
@@ -96,12 +105,12 @@ export async function syncCoursesToCalendar(): Promise<{
 }> {
   const hasPermission = await requestCalendarPermission();
   if (!hasPermission) {
-    return { success: false, count: 0, error: "没有日历访问权限" };
+    return { success: false, count: 0, error: t("calSync.errNoPermission") };
   }
 
   const { courses, termStart } = useCourseStore.getState();
   if (!termStart || courses.length === 0) {
-    return { success: false, count: 0, error: "没有课程数据或学期开始时间" };
+    return { success: false, count: 0, error: t("calSync.errNoData") };
   }
 
   try {
@@ -141,12 +150,12 @@ export async function syncCoursesToCalendar(): Promise<{
     }
 
     if (count === 0 && reported) {
-      return { success: false, count: 0, error: "事件写入失败" };
+      return { success: false, count: 0, error: t("calSync.errWriteFail") };
     }
     return { success: true, count };
   } catch (e) {
     reportError(e, { module: "calendar-sync" });
-    const msg = e instanceof Error ? e.message : "未知错误";
+    const msg = e instanceof Error ? e.message : t("calSync.errUnknown");
     return { success: false, count: 0, error: msg };
   }
 }
@@ -186,7 +195,9 @@ function createEventsForCourse(
       startDate: startDate.getTime() as unknown as Date,
       endDate: endDate.getTime() as unknown as Date,
       alarms: [{ relativeOffset: -15 }],
-      notes: course.teacher ? `教师: ${course.teacher}` : undefined,
+      notes: course.teacher
+        ? t("calSync.teacherNotes", { teacher: course.teacher })
+        : undefined,
       timeZone: "Asia/Shanghai",
     });
   }

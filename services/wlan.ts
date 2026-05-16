@@ -2,6 +2,7 @@ import { Platform } from "react-native";
 import TcpSocket from "react-native-tcp-socket";
 import WifiManager from "react-native-wifi-reborn";
 
+import { t } from "@/lib/i18n";
 import { reportWifiConnectivity } from "@/modules/network-reporter";
 
 const GATEWAY = "http://172.30.21.100";
@@ -43,7 +44,7 @@ function getNasId(): Promise<string | null> {
 
     socket.on("error", () => {
       socket.destroy();
-      reject(new Error("网络连接异常，请检查网络连接并重试"));
+      reject(new Error(t("wlan.errNetwork")));
     });
   });
 }
@@ -56,7 +57,7 @@ export async function login(
     try {
       await WifiManager.forceWifiUsageWithOptions(true, { noInternet: true });
     } catch {
-      throw new Error("非校园网环境，请连接校园网后重试");
+      throw new Error(t("wlan.errNotCampus"));
     }
   }
 

@@ -16,66 +16,67 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { IS_DEV } from "@/constants/is-dev";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { type TKey, useT } from "@/lib/i18n";
 
 type WebApp = {
   icon: React.ComponentProps<typeof Ionicons>["name"];
-  label: string;
+  labelKey: TKey;
   color: string;
   uri: string;
 };
 
 type Section = {
-  title: string;
+  titleKey: TKey;
   items: WebApp[];
 };
 
 const SECTIONS: Section[] = [
   {
-    title: "学习工具",
+    titleKey: "fn.section.study",
     items: [
       {
         icon: "book-outline",
-        label: "自习室查询",
+        labelKey: "fn.app.classroom",
         color: "#0d9488",
         uri: "https://classroom-iwut.tokenteam.net",
       },
       {
         icon: "school-outline",
-        label: "教务系统",
+        labelKey: "fn.app.jwxt",
         color: "#8b5cf6",
         uri: "https://zhlgd.whut.edu.cn/tpass/login?service=https%3A%2F%2Fjwxt.whut.edu.cn%2Fjwapp%2Fsys%2Fhomeapp%2Findex.do%3FforceCas%3D1",
       },
       {
         icon: "library-outline",
-        label: "图书馆管家",
+        labelKey: "fn.app.library",
         color: "#3b82f6",
         uri: "https://library-info-iwut.tokenteam.net",
       },
     ],
   },
   {
-    title: "生活服务",
+    titleKey: "fn.section.life",
     items: [
       {
         icon: "card-outline",
-        label: "智寻卡片",
+        labelKey: "fn.app.card",
         color: "#10b981",
         uri: "https://cardcare-iwut.tokenteam.net",
       },
       {
         icon: "flash-outline",
-        label: "电费查询",
+        labelKey: "fn.app.elec",
         color: "#eab308",
         uri: "https://zhlgd.whut.edu.cn/tpass/login?service=http://nyyzf.whut.edu.cn/MobileWebOnlineHall/#/",
       },
     ],
   },
   {
-    title: "校园资讯",
+    titleKey: "fn.section.info",
     items: [
       {
         icon: "newspaper-outline",
-        label: "校园公告",
+        labelKey: "fn.app.campusNews",
         color: "#f97316",
         uri: "http://i.whut.edu.cn",
       },
@@ -88,6 +89,7 @@ function openWebApp(uri: string) {
 }
 
 export default function FunctionScreen() {
+  const t = useT();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { height } = useWindowDimensions();
@@ -107,7 +109,7 @@ export default function FunctionScreen() {
               className="text-[32px] font-bold tracking-tight text-neutral-900 dark:text-neutral-50"
               numberOfLines={1}
             >
-              功能
+              {t("fn.title")}
             </Text>
             {IS_DEV && (
               <Pressable
@@ -128,22 +130,23 @@ export default function FunctionScreen() {
             )}
           </View>
           <Text className="mt-1.5 text-base text-neutral-400 dark:text-neutral-500">
-            校园服务，触手可及
+            {t("fn.subtitle")}
           </Text>
         </View>
 
         <View className="mx-6 my-4 h-px bg-neutral-100 dark:bg-neutral-800/60" />
 
         {SECTIONS.map((section) => (
-          <View key={section.title} className="mb-5">
+          <View key={section.titleKey} className="mb-5">
             <Text className="mb-3 px-6 text-base font-semibold text-neutral-800 dark:text-neutral-100">
-              {section.title}
+              {t(section.titleKey)}
             </Text>
             <View className="flex-row flex-wrap px-2">
               {section.items.map((app) => (
                 <AppItem
-                  key={app.label}
+                  key={app.labelKey}
                   app={app}
+                  label={t(app.labelKey)}
                   isDark={isDark}
                   onPress={() => openWebApp(app.uri)}
                 />
@@ -176,7 +179,7 @@ export default function FunctionScreen() {
                 <View className="mb-4 flex-row items-center gap-2">
                   <Ionicons name="globe-outline" size={20} color="#3b82f6" />
                   <Text className="text-base font-semibold text-neutral-800 dark:text-neutral-100">
-                    打开网页
+                    {t("browser.openWeb")}
                   </Text>
                 </View>
                 <View className="h-12 flex-row items-center rounded-2xl border border-neutral-200 bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-700/50">
@@ -220,10 +223,12 @@ export default function FunctionScreen() {
 
 function AppItem({
   app,
+  label,
   isDark,
   onPress,
 }: {
   app: WebApp;
+  label: string;
   isDark: boolean;
   onPress: () => void;
 }) {
@@ -252,7 +257,7 @@ function AppItem({
         className="mt-2 text-xs text-neutral-700 dark:text-neutral-300"
         numberOfLines={1}
       >
-        {app.label}
+        {label}
       </Text>
     </Pressable>
   );

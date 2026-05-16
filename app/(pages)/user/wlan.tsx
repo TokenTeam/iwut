@@ -16,11 +16,13 @@ import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
 import { login } from "@/services/wlan";
 import { useWlanStore } from "@/store/wlan";
 
 export default function WlanScreen() {
+  const t = useT();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
   const { hasSaved, username, save, clear, getCredentials } = useWlanStore();
@@ -46,7 +48,7 @@ export default function WlanScreen() {
     if (!trimmed || !inputPass) {
       Toast.show({
         type: "error",
-        text1: "请输入账号和密码",
+        text1: t("wlan.needCreds"),
         position: "bottom",
       });
       return;
@@ -68,14 +70,14 @@ export default function WlanScreen() {
       const msg = await login(cred.username, cred.password);
       Toast.show({
         type: "success",
-        text1: msg ?? "网络通畅，无需连接",
+        text1: msg ?? t("wlan.connectOk"),
         position: "bottom",
       });
     } catch (e: any) {
       if (e.message) {
         Toast.show({
           type: "error",
-          text1: "连接失败",
+          text1: t("wlan.connectFail"),
           text2: e.message,
           position: "bottom",
         });
@@ -83,7 +85,7 @@ export default function WlanScreen() {
         reportError(e, { module: "wlan" });
         Toast.show({
           type: "error",
-          text1: "连接失败",
+          text1: t("wlan.connectFail"),
           text2: e.toString(),
           position: "bottom",
         });
@@ -91,21 +93,21 @@ export default function WlanScreen() {
     } finally {
       setConnecting(false);
     }
-  }, [getCredentials, openSheet]);
+  }, [getCredentials, openSheet, t]);
 
   const handleClear = () => {
     clear();
     setClearVisible(false);
     Toast.show({
       type: "success",
-      text1: "账号已清除",
+      text1: t("wlan.accountCleared"),
       position: "bottom",
     });
   };
 
   return (
     <>
-      <Stack.Screen options={{ title: "校园网连接" }} />
+      <Stack.Screen options={{ title: t("wlan.title") }} />
       <ScrollView
         className="flex-1 bg-neutral-100 dark:bg-neutral-900"
         contentContainerClassName="px-4 pt-4 pb-8"
@@ -132,26 +134,26 @@ export default function WlanScreen() {
           </Pressable>
         </View>
 
-        <MenuGroup title="账号">
+        <MenuGroup title={t("wlan.accountGroup")}>
           {hasSaved ? (
             <>
               <MenuItem
                 icon="person"
                 iconBg="#007AFF"
-                label="当前账号"
+                label={t("wlan.currentAccount")}
                 value={username}
                 showArrow={false}
               />
               <MenuItem
                 icon="edit"
                 iconBg="#FF9500"
-                label="修改账号"
+                label={t("wlan.editAccount")}
                 onPress={openSheet}
               />
               <MenuItem
                 icon="delete-outline"
                 iconBg="#FF3B30"
-                label="清除账号"
+                label={t("wlan.clearAccount")}
                 onPress={() => setClearVisible(true)}
               />
             </>
@@ -159,7 +161,7 @@ export default function WlanScreen() {
             <MenuItem
               icon="person-add"
               iconBg="#34C759"
-              label="设置校园网账号"
+              label={t("wlan.setupAccount")}
               onPress={openSheet}
             />
           )}
@@ -169,10 +171,10 @@ export default function WlanScreen() {
       <BottomSheet
         visible={sheetVisible}
         onClose={() => setSheetVisible(false)}
-        title="校园网账号"
+        title={t("wlan.sheetTitle")}
       >
         <Text className="px-5 pb-4 text-sm text-neutral-500 dark:text-neutral-400">
-          输入校园网账号和密码，保存后可一键连接。
+          {t("wlan.sheetHint")}
         </Text>
         <View
           className="mx-5 mb-3 h-11 flex-row items-center rounded-xl px-3"
@@ -185,7 +187,7 @@ export default function WlanScreen() {
           />
           <TextInput
             className="ml-2.5 flex-1 text-sm text-neutral-900 dark:text-neutral-100"
-            placeholder="账号"
+            placeholder={t("wlan.username")}
             placeholderTextColor={isDark ? "#525252" : "#d4d4d4"}
             value={inputUser}
             onChangeText={setInputUser}
@@ -207,7 +209,7 @@ export default function WlanScreen() {
           <TextInput
             ref={passwordRef}
             className="ml-2.5 flex-1 text-sm text-neutral-900 dark:text-neutral-100"
-            placeholder="密码"
+            placeholder={t("wlan.password")}
             placeholderTextColor={isDark ? "#525252" : "#d4d4d4"}
             value={inputPass}
             onChangeText={setInputPass}
@@ -232,14 +234,16 @@ export default function WlanScreen() {
             onPress={() => setSheetVisible(false)}
           >
             <Text className="text-base font-medium text-neutral-600 dark:text-neutral-300">
-              取消
+              {t("wlan.cancel")}
             </Text>
           </Pressable>
           <Pressable
             className="flex-1 items-center rounded-xl bg-blue-500 py-3 active:bg-blue-600"
             onPress={handleSave}
           >
-            <Text className="text-base font-medium text-white">保存</Text>
+            <Text className="text-base font-medium text-white">
+              {t("wlan.save")}
+            </Text>
           </Pressable>
         </View>
       </BottomSheet>
@@ -247,9 +251,9 @@ export default function WlanScreen() {
       <ConfirmSheet
         visible={clearVisible}
         onClose={() => setClearVisible(false)}
-        title="清除账号"
-        description="确定要清除已保存的校园网账号吗？"
-        confirmText="确认清除"
+        title={t("wlan.clearTitle")}
+        description={t("wlan.clearDesc")}
+        confirmText={t("wlan.clearConfirm")}
         destructive
         onConfirm={handleClear}
       />

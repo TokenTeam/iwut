@@ -1,9 +1,27 @@
+import type { TKey } from "@/lib/i18n";
+
 export interface ColorPalette {
   name: string;
   version: 1;
   colors: string[];
   overrides?: Record<string, string>;
 }
+
+// Maps the persisted Chinese palette name back to an i18n key so we can
+// localize built-in palette names at render time without changing the
+// stored schema (legacy MMKV state and exported JSON keep working).
+export const BUILTIN_PALETTE_NAME_KEYS: Record<string, TKey> = {
+  默认: "palettes.default",
+  马卡龙: "palettes.macaron",
+  森林: "palettes.forest",
+  星空: "palettes.starry",
+  日落: "palettes.sunset",
+  海洋: "palettes.ocean",
+  樱花: "palettes.sakura",
+  薄荷: "palettes.mint",
+  莫兰迪: "palettes.morandi",
+  霓虹: "palettes.neon",
+};
 
 export const BUILTIN_PALETTES: ColorPalette[] = [
   {

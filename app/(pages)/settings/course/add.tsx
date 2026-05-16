@@ -15,9 +15,18 @@ import {
 import Toast from "react-native-toast-message";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { type TKey, useT } from "@/lib/i18n";
 import { type Course, useCourseStore } from "@/store/course";
 
-const DAY_OPTIONS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+const DAY_KEYS: TKey[] = [
+  "schedule.weekday.mon",
+  "schedule.weekday.tue",
+  "schedule.weekday.wed",
+  "schedule.weekday.thu",
+  "schedule.weekday.fri",
+  "schedule.weekday.sat",
+  "schedule.weekday.sun",
+];
 const MAX_WEEK = 20;
 const MAX_SECTION = 16;
 
@@ -80,21 +89,31 @@ function weeksToRanges(weeks: Set<number>): [number, number][] {
   return ranges;
 }
 
-function formatWeeks(weeks: Set<number>): string {
-  if (weeks.size === 0) return "未选择";
+function formatWeeks(
+  weeks: Set<number>,
+  notSelectedLabel: string,
+  weeksSuffix: string,
+): string {
+  if (weeks.size === 0) return notSelectedLabel;
   const ranges = weeksToRanges(weeks);
   return (
-    ranges.map(([s, e]) => (s === e ? `${s}` : `${s}-${e}`)).join(", ") + " 周"
+    ranges.map(([s, e]) => (s === e ? `${s}` : `${s}-${e}`)).join(", ") +
+    weeksSuffix
   );
 }
 
 export default function AddEditCourseScreen() {
+  const t = useT();
   const router = useRouter();
   const { name: editName } = useLocalSearchParams<{ name?: string }>();
   const isEdit = !!editName;
 
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
+
+  const dayOptions = DAY_KEYS.map((k) => t(k));
+  const weeksSuffix = t("courseAdd.weeksUnit");
+  const notSelectedLabel = t("courseAdd.weeksNotSelected");
 
   const courses = useCourseStore((s) => s.courses);
   const addCourse = useCourseStore((s) => s.addCourse);
@@ -142,7 +161,7 @@ export default function AddEditCourseScreen() {
       if (slots.length <= 1) {
         Toast.show({
           type: "error",
-          text1: "至少保留一个时段",
+          text1: t("courseAdd.minSlotRequired"),
           position: "bottom",
         });
         return;
@@ -156,7 +175,7 @@ export default function AddEditCourseScreen() {
         return prev;
       });
     },
-    [slots.length],
+    [slots.length, t],
   );
 
   const inputBg = isDark ? "#262626" : "#f5f5f5";
@@ -172,7 +191,7 @@ export default function AddEditCourseScreen() {
     if (!trimmedName) {
       Toast.show({
         type: "error",
-        text1: "请输入课程名称",
+        text1: t("courseAdd.needCourseName"),
         position: "bottom",
       });
       return;
@@ -182,7 +201,7 @@ export default function AddEditCourseScreen() {
       if (slot.weeks.size === 0) {
         Toast.show({
           type: "error",
-          text1: `时段 ${i + 1} 未选择周次`,
+          text1: t("courseAdd.slotNoWeeks", { n: i + 1 }),
           position: "bottom",
         });
         setExpandedIndex(i);
@@ -191,7 +210,7 @@ export default function AddEditCourseScreen() {
       if (slot.sectionEnd < slot.sectionStart) {
         Toast.show({
           type: "error",
-          text1: `时段 ${i + 1} 节次范围有误`,
+          text1: t("courseAdd.slotInvalidRange", { n: i + 1 }),
           position: "bottom",
         });
         setExpandedIndex(i);
@@ -222,7 +241,7 @@ export default function AddEditCourseScreen() {
 
     Toast.show({
       type: "success",
-      text1: isEdit ? "课程已更新" : "课程已添加",
+      text1: isEdit ? t("courseAdd.courseUpdated") : t("courseAdd.courseAdded"),
       position: "bottom",
     });
     router.back();
@@ -230,7 +249,11 @@ export default function AddEditCourseScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: isEdit ? "编辑课程" : "添加课程" }} />
+      <Stack.Screen
+        options={{
+          title: isEdit ? t("courseAdd.titleEdit") : t("courseAdd.titleAdd"),
+        }}
+      />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -245,12 +268,12 @@ export default function AddEditCourseScreen() {
               <Text
                 style={{ fontSize: 12, color: labelColor, marginBottom: 6 }}
               >
-                课程名称
+                {t("courseAdd.courseName")}
               </Text>
               <TextInput
                 value={name}
                 onChangeText={setName}
-                placeholder="如：高等数学"
+                placeholder={t("courseAdd.courseNamePlaceholder")}
                 placeholderTextColor={placeholderColor}
                 editable={!isEdit}
                 style={{
@@ -268,12 +291,12 @@ export default function AddEditCourseScreen() {
               <Text
                 style={{ fontSize: 12, color: labelColor, marginBottom: 6 }}
               >
-                教师
+                {t("courseAdd.teacher")}
               </Text>
               <TextInput
                 value={teacher}
                 onChangeText={setTeacher}
-                placeholder="可选"
+                placeholder={t("courseAdd.teacherPlaceholder")}
                 placeholderTextColor={placeholderColor}
                 style={{
                   fontSize: 16,
@@ -306,6 +329,10 @@ export default function AddEditCourseScreen() {
               inputColor={inputColor}
               placeholderColor={placeholderColor}
               cardBg={cardBg}
+              dayOptions={dayOptions}
+              t={t}
+              notSelectedLabel={notSelectedLabel}
+              weeksSuffix={weeksSuffix}
             />
           ))}
 
@@ -315,7 +342,7 @@ export default function AddEditCourseScreen() {
           >
             <Ionicons name="add" size={18} color="#3b82f6" />
             <Text className="ml-1 text-sm font-medium text-blue-500">
-              添加时段
+              {t("courseAdd.addSlot")}
             </Text>
           </Pressable>
 
@@ -323,7 +350,9 @@ export default function AddEditCourseScreen() {
             onPress={handleSave}
             className="items-center rounded-xl bg-blue-500 py-3.5 active:bg-blue-600"
           >
-            <Text className="text-base font-semibold text-white">保存</Text>
+            <Text className="text-base font-semibold text-white">
+              {t("common.save")}
+            </Text>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -347,6 +376,10 @@ function SlotCard({
   inputColor,
   placeholderColor,
   cardBg,
+  dayOptions,
+  t,
+  notSelectedLabel,
+  weeksSuffix,
 }: {
   slot: TimeSlot;
   index: number;
@@ -363,6 +396,10 @@ function SlotCard({
   inputColor: string;
   placeholderColor: string;
   cardBg: string;
+  dayOptions: string[];
+  t: ReturnType<typeof useT>;
+  notSelectedLabel: string;
+  weeksSuffix: string;
 }) {
   const toggleWeek = (w: number) => {
     const next = new Set(slot.weeks);
@@ -381,7 +418,21 @@ function SlotCard({
     onUpdate({ weeks: new Set() });
   };
 
-  const summary = `${DAY_OPTIONS[slot.day - 1]} 第${slot.sectionStart}-${slot.sectionEnd}节${slot.room ? ` ${slot.room}` : ""} | ${formatWeeks(slot.weeks)}`;
+  const weeksLabel = formatWeeks(slot.weeks, notSelectedLabel, weeksSuffix);
+  const summary = slot.room
+    ? t("courseAdd.slotSummaryWithRoom", {
+        weekday: dayOptions[slot.day - 1],
+        start: slot.sectionStart,
+        end: slot.sectionEnd,
+        room: slot.room,
+        weeks: weeksLabel,
+      })
+    : t("courseAdd.slotSummary", {
+        weekday: dayOptions[slot.day - 1],
+        start: slot.sectionStart,
+        end: slot.sectionEnd,
+        weeks: weeksLabel,
+      });
 
   return (
     <View
@@ -433,10 +484,10 @@ function SlotCard({
 
           {/* 星期 */}
           <Text style={{ fontSize: 12, color: labelColor, marginBottom: 8 }}>
-            星期
+            {t("courseAdd.weekday")}
           </Text>
           <View style={{ flexDirection: "row", gap: 6, marginBottom: 16 }}>
-            {DAY_OPTIONS.map((label, i) => {
+            {dayOptions.map((label, i) => {
               const selected = slot.day === i + 1;
               return (
                 <Pressable
@@ -466,12 +517,12 @@ function SlotCard({
 
           {/* 教室 */}
           <Text style={{ fontSize: 12, color: labelColor, marginBottom: 6 }}>
-            教室
+            {t("courseAdd.room")}
           </Text>
           <TextInput
             value={slot.room}
             onChangeText={(v) => onUpdate({ room: v })}
-            placeholder="可选"
+            placeholder={t("courseAdd.roomPlaceholder")}
             placeholderTextColor={placeholderColor}
             style={{
               fontSize: 15,
@@ -494,14 +545,18 @@ function SlotCard({
             }}
           >
             <Text style={{ fontSize: 12, color: labelColor }}>
-              周次（可多选）
+              {t("courseAdd.weeks")}
             </Text>
             <View style={{ flexDirection: "row", gap: 12 }}>
               <Pressable onPress={selectAllWeeks} hitSlop={8}>
-                <Text style={{ fontSize: 12, color: "#3b82f6" }}>全选</Text>
+                <Text style={{ fontSize: 12, color: "#3b82f6" }}>
+                  {t("courseAdd.selectAll")}
+                </Text>
               </Pressable>
               <Pressable onPress={clearAllWeeks} hitSlop={8}>
-                <Text style={{ fontSize: 12, color: "#3b82f6" }}>清空</Text>
+                <Text style={{ fontSize: 12, color: "#3b82f6" }}>
+                  {t("courseAdd.clear")}
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -544,7 +599,7 @@ function SlotCard({
 
           {/* 节次范围 */}
           <Text style={{ fontSize: 12, color: labelColor, marginBottom: 4 }}>
-            节次范围
+            {t("courseAdd.sectionRange")}
           </Text>
           <Text
             style={{
@@ -555,7 +610,10 @@ function SlotCard({
               marginBottom: 4,
             }}
           >
-            第 {slot.sectionStart} - {slot.sectionEnd} 节
+            {t("courseAdd.currentRange", {
+              start: slot.sectionStart,
+              end: slot.sectionEnd,
+            })}
           </Text>
           <RangeSlider
             range={[slot.sectionStart, slot.sectionEnd]}

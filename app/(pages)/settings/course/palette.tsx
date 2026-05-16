@@ -8,20 +8,24 @@ import Toast from "react-native-toast-message";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import {
+  BUILTIN_PALETTE_NAME_KEYS,
   BUILTIN_PALETTES,
   type ColorPalette,
   validateColorPalette,
 } from "@/constants/course-palettes";
+import { useT } from "@/lib/i18n";
 import { useScheduleStore } from "@/store/schedule";
 
 function PaletteRow({
   palette,
   isActive,
+  displayName,
   onPress,
   onDelete,
 }: {
   palette: ColorPalette;
   isActive: boolean;
+  displayName: string;
   onPress: () => void;
   onDelete?: () => void;
 }) {
@@ -39,7 +43,7 @@ function PaletteRow({
             : "text-neutral-900 dark:text-neutral-100"
         }`}
       >
-        {palette.name}
+        {displayName}
       </Text>
       <View
         style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 6 }}
@@ -76,6 +80,7 @@ function PaletteRow({
 }
 
 export default function PaletteScreen() {
+  const t = useT();
   const colorPalette = useScheduleStore((s) => s.colorPalette);
   const setColorPalette = useScheduleStore((s) => s.setColorPalette);
   const customPalettes = useScheduleStore((s) => s.customPalettes);
@@ -85,19 +90,28 @@ export default function PaletteScreen() {
 
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
+  const paletteName = (p: ColorPalette): string => {
+    const key = BUILTIN_PALETTE_NAME_KEYS[p.name];
+    return key ? t(key) : p.name;
+  };
+
   const handleImport = async () => {
     try {
       const text = await Clipboard.getStringAsync();
       if (!text.trim()) {
-        Toast.show({ type: "error", text1: "剪贴板为空", position: "bottom" });
+        Toast.show({
+          type: "error",
+          text1: t("palette.clipboardEmpty"),
+          position: "bottom",
+        });
         return;
       }
       const data = JSON.parse(text);
       if (!validateColorPalette(data)) {
         Toast.show({
           type: "error",
-          text1: "配色格式错误",
-          text2: "请检查 JSON 格式是否正确",
+          text1: t("palette.formatError"),
+          text2: t("palette.formatErrorSub"),
           position: "bottom",
         });
         return;
@@ -106,14 +120,14 @@ export default function PaletteScreen() {
       setColorPalette(data);
       Toast.show({
         type: "success",
-        text1: `已导入配色方案：${data.name}`,
+        text1: t("palette.imported", { name: paletteName(data) }),
         position: "bottom",
       });
     } catch {
       Toast.show({
         type: "error",
-        text1: "配色格式错误",
-        text2: "无法解析 JSON",
+        text1: t("palette.formatError"),
+        text2: t("palette.parseError"),
         position: "bottom",
       });
     }
@@ -133,7 +147,7 @@ export default function PaletteScreen() {
     await Clipboard.setStringAsync(JSON.stringify(exported, null, 2));
     Toast.show({
       type: "success",
-      text1: "配色方案已复制到剪贴板",
+      text1: t("palette.exported"),
       position: "bottom",
     });
   };
@@ -147,14 +161,14 @@ export default function PaletteScreen() {
     setDeleteTarget(null);
     Toast.show({
       type: "success",
-      text1: `已删除「${deleteTarget}」`,
+      text1: t("palette.deleted", { name: deleteTarget }),
       position: "bottom",
     });
   };
 
   return (
     <>
-      <Stack.Screen options={{ title: "配色方案" }} />
+      <Stack.Screen options={{ title: t("palette.title") }} />
       <ScrollView
         className="flex-1 bg-neutral-100 dark:bg-neutral-900"
         contentContainerClassName="px-4 pt-4 pb-8"
@@ -168,6 +182,7 @@ export default function PaletteScreen() {
               <PaletteRow
                 palette={palette}
                 isActive={colorPalette.name === palette.name}
+                displayName={paletteName(palette)}
                 onPress={() => setColorPalette(palette)}
               />
             </View>
@@ -184,6 +199,7 @@ export default function PaletteScreen() {
                 <PaletteRow
                   palette={palette}
                   isActive={colorPalette.name === palette.name}
+                  displayName={paletteName(palette)}
                   onPress={() => setColorPalette(palette)}
                   onDelete={() => setDeleteTarget(palette.name)}
                 />
@@ -192,17 +208,17 @@ export default function PaletteScreen() {
           </View>
         )}
 
-        <MenuGroup title="操作">
+        <MenuGroup title={t("palette.actions")}>
           <MenuItem
             icon="content-paste"
             iconBg="#007AFF"
-            label="从剪贴板导入"
+            label={t("palette.importFromClipboard")}
             onPress={handleImport}
           />
           <MenuItem
             icon="ios-share"
             iconBg="#34C759"
-            label="导出到剪贴板"
+            label={t("palette.exportToClipboard")}
             onPress={handleExport}
           />
         </MenuGroup>
@@ -211,10 +227,10 @@ export default function PaletteScreen() {
       <BottomSheet
         visible={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        title="删除配色"
+        title={t("palette.deleteTitle")}
       >
         <Text className="px-5 pb-4 text-sm text-neutral-500 dark:text-neutral-400">
-          确定要删除「{deleteTarget}」吗？
+          {t("palette.deleteDesc", { name: deleteTarget ?? "" })}
         </Text>
         <View className="mx-5 mb-2 flex-row gap-3">
           <Pressable
@@ -222,14 +238,16 @@ export default function PaletteScreen() {
             onPress={() => setDeleteTarget(null)}
           >
             <Text className="text-base font-medium text-neutral-600 dark:text-neutral-300">
-              取消
+              {t("common.cancel")}
             </Text>
           </Pressable>
           <Pressable
             className="flex-1 items-center rounded-xl bg-red-500 py-3 active:bg-red-600"
             onPress={confirmDelete}
           >
-            <Text className="text-base font-medium text-white">确认删除</Text>
+            <Text className="text-base font-medium text-white">
+              {t("palette.deleteConfirm")}
+            </Text>
           </Pressable>
         </View>
       </BottomSheet>

@@ -6,6 +6,7 @@ import { type ColorValue } from "react-native";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
+import { useT } from "@/lib/i18n";
 import { useSettingsStore } from "@/store/settings";
 
 let hasLaunched = false;
@@ -40,6 +41,7 @@ function TabIcon({
 }
 
 export default function TabLayout() {
+  const t = useT();
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme === "dark" ? "dark" : "light"];
   const haptic = useHaptics();
@@ -69,7 +71,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "首页",
+          title: t("nav.home"),
           tabBarActiveTintColor: TAB_COLORS.home,
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
@@ -85,7 +87,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="course"
         options={{
-          title: "课程",
+          title: t("nav.course"),
           tabBarActiveTintColor: TAB_COLORS.course,
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
@@ -101,7 +103,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="function"
         options={{
-          title: "功能",
+          title: t("nav.function"),
           tabBarActiveTintColor: TAB_COLORS.function,
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
@@ -117,7 +119,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="user"
         options={{
-          title: "我的",
+          title: t("nav.user"),
           tabBarActiveTintColor: TAB_COLORS.user,
           tabBarIcon: ({ color, focused }) => (
             <TabIcon

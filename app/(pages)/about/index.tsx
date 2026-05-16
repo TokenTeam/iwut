@@ -18,12 +18,14 @@ import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { IS_DEV } from "@/constants/is-dev";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useT } from "@/lib/i18n";
 import { useUpdateStore } from "@/store/update";
 
 const icon = require("@/assets/images/icon.png");
 const uniLabel = require("@/assets/images/icon_uni_label.svg");
 
 export default function AboutScreen() {
+  const t = useT();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
   const version = Constants.expoConfig?.version ?? "N/A";
@@ -33,14 +35,17 @@ export default function AboutScreen() {
   const checking = useUpdateStore((s) => s.checking);
   const check = useUpdateStore((s) => s.check);
 
-  const copyToClipboard = useCallback(async (label: string, value: string) => {
-    await Clipboard.setStringAsync(value);
-    Toast.show({
-      type: "success",
-      text1: `已复制${label}`,
-      position: "bottom",
-    });
-  }, []);
+  const copyToClipboard = useCallback(
+    async (label: string, value: string) => {
+      await Clipboard.setStringAsync(value);
+      Toast.show({
+        type: "success",
+        text1: t("about.copied", { label }),
+        position: "bottom",
+      });
+    },
+    [t],
+  );
 
   const handleCheckUpdate = useCallback(async () => {
     await check();
@@ -49,8 +54,8 @@ export default function AboutScreen() {
     if (updated) {
       Toast.show({
         type: "info",
-        text1: "发现新版本",
-        text2: `v${latest} 可用，点击下载`,
+        text1: t("about.newVersionFound"),
+        text2: t("about.newVersionTip", { v: latest ?? "" }),
         position: "bottom",
         onPress: () => {
           if (Platform.OS === "ios") {
@@ -67,15 +72,15 @@ export default function AboutScreen() {
     } else {
       Toast.show({
         type: "success",
-        text1: "当前已是最新版本",
+        text1: t("about.upToDate"),
         position: "bottom",
       });
     }
-  }, [check]);
+  }, [check, t]);
 
   return (
     <>
-      <Stack.Screen options={{ title: "关于" }} />
+      <Stack.Screen options={{ title: t("about.title") }} />
       <ScrollView
         className="flex-1 bg-neutral-100 dark:bg-neutral-900"
         contentContainerClassName="px-4 pt-4 pb-8"
@@ -86,7 +91,7 @@ export default function AboutScreen() {
             style={{ width: 80, height: 80, borderRadius: 18 }}
           />
           <Text className="mt-4 text-xl font-semibold text-neutral-900 dark:text-neutral-100">
-            掌上吾理
+            {t("about.appName")}
           </Text>
           <Text className="mt-1.5 text-sm text-neutral-400 dark:text-neutral-500">
             {version}
@@ -94,30 +99,32 @@ export default function AboutScreen() {
           </Text>
         </View>
 
-        <MenuGroup title="信息">
+        <MenuGroup title={t("about.infoGroup")}>
           <MenuItem
             icon="info-outline"
-            label="版本号"
+            label={t("about.version")}
             value={version}
             showArrow={false}
-            onPress={() => copyToClipboard("版本号", version)}
+            onPress={() => copyToClipboard(t("about.version"), version)}
           />
           <MenuItem
             icon="commit"
-            label="Commit"
+            label={t("about.commit")}
             value={commit}
             showArrow={false}
-            onPress={() => copyToClipboard("Commit", commit)}
+            onPress={() => copyToClipboard(t("about.commit"), commit)}
           />
         </MenuGroup>
 
-        <MenuGroup title="更新">
+        <MenuGroup title={t("about.updateGroup")}>
           <MenuItem
             icon="system-update"
             iconBg="#34C759"
-            label="检查更新"
+            label={t("about.checkUpdate")}
             value={
-              hasUpdate && latestVersion ? `新版本 ${latestVersion}` : undefined
+              hasUpdate && latestVersion
+                ? t("about.newVersionAvailable", { v: latestVersion })
+                : undefined
             }
             badge={hasUpdate}
             showArrow={false}
@@ -126,17 +133,17 @@ export default function AboutScreen() {
           />
         </MenuGroup>
 
-        <MenuGroup title="链接">
+        <MenuGroup title={t("about.linksGroup")}>
           <MenuItem
             icon="language"
             iconBg="#007AFF"
-            label="官方网站"
+            label={t("about.website")}
             onPress={() => Linking.openURL("https://iwut.tokenteam.net")}
           />
           <MenuItem
             icon="code"
             iconBg="#333"
-            label="GitHub"
+            label={t("about.github")}
             onPress={() => Linking.openURL("https://github.com/tokenteam/iwut")}
           />
         </MenuGroup>

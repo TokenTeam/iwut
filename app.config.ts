@@ -61,6 +61,9 @@ const config: ExpoConfig = {
     },
     predictiveBackGestureEnabled: false,
   },
+  locales: {
+    en: "./assets/locales/app-meta-en.json",
+  },
   plugins: [
     ...(IS_DEV ? ["expo-dev-client"] : []),
     "expo-router",
@@ -69,6 +72,15 @@ const config: ExpoConfig = {
     "expo-image",
     "expo-secure-store",
     "expo-sharing",
+    [
+      "expo-localization",
+      {
+        supportedLocales: {
+          ios: ["zh-Hans", "en"],
+          android: ["zh-Hans", "en"],
+        },
+      },
+    ],
     [
       "expo-splash-screen",
       {

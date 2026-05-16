@@ -13,8 +13,10 @@ import Toast from "react-native-toast-message";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
+import { BUILTIN_PALETTE_NAME_KEYS } from "@/constants/course-palettes";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useT } from "@/lib/i18n";
 import {
   deleteAppCalendar,
   syncCoursesToCalendar,
@@ -34,6 +36,7 @@ function isCropCancelled(error: unknown) {
 }
 
 export default function CalendarSettingsScreen() {
+  const t = useT();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
@@ -70,14 +73,14 @@ export default function CalendarSettingsScreen() {
         setCalendarSync(true);
         Toast.show({
           type: "success",
-          text1: "已同步到系统日历",
-          text2: `共写入 ${result.count} 条课程数据`,
+          text1: t("calendarSet.syncedToast"),
+          text2: t("calendarSet.syncedSub", { n: result.count }),
           position: "bottom",
         });
       } else {
         Toast.show({
           type: "error",
-          text1: "同步失败",
+          text1: t("calendarSet.syncFailed"),
           text2: result.error,
           position: "bottom",
         });
@@ -87,7 +90,7 @@ export default function CalendarSettingsScreen() {
       setCalendarSync(false);
       Toast.show({
         type: "success",
-        text1: "已从系统日历移除",
+        text1: t("calendarSet.syncRemoved"),
         position: "bottom",
       });
     }
@@ -129,8 +132,8 @@ export default function CalendarSettingsScreen() {
             : undefined,
         format: "jpeg",
         compressImageQuality: 0.85,
-        cancelButtonText: "取消",
-        doneButtonText: "完成",
+        cancelButtonText: t("calendarSet.bgPickerCancel"),
+        doneButtonText: t("calendarSet.bgPickerDone"),
       });
 
       tempCroppedUri = cropped.path;
@@ -143,15 +146,15 @@ export default function CalendarSettingsScreen() {
       setBackgroundImageUri(dest.uri);
       Toast.show({
         type: "success",
-        text1: "背景已设置",
+        text1: t("calendarSet.bgSetSuccess"),
         position: "bottom",
       });
     } catch (error) {
       if (isCropCancelled(error)) return;
       Toast.show({
         type: "error",
-        text1: "背景设置失败",
-        text2: "图片裁剪或保存时出现问题",
+        text1: t("calendarSet.bgSetFailed"),
+        text2: t("calendarSet.bgSetFailedSub"),
         position: "bottom",
       });
     } finally {
@@ -169,31 +172,42 @@ export default function CalendarSettingsScreen() {
     await deleteOldBg(backgroundImageUri);
     setBackgroundImageUri(null);
     setShowBgPicker(false);
-    Toast.show({ type: "success", text1: "背景已移除", position: "bottom" });
+    Toast.show({
+      type: "success",
+      text1: t("calendarSet.bgRemoved"),
+      position: "bottom",
+    });
   };
+
+  const paletteKey = BUILTIN_PALETTE_NAME_KEYS[colorPalette.name];
+  const paletteDisplayName = paletteKey ? t(paletteKey) : colorPalette.name;
 
   return (
     <>
-      <Stack.Screen options={{ title: "课表设置" }} />
+      <Stack.Screen options={{ title: t("calendarSet.title") }} />
       <ScrollView
         className="flex-1 bg-neutral-100 dark:bg-neutral-900"
         contentContainerClassName="px-4 pt-4 pb-8"
       >
-        <MenuGroup title="课程">
+        <MenuGroup title={t("calendarSet.courseGroup")}>
           <MenuItem
             icon="school"
             iconBg="#34C759"
-            label="课程管理"
-            value={courseCount > 0 ? `${courseCount} 门课` : "暂无课程"}
+            label={t("calendarSet.courseManage")}
+            value={
+              courseCount > 0
+                ? t("calendarSet.courseCount", { n: courseCount })
+                : t("calendarSet.noCourses")
+            }
             href="/settings/course/manage"
           />
         </MenuGroup>
 
-        <MenuGroup title="显示">
+        <MenuGroup title={t("calendarSet.displayGroup")}>
           <MenuItem
             icon="swap-horiz"
             iconBg="#007AFF"
-            label="周末课表滚动查看"
+            label={t("calendarSet.scrollWeekend")}
             showArrow={false}
             right={
               <Switch value={scrollWeekend} onValueChange={setScrollWeekend} />
@@ -202,17 +216,17 @@ export default function CalendarSettingsScreen() {
           <MenuItem
             icon="wb-sunny"
             iconBg="#FF9500"
-            label="显示中课"
+            label={t("calendarSet.showMidday")}
             showArrow={false}
             right={<Switch value={showMidday} onValueChange={setShowMidday} />}
           />
         </MenuGroup>
 
-        <MenuGroup title="同步">
+        <MenuGroup title={t("calendarSet.syncGroup")}>
           <MenuItem
             icon="event"
             iconBg="#FF9500"
-            label="同步到系统日历"
+            label={t("calendarSet.syncCalendar")}
             showArrow={false}
             right={
               syncing ? (
@@ -227,19 +241,23 @@ export default function CalendarSettingsScreen() {
           />
         </MenuGroup>
 
-        <MenuGroup title="个性化">
+        <MenuGroup title={t("calendarSet.customGroup")}>
           <MenuItem
             icon="palette"
             iconBg="#5856D6"
-            label="配色方案"
-            value={colorPalette.name}
+            label={t("calendarSet.palette")}
+            value={paletteDisplayName}
             href="/settings/course/palette"
           />
           <MenuItem
             icon="image"
             iconBg="#FF2D55"
-            label="课表背景"
-            value={backgroundImageUri ? "已设置" : "无"}
+            label={t("calendarSet.bg")}
+            value={
+              backgroundImageUri
+                ? t("calendarSet.bgSet")
+                : t("calendarSet.bgNone")
+            }
             onPress={() => setShowBgPicker(true)}
           />
         </MenuGroup>
@@ -248,7 +266,7 @@ export default function CalendarSettingsScreen() {
       <BottomSheet
         visible={showBgPicker}
         onClose={() => setShowBgPicker(false)}
-        title="课表背景"
+        title={t("calendarSet.bgSheetTitle")}
       >
         <Pressable
           className="flex-row items-center px-5 py-3.5 active:bg-neutral-100 dark:active:bg-neutral-700"
@@ -256,7 +274,7 @@ export default function CalendarSettingsScreen() {
         >
           <IconSymbol name="photo-library" size={22} color={iconColor} />
           <Text className="ml-3 flex-1 text-base text-neutral-800 dark:text-neutral-200">
-            从相册选择
+            {t("calendarSet.bgPickFromAlbum")}
           </Text>
         </Pressable>
         {backgroundImageUri && (
@@ -265,7 +283,9 @@ export default function CalendarSettingsScreen() {
             onPress={handleRemoveBg}
           >
             <IconSymbol name="delete-outline" size={22} color="#ef4444" />
-            <Text className="ml-3 flex-1 text-base text-red-500">移除背景</Text>
+            <Text className="ml-3 flex-1 text-base text-red-500">
+              {t("calendarSet.bgRemove")}
+            </Text>
           </Pressable>
         )}
       </BottomSheet>

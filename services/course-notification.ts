@@ -2,6 +2,8 @@ import * as BackgroundTask from "expo-background-task";
 import * as TaskManager from "expo-task-manager";
 import { Platform } from "react-native";
 
+import { getCurrentWeek, getTermWeekMonday } from "@/lib/date";
+import { t } from "@/lib/i18n";
 import {
   cancelAll,
   createChannel,
@@ -11,7 +13,6 @@ import {
 import { SECTION_TIMES } from "@/services/course-time";
 import { useCourseStore } from "@/store/course";
 import { useSettingsStore } from "@/store/settings";
-import { getCurrentWeek, getTermWeekMonday } from "@/lib/date";
 
 const CHANNEL_ID = "course_reminder";
 const BACKGROUND_TASK_NAME = "course-reminder-refresh";
@@ -48,7 +49,14 @@ export async function unregisterBackgroundRefresh(): Promise<void> {
 
 export async function initNotificationChannel(): Promise<void> {
   if (Platform.OS === "android") {
-    await createChannel(CHANNEL_ID, "课程提醒", "在课程开始前显示倒计时通知");
+    // Android caches the channel name/description after first creation, so
+    // language changes won't update an already-created channel. Fresh installs
+    // (or new channels) still pick up the current locale.
+    await createChannel(
+      CHANNEL_ID,
+      t("notif.channelName"),
+      t("notif.channelDesc"),
+    );
   }
 }
 
