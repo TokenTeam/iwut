@@ -15,3 +15,7 @@ branch:
                 value: preview
               - name: Production
                 value: production
+  - reg: ^main$
+    buttons:
+      - name: OTA Update
+        event: web_trigger_ota

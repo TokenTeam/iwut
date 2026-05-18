@@ -29,6 +29,21 @@ main:
             bun install --frozen-lockfile
             bun run lint
 
+  web_trigger_ota:
+    - docker:
+        image: docker.cnb.cool/zhxycn/env:latest
+        volumes:
+          - /root/.bun/install/cache:copy-on-write
+          - node_modules:copy-on-write
+      imports:
+        - https://cnb.cool/TokenTeam/secrets/-/blob/main/expo.yml
+      stages:
+        - script: |
+            export BUN_INSTALL="$HOME/.bun"
+            export PATH="$BUN_INSTALL/bin:$PATH"
+            bun install --frozen-lockfile
+            bash scripts/ota-update.sh --token "$OTA_TOKEN"
+
 "**":
   web_trigger_job:
     - runner:
