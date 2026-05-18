@@ -41,6 +41,12 @@ const SECTIONS: Section[] = [
         uri: "https://classroom-iwut.tokenteam.net",
       },
       {
+        icon: "easel-outline",
+        labelKey: "fn.app.icSpace",
+        color: "#06b6d4",
+        uri: "https://zhlgd.whut.edu.cn/tpass/login?service=https%3A%2F%2Fzw.whut.edu.cn%2Frem%2Fstatic%2Fsso%2FwebOAuthRed",
+      },
+      {
         icon: "school-outline",
         labelKey: "fn.app.jwxt",
         color: "#8b5cf6",
