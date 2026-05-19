@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import { useState } from "react";
 import {
   Linking,
@@ -6,6 +7,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -171,7 +173,13 @@ export function UpdateModal() {
       statusBarTranslucent
       onRequestClose={handleClose}
     >
-      <View className="flex-1 items-center justify-center bg-black/50 px-6">
+      <View className="flex-1 items-center justify-center px-6">
+        <BlurView
+          intensity={30}
+          tint="dark"
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
         <Pressable
           className="absolute inset-0"
           onPress={hardBlock ? undefined : handleClose}

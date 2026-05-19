@@ -14,6 +14,7 @@
         "@tailwindcss/postcss": "^4.3.0",
         "expo": "~56.0.0-preview.12",
         "expo-background-task": "~56.0.9",
+        "expo-blur": "~56.0.3",
         "expo-build-properties": "~56.0.9",
         "expo-calendar": "~56.0.5",
         "expo-clipboard": "~56.0.3",
@@ -905,6 +906,8 @@
     "expo-asset": ["expo-asset@56.0.10", "https://mirrors.cloud.tencent.com/npm/expo-asset/-/expo-asset-56.0.10.tgz", { "dependencies": { "@expo/image-utils": "^0.9.3", "expo-constants": "~56.0.11" }, "peerDependencies": { "expo": "*", "react": "*", "react-native": "*" } }, "sha512-Jj+zPmRIwpTa/JB5DeTWjrKGrGvehCknEUC1Ovr5K8d3hG6CViJJgv/UXtF5ekgXDuX9y7pBETRhD4cUiedgeQ=="],
 
     "expo-background-task": ["expo-background-task@56.0.9", "https://mirrors.cloud.tencent.com/npm/expo-background-task/-/expo-background-task-56.0.9.tgz", { "dependencies": { "expo-task-manager": "~56.0.9" }, "peerDependencies": { "expo": "*" } }, "sha512-ODfm4bYguWXbV/uyikburtflPiM7+DNjd5H8IXt02FdKoLkyAfuSkm5tC0JE3QoLOH2bpPpcpp9S5cboTHbElA=="],
+
+    "expo-blur": ["expo-blur@56.0.3", "https://mirrors.cloud.tencent.com/npm/expo-blur/-/expo-blur-56.0.3.tgz", { "peerDependencies": { "expo": "*", "react": "*", "react-native": "*" } }, "sha512-KDDtrpWc2tYlm1WCPaOgBtv+YEGqe5ELheFPIgSNgHt28NQUDcfBcFsA9Us2StDh6osmSD6NbKxOt5bU6PcDbQ=="],
 
     "expo-build-properties": ["expo-build-properties@56.0.9", "https://mirrors.cloud.tencent.com/npm/expo-build-properties/-/expo-build-properties-56.0.9.tgz", { "dependencies": { "@expo/schema-utils": "^56.0.0", "resolve-from": "^5.0.0", "semver": "^7.6.0" }, "peerDependencies": { "expo": "*" } }, "sha512-g1+USfzicS7cnlvVi6Mua5ZVf3Z2KpneTVMN817t8fbXw/WYSF8619hmvVVJFWsdma6uBw1Z4S6Gm3zxaAncIg=="],
 
