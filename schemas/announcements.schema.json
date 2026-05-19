@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://raw.githubusercontent.com/TokenTeam/iwut/main/schemas/announcements.schema.json",
   "title": "iwut Announcements",
-  "description": "iwut 主页公告位的远程配置文件结构。内容仓库见 https://github.com/TokenTeam/iwut-config",
+  "description": "iwut 主页公告位的远程配置文件结构。内容仓库见 https://cnb.cool/TokenTeam/iwut-config",
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "announcements"],

@@ -2,12 +2,10 @@ import * as Clipboard from "expo-clipboard";
 import Constants from "expo-constants";
 import { Image } from "expo-image";
 import { Stack } from "expo-router";
-import * as Updates from "expo-updates";
 import { useCallback } from "react";
 import {
   ActivityIndicator,
   Linking,
-  Platform,
   ScrollView,
   Text,
   View,
@@ -34,6 +32,7 @@ export default function AboutScreen() {
   const latestVersion = useUpdateStore((s) => s.latestVersion);
   const checking = useUpdateStore((s) => s.checking);
   const check = useUpdateStore((s) => s.check);
+  const openUpdateModal = useUpdateStore((s) => s.openModal);
 
   const copyToClipboard = useCallback(
     async (label: string, value: string) => {
@@ -48,27 +47,10 @@ export default function AboutScreen() {
   );
 
   const handleCheckUpdate = useCallback(async () => {
-    await check();
-    const { hasUpdate: updated, latestVersion: latest } =
-      useUpdateStore.getState();
+    await check({ force: true });
+    const { hasUpdate: updated } = useUpdateStore.getState();
     if (updated) {
-      Toast.show({
-        type: "info",
-        text1: t("about.newVersionFound"),
-        text2: t("about.newVersionTip", { v: latest ?? "" }),
-        position: "bottom",
-        onPress: () => {
-          if (Platform.OS === "ios") {
-            Linking.openURL("itms-apps://apps.apple.com/cn/app/id6761684977");
-          } else {
-            const channel = Updates.channel || "production";
-            Linking.openURL(
-              `https://download.tokenteam.dev/iwut/${latest}/${channel}.apk`,
-            );
-          }
-          Toast.hide();
-        },
-      });
+      openUpdateModal();
     } else {
       Toast.show({
         type: "success",
@@ -76,7 +58,7 @@ export default function AboutScreen() {
         position: "bottom",
       });
     }
-  }, [check, t]);
+  }, [check, openUpdateModal, t]);
 
   return (
     <>

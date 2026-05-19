@@ -308,6 +308,21 @@
     "website": "官方网站",
     "github": "GitHub"
   },
+  "update": {
+    "modalTitleDefault": "新版本 v{v}",
+    "highlightsTitle": "本次更新",
+    "newVersionTipNoChangelog": "v{v} 已发布，建议立即更新",
+    "viewFullChangelog": "查看完整更新日志",
+    "actionUpdate": "立即更新",
+    "actionLater": "稍后再说",
+    "requiredBadge": "重要更新",
+    "requiredReasonTitle": "为什么必须升级",
+    "requiredRemaining": "本次更新建议立即升级（还可忽略 {n} 次）",
+    "requiredExhausted": "已达忽略上限，请立即升级以继续使用",
+    "hardBlockTitle": "需要升级",
+    "hardBlockDesc": "当前版本过低或已被弃用，请升级到 v{v} 后继续使用",
+    "downloadFailed": "无法打开下载链接，请稍后再试"
+  },
   "sms": {
     "title": "短信验证码",
     "sentTo": "验证码已发送至手机尾号 {tail}",

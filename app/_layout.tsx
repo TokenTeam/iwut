@@ -38,6 +38,7 @@ import {
 } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
+import { UpdateModal } from "@/components/ui/update-modal";
 import { Themes } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { refreshSystemLocale } from "@/lib/i18n";
@@ -156,6 +157,7 @@ function RootLayout() {
           </Stack>
           <StatusBar style="auto" />
           <Toast />
+          <UpdateModal />
         </ThemeProvider>
       </View>
     </SafeAreaProvider>
