@@ -308,6 +308,21 @@
     "website": "Website",
     "github": "GitHub"
   },
+  "update": {
+    "modalTitleDefault": "New version v{v}",
+    "highlightsTitle": "What's new",
+    "newVersionTipNoChangelog": "v{v} is out — tap update to install",
+    "viewFullChangelog": "View full changelog",
+    "actionUpdate": "Update now",
+    "actionLater": "Remind me later",
+    "requiredBadge": "Critical update",
+    "requiredReasonTitle": "Why upgrade is required",
+    "requiredRemaining": "Please update soon ({n} skips left)",
+    "requiredExhausted": "Skip limit reached. Please update now to continue.",
+    "hardBlockTitle": "Update required",
+    "hardBlockDesc": "Your version is too old or no longer supported. Please update to v{v} to continue.",
+    "downloadFailed": "Could not open the download link. Please try again."
+  },
   "sms": {
     "title": "SMS verification code",
     "sentTo": "Code sent to phone ending in {tail}",

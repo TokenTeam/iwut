@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   LayoutChangeEvent,
@@ -131,12 +130,12 @@ export default function HomeScreen() {
   const t = useT();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const router = useRouter();
   const haptic = useHaptics();
   const { width: screenWidth } = useWindowDimensions();
   const courses = useCourseStore((s) => s.courses);
   const termStart = useCourseStore((s) => s.termStart);
   const hasUpdate = useUpdateStore((s) => s.hasUpdate);
+  const openUpdateModal = useUpdateStore((s) => s.openModal);
   const colorPalette = useScheduleStore((s) => s.colorPalette);
   const courseColorOverrides = useScheduleStore((s) => s.courseColorOverrides);
   const announcements = useAnnouncementStore((s) => s.announcements);
@@ -351,7 +350,10 @@ export default function HomeScreen() {
             {hasUpdate && (
               <Pressable
                 className="relative p-1 active:opacity-60"
-                onPress={() => router.push("/about" as any)}
+                onPress={() => {
+                  haptic();
+                  openUpdateModal();
+                }}
               >
                 <Ionicons
                   name="arrow-up-circle-outline"

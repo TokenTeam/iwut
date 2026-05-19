@@ -1,0 +1,193 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/TokenTeam/iwut/main/schemas/update.schema.json",
+  "title": "iwut Update Manifest",
+  "description": "iwut 客户端的远程版本更新清单。内容仓库见 https://cnb.cool/TokenTeam/iwut-config",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "channels"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "version": {
+      "type": "integer",
+      "description": "协议版本号；字段语义发生不兼容变化时 +1。老客户端遇到不认识的 version 应放弃解析",
+      "const": 1
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "文件最后更新时间（ISO 8601 / UTC），便于排查 CDN 缓存。客户端不依赖此字段做业务判断"
+    },
+    "channels": {
+      "type": "object",
+      "description": "按发布通道组织（与 EAS Updates / APK 下载链接里的 channel 概念一致）。客户端默认读取 \"production\"，可由 expo-updates 的 channel 决定",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/definitions/channel" }
+    }
+  },
+  "definitions": {
+    "channel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["latestVersion", "releases"],
+      "properties": {
+        "latestVersion": {
+          "type": "string",
+          "description": "当前通道的最新版本号；客户端低于此版本即视为有更新",
+          "pattern": "^\\d+(\\.\\d+){0,2}$"
+        },
+        "minSupportedVersion": {
+          "type": ["string", "null"],
+          "description": "硬下限。低于此版本的客户端会被强制阻断（无法忽略），需立即升级。null 或省略表示无下限",
+          "pattern": "^\\d+(\\.\\d+){0,2}$"
+        },
+        "releases": {
+          "type": "array",
+          "description": "版本发布列表。客户端会取 (本地版本, latestVersion] 区间内全部条目，合并展示 changelog，并以最高强度作为生效 level",
+          "items": { "$ref": "#/definitions/release" }
+        }
+      }
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "level"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "该条 release 对应的版本号",
+          "pattern": "^\\d+(\\.\\d+){0,2}$"
+        },
+        "level": {
+          "type": "string",
+          "description": "更新强度。silent = 首页红点（被动）；recommended = 启动弹窗，可\"稍后再说\"；required = 启动弹窗，最多可忽略 3 次，第 4 次起强制升级",
+          "enum": ["silent", "recommended", "required"]
+        },
+        "reason": {
+          "description": "level=required 时必填：向用户解释\"为什么必须升级\"。允许多语言",
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/definitions/localizedString" }
+          ]
+        },
+        "releasedAt": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "发布时间（ISO 8601 / UTC），用于灰度起始判断；null 或省略表示立即生效"
+        },
+        "platforms": {
+          "type": "array",
+          "description": "限定生效平台；省略或为空数组表示全平台",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["ios", "android", "web"]
+          }
+        },
+        "title": {
+          "description": "弹窗主标题；省略时客户端用默认文案 \"新版本 vX.Y.Z\"",
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/definitions/localizedString" }
+          ]
+        },
+        "highlights": {
+          "description": "高亮列表，建议 3–5 条短文案，用于弹窗主体",
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/definitions/localizedStringArray" }
+          ]
+        },
+        "changelog": {
+          "description": "完整 changelog，markdown 文本，可在弹窗内\"查看完整更新日志\"展开",
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/definitions/localizedString" }
+          ]
+        },
+        "downloadUrl": {
+          "description": "覆盖默认下载地址。客户端按平台选择 ios / android 字段；省略时使用客户端内置 fallback",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "ios": {
+                  "type": "string",
+                  "description": "iOS 下载入口，通常是 itms-apps:// 或 https://apps.apple.com/...",
+                  "minLength": 1
+                },
+                "android": {
+                  "type": "string",
+                  "description": "Android APK 直链或落地页",
+                  "format": "uri",
+                  "pattern": "^https?://"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": ["level"],
+            "properties": { "level": { "const": "required" } }
+          },
+          "then": {
+            "required": ["reason"],
+            "properties": {
+              "reason": { "$ref": "#/definitions/localizedString" }
+            }
+          }
+        }
+      ]
+    },
+    "localizedString": {
+      "description": "本地化字符串。可以是单一字符串（所有语言相同），或按语言代码（zh / en / ...）分别提供。客户端按用户当前 i18n 语言选择，缺失时回退到 zh",
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        {
+          "type": "object",
+          "required": ["zh"],
+          "properties": {
+            "zh": { "type": "string", "minLength": 1 },
+            "en": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        }
+      ]
+    },
+    "localizedStringArray": {
+      "description": "本地化字符串数组。可以是字符串数组（所有语言相同），或按语言代码分别提供",
+      "oneOf": [
+        {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        {
+          "type": "object",
+          "required": ["zh"],
+          "properties": {
+            "zh": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 }
+            },
+            "en": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 }
+            }
+          },
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
+    }
+  }
+}

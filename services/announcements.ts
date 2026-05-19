@@ -166,10 +166,17 @@ export async function fetchAnnouncements(): Promise<Announcement[]> {
 }
 
 export function isNetworkError(err: unknown): boolean {
-  return (
-    (err instanceof DOMException && err.name === "AbortError") ||
-    err instanceof TypeError
-  );
+  if (typeof DOMException !== "undefined" && err instanceof DOMException) {
+    return err.name === "AbortError";
+  }
+  if (
+    err &&
+    typeof err === "object" &&
+    (err as { name?: string }).name === "AbortError"
+  ) {
+    return true;
+  }
+  return err instanceof TypeError;
 }
 
 export function filterActiveAnnouncements(
