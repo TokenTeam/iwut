@@ -1,4 +1,14 @@
-import * as Calendar from "expo-calendar";
+import {
+  CalendarAccessLevel,
+  createCalendar,
+  EntityTypes,
+  type ExpoCalendar,
+  type ExpoCalendarEvent,
+  getCalendars,
+  getDefaultCalendarSync,
+  requestCalendarPermissions,
+  SourceType,
+} from "expo-calendar/next";
 import { Platform } from "react-native";
 
 import { getTermWeekMonday } from "@/lib/date";
@@ -13,65 +23,75 @@ function getCalendarTitle(): string {
   return t("calSync.title");
 }
 const CALENDAR_COLOR = "#007AFF";
+// Android 上用作 ACCOUNT_NAME / OWNER_ACCOUNT 的固定标识，使用 ASCII 字符以
+// 避开部分 OEM Calendar Provider 对非 ASCII 账户名的隐式拒绝。
+const APP_ACCOUNT_NAME = "iwut.tokenteam.dev";
+// Android Calendars.NAME 与 Calendar.title 独立，便于多语言切换后定位。
+const CALENDAR_INTERNAL_NAME = "iwut_schedule";
 
 export async function requestCalendarPermission(): Promise<boolean> {
-  const { status } = await Calendar.requestCalendarPermissionsAsync();
+  const { status } = await requestCalendarPermissions();
   return status === "granted";
 }
 
-async function findAppCalendar(): Promise<string | null> {
-  const calendars = await Calendar.getCalendarsAsync(
-    Calendar.EntityTypes.EVENT,
-  );
-  // Match by either the current locale's title or the legacy zh title so we
-  // can clean up stale calendars after a language switch.
-  const candidates = new Set([t("calSync.title"), "掌上吾理-我的课表"]);
-  const found = calendars.find((c) => candidates.has(c.title ?? ""));
-  return found?.id ?? null;
+function isAppCalendar(c: ExpoCalendar): boolean {
+  if (Platform.OS === "android") {
+    return (
+      c.name === CALENDAR_INTERNAL_NAME || c.source?.name === APP_ACCOUNT_NAME
+    );
+  }
+  return (c.title ?? "") === t("calSync.title");
 }
 
-async function createAppCalendar(): Promise<string> {
+async function findAppCalendars(): Promise<ExpoCalendar[]> {
+  const calendars = await getCalendars(EntityTypes.EVENT);
+  return calendars.filter(isAppCalendar);
+}
+
+async function deleteCalendarSafe(calendar: ExpoCalendar): Promise<void> {
+  try {
+    await calendar.delete();
+  } catch {
+    // 清理动作不应阻塞主流程
+  }
+}
+
+async function createAppCalendar(): Promise<ExpoCalendar> {
   const title = getCalendarTitle();
   if (Platform.OS === "ios") {
-    const defaultCalendar = await Calendar.getDefaultCalendarAsync();
-    const id = await Calendar.createCalendarAsync({
+    const defaultCalendar = getDefaultCalendarSync();
+    return createCalendar({
       title,
       color: CALENDAR_COLOR,
-      entityType: Calendar.EntityTypes.EVENT,
+      entityType: EntityTypes.EVENT,
       sourceId: defaultCalendar.source.id,
       source: defaultCalendar.source,
       name: title,
       ownerAccount: "personal",
-      accessLevel: Calendar.CalendarAccessLevel.OWNER,
+      accessLevel: CalendarAccessLevel.OWNER,
     });
-    return id;
   }
 
-  // Android 需要找到一个可用的 local source
-  const calendars = await Calendar.getCalendarsAsync(
-    Calendar.EntityTypes.EVENT,
-  );
-  const localSource = calendars.find(
-    (c) => c.source && c.source.isLocalAccount,
-  )?.source;
-
-  const id = await Calendar.createCalendarAsync({
+  // Android 固定使用 ASCII ACCOUNT_NAME + LOCAL source，并显式开启 isVisible /
+  // isSynced / allowsModifications。Android 文档建议这些字段为 true，避免 Calendar
+  // Provider 行为异常；同时使用 ASCII OWNER_ACCOUNT 与 source.name 保持一致，便于
+  // 多语言切换后通过 source.name 重新定位本应用的日历。
+  return createCalendar({
     title,
+    name: CALENDAR_INTERNAL_NAME,
     color: CALENDAR_COLOR,
-    entityType: Calendar.EntityTypes.EVENT,
-    sourceId: localSource?.id,
-    source:
-      localSource ??
-      ({
-        isLocalAccount: true,
-        name: title,
-        type: Calendar.SourceType?.LOCAL ?? ("LOCAL" as Calendar.SourceType),
-      } as Calendar.Source),
-    name: title,
-    ownerAccount: "personal",
-    accessLevel: Calendar.CalendarAccessLevel.OWNER,
+    entityType: EntityTypes.EVENT,
+    source: {
+      isLocalAccount: true,
+      name: APP_ACCOUNT_NAME,
+      type: SourceType?.LOCAL ?? ("LOCAL" as SourceType),
+    },
+    ownerAccount: APP_ACCOUNT_NAME,
+    accessLevel: CalendarAccessLevel.OWNER,
+    isVisible: true,
+    isSynced: true,
+    allowsModifications: true,
   });
-  return id;
 }
 
 function formatLocation(room: string | undefined): string | undefined {
@@ -98,6 +118,14 @@ function buildEventDate(
   return date;
 }
 
+function formatEventDateForReport(value: unknown): string {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return new Date(value).toISOString();
+  }
+  return String(value);
+}
+
 export async function syncCoursesToCalendar(): Promise<{
   success: boolean;
   count: number;
@@ -113,14 +141,16 @@ export async function syncCoursesToCalendar(): Promise<{
     return { success: false, count: 0, error: t("calSync.errNoData") };
   }
 
-  try {
-    // 每次同步先删除旧日历再重建
-    const existingId = await findAppCalendar();
-    if (existingId) {
-      await Calendar.deleteCalendarAsync(existingId);
-    }
+  // 每次同步先彻底清理旧日历再重建
+  const stale = await findAppCalendars();
+  for (const cal of stale) {
+    await deleteCalendarSafe(cal);
+  }
 
-    const calendarId = await createAppCalendar();
+  let calendar: ExpoCalendar | null = null;
+
+  try {
+    calendar = await createAppCalendar();
 
     if (Platform.OS === "android") {
       await new Promise((r) => setTimeout(r, 200));
@@ -132,35 +162,50 @@ export async function syncCoursesToCalendar(): Promise<{
       const events = createEventsForCourse(course, termStart);
       for (const eventData of events) {
         try {
-          await Calendar.createEventAsync(calendarId, eventData);
+          await calendar.createEvent(eventData);
           count++;
         } catch (e) {
           if (!reported) {
-            // 避免重复上报
+            // 仅上报首个失败事件，附带足以定位的上下文
             reported = true;
             reportError(e, {
               module: "calendar-sync",
               course: course.name,
               day: course.day,
               section: `${course.sectionStart}-${course.sectionEnd}`,
+              calendarId: calendar.id,
+              startDate: formatEventDateForReport(eventData.startDate),
+              endDate: formatEventDateForReport(eventData.endDate),
+              timeZone: eventData.timeZone,
+              platform: Platform.OS,
+              platformVersion: String(Platform.Version),
             });
           }
         }
       }
     }
 
-    if (count === 0 && reported) {
+    if (count === 0) {
+      // 彻底失败时应删掉空日历
+      await deleteCalendarSafe(calendar);
       return { success: false, count: 0, error: t("calSync.errWriteFail") };
     }
     return { success: true, count };
   } catch (e) {
-    reportError(e, { module: "calendar-sync" });
+    reportError(e, {
+      module: "calendar-sync",
+      platform: Platform.OS,
+      platformVersion: String(Platform.Version),
+    });
+    if (calendar) {
+      await deleteCalendarSafe(calendar);
+    }
     const msg = e instanceof Error ? e.message : t("calSync.errUnknown");
     return { success: false, count: 0, error: msg };
   }
 }
 
-type EventInput = Omit<Partial<Calendar.Event>, "id" | "organizer">;
+type EventInput = Omit<Partial<ExpoCalendarEvent>, "id" | "organizer">;
 
 function createEventsForCourse(
   course: Course,
@@ -190,10 +235,9 @@ function createEventsForCourse(
     events.push({
       title: course.name,
       location: formatLocation(course.room),
-      // 传递毫秒时间戳而非 Date 对象，原生层直接作为 Long/Double 使用，
-      // 避免 ISO 字符串经 SimpleDateFormat 解析在部分 OEM 设备上丢失 DTSTART
-      startDate: startDate.getTime() as unknown as Date,
-      endDate: endDate.getTime() as unknown as Date,
+      // next API 会把 Date 转成 ISO 字符串；Android 原生 EventInputRecord 需要 string。
+      startDate,
+      endDate,
       alarms: [{ relativeOffset: -15 }],
       notes: course.teacher
         ? t("calSync.teacherNotes", { teacher: course.teacher })
@@ -209,8 +253,8 @@ export async function deleteAppCalendar(): Promise<void> {
   const hasPermission = await requestCalendarPermission();
   if (!hasPermission) return;
 
-  const calendarId = await findAppCalendar();
-  if (calendarId) {
-    await Calendar.deleteCalendarAsync(calendarId);
+  const calendars = await findAppCalendars();
+  for (const cal of calendars) {
+    await deleteCalendarSafe(cal);
   }
 }
