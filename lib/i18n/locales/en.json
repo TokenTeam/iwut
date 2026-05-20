@@ -50,6 +50,11 @@
   },
   "course": {
     "selectImportType": "Choose import type",
+    "drawer": {
+      "manage": "Courses",
+      "reimport": "Re-import",
+      "settings": "Schedule settings"
+    },
     "bachelor": "Undergraduate",
     "master": "Postgraduate",
     "needBindTitle": "Link your iWUT account first",
@@ -61,6 +66,7 @@
     "importSuccessSub": "Nice!",
     "importFail": "Import failed",
     "importFailSub": "Please check your connection and try again",
+    "importCancelled": "Import cancelled",
     "smsCancelled": "SMS verification cancelled",
     "importTimeout": "Request timed out, check your connection and retry",
     "parseFailed": "Failed to parse timetable data",
@@ -91,7 +97,31 @@
     "weeks": "Weeks",
     "weeksValue": "Weeks {start}-{end}",
     "time": "Time",
-    "countdownEndTag": "end"
+    "countdownEndTag": "end",
+    "slotListTitle": "Courses at this slot",
+    "slotCountValue": "{n} courses",
+    "otherWeekTag": "Other week",
+    "editCourse": "Edit course",
+    "addAtSameSlot": "Add course",
+    "quickAdd": {
+      "title": "Add course",
+      "namePlaceholder": "Course name",
+      "roomPlaceholder": "Room",
+      "teacherPlaceholder": "Teacher",
+      "addTeacher": "Add teacher",
+      "weeksLabel": "Weeks",
+      "weeksOnlyCurrent": "This week",
+      "weeksToEnd": "To end of term",
+      "weeksAll": "All weeks",
+      "presetsNotEnough": "Need more? Use custom editor",
+      "save": "Add",
+      "added": "Added",
+      "needName": "Please enter a course name",
+      "needWeeks": "Please pick week range",
+      "conflictTitle": "Slot conflict",
+      "conflictDesc": "Week {weeks} already has a course at this slot. Adding will cause multiple courses overlapping.",
+      "conflictConfirm": "Add anyway"
+    }
   },
   "fn": {
     "title": "Apps",
@@ -176,6 +206,7 @@
     "displayGroup": "Display",
     "scrollWeekend": "Scroll horizontally on weekends",
     "showMidday": "Show midday periods",
+    "showOtherWeek": "Show other week courses",
     "syncGroup": "Sync",
     "syncCalendar": "Sync to system calendar",
     "syncedToast": "Synced to system calendar",

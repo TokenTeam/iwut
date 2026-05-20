@@ -333,7 +333,7 @@ export default function HomeScreen() {
   ];
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 32, flexGrow: 1 }}

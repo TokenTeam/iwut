@@ -50,6 +50,11 @@
   },
   "course": {
     "selectImportType": "选择导入类型",
+    "drawer": {
+      "manage": "课程管理",
+      "reimport": "重新导入",
+      "settings": "课表设置"
+    },
     "bachelor": "本科生",
     "master": "研究生",
     "needBindTitle": "请先绑定智慧理工大账号",
@@ -61,6 +66,7 @@
     "importSuccessSub": "好耶！",
     "importFail": "导入失败",
     "importFailSub": "请检查网络连接并重试",
+    "importCancelled": "已取消导入",
     "smsCancelled": "已取消短信验证",
     "importTimeout": "加载超时，请检查网络连接并重试",
     "parseFailed": "课表数据解析失败",
@@ -91,7 +97,31 @@
     "weeks": "周次",
     "weeksValue": "第 {start}-{end} 周",
     "time": "时间",
-    "countdownEndTag": "end"
+    "countdownEndTag": "end",
+    "slotListTitle": "该时段课程",
+    "slotCountValue": "共 {n} 门",
+    "otherWeekTag": "非本周",
+    "editCourse": "编辑课程",
+    "addAtSameSlot": "添加课程",
+    "quickAdd": {
+      "title": "添加课程",
+      "namePlaceholder": "输入课程名",
+      "roomPlaceholder": "教室",
+      "teacherPlaceholder": "教师",
+      "addTeacher": "添加教师",
+      "weeksLabel": "周次",
+      "weeksOnlyCurrent": "仅本周",
+      "weeksToEnd": "到学期末",
+      "weeksAll": "全部",
+      "presetsNotEnough": "预设不够？去自定义",
+      "save": "添加",
+      "added": "已添加",
+      "needName": "请输入课程名",
+      "needWeeks": "请选择周次",
+      "conflictTitle": "时段冲突",
+      "conflictDesc": "第 {weeks} 周该时段已有课程，仍要添加会导致同一时段出现多门课。",
+      "conflictConfirm": "仍要添加"
+    }
   },
   "fn": {
     "title": "功能",
@@ -176,6 +206,7 @@
     "displayGroup": "显示",
     "scrollWeekend": "周末课表滚动查看",
     "showMidday": "显示中课",
+    "showOtherWeek": "显示非本周课程",
     "syncGroup": "同步",
     "syncCalendar": "同步到系统日历",
     "syncedToast": "已同步到系统日历",

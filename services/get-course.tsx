@@ -407,7 +407,6 @@ export const GetCourse = forwardRef<GetCourseHandle>(
 
           const store = useCourseStore.getState();
           store.setImportedCourses(courses);
-          store.setLastImportType(importType);
           if (msg.termStart) store.setTermStart(msg.termStart);
           syncWidgetData().catch(() => {});
           finish(true);
@@ -434,7 +433,6 @@ export const GetCourse = forwardRef<GetCourseHandle>(
 
           const store = useCourseStore.getState();
           store.setImportedCourses(courses);
-          store.setLastImportType(importType);
           syncWidgetData().catch(() => {});
           finish(true);
         }
@@ -448,7 +446,12 @@ export const GetCourse = forwardRef<GetCourseHandle>(
       importType === "bachelor" ? BACHELOR_LOGIN_URL : MASTER_LOGIN_URL;
 
     return (
-      <Modal visible transparent animationType="fade">
+      <Modal
+        visible
+        transparent
+        animationType="fade"
+        onRequestClose={() => finish(false, t("course.importCancelled"))}
+      >
         <View style={{ flex: 1 }}>
           <View
             style={{
