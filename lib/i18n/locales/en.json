@@ -95,7 +95,26 @@
     "countdownEndTag": "end",
     "slotListTitle": "Courses at this slot",
     "slotCountValue": "{n} courses",
-    "otherWeekTag": "Other week"
+    "otherWeekTag": "Other week",
+    "editCourse": "Edit course",
+    "addAtSameSlot": "Add course",
+    "quickAdd": {
+      "title": "Add course",
+      "namePlaceholder": "Course name",
+      "roomPlaceholder": "Room",
+      "teacherPlaceholder": "Teacher",
+      "addTeacher": "Add teacher",
+      "weeksLabel": "Weeks",
+      "weeksOnlyCurrent": "This week",
+      "weeksToEnd": "To end of term",
+      "weeksAll": "All weeks",
+      "presetsNotEnough": "Need more? Use custom editor",
+      "save": "Add",
+      "added": "Added",
+      "needName": "Please enter a course name",
+      "needWeeks": "Please pick week range",
+      "conflict": "Week {weeks} already has a course; added anyway"
+    }
   },
   "fn": {
     "title": "Apps",

@@ -95,7 +95,26 @@
     "countdownEndTag": "end",
     "slotListTitle": "该时段课程",
     "slotCountValue": "共 {n} 门",
-    "otherWeekTag": "非本周"
+    "otherWeekTag": "非本周",
+    "editCourse": "编辑课程",
+    "addAtSameSlot": "添加课程",
+    "quickAdd": {
+      "title": "添加课程",
+      "namePlaceholder": "输入课程名",
+      "roomPlaceholder": "教室",
+      "teacherPlaceholder": "教师",
+      "addTeacher": "添加教师",
+      "weeksLabel": "周次",
+      "weeksOnlyCurrent": "仅本周",
+      "weeksToEnd": "到学期末",
+      "weeksAll": "全部",
+      "presetsNotEnough": "预设不够？去自定义",
+      "save": "添加",
+      "added": "已添加",
+      "needName": "请输入课程名",
+      "needWeeks": "请选择周次",
+      "conflict": "第 {weeks} 周已有课程，已覆盖式添加"
+    }
   },
   "fn": {
     "title": "功能",

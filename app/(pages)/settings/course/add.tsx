@@ -15,6 +15,7 @@ import {
 import Toast from "react-native-toast-message";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { MAX_SECTION, MAX_WEEK, weeksToRanges } from "@/lib/course-weeks";
 import { type TKey, useT } from "@/lib/i18n";
 import { type Course, useCourseStore } from "@/store/course";
 
@@ -27,8 +28,6 @@ const DAY_KEYS: TKey[] = [
   "schedule.weekday.sat",
   "schedule.weekday.sun",
 ];
-const MAX_WEEK = 20;
-const MAX_SECTION = 16;
 
 interface TimeSlot {
   day: number;
@@ -70,25 +69,6 @@ function recordsToSlots(records: Course[]): TimeSlot[] {
   return map.size > 0 ? [...map.values()] : [createEmptySlot()];
 }
 
-function weeksToRanges(weeks: Set<number>): [number, number][] {
-  const sorted = [...weeks].sort((a, b) => a - b);
-  if (sorted.length === 0) return [];
-  const ranges: [number, number][] = [];
-  let start = sorted[0];
-  let end = sorted[0];
-  for (let i = 1; i < sorted.length; i++) {
-    if (sorted[i] === end + 1) {
-      end = sorted[i];
-    } else {
-      ranges.push([start, end]);
-      start = sorted[i];
-      end = sorted[i];
-    }
-  }
-  ranges.push([start, end]);
-  return ranges;
-}
-
 function formatWeeks(
   weeks: Set<number>,
   notSelectedLabel: string,
@@ -105,7 +85,16 @@ function formatWeeks(
 export default function AddEditCourseScreen() {
   const t = useT();
   const router = useRouter();
-  const { name: editName } = useLocalSearchParams<{ name?: string }>();
+  const params = useLocalSearchParams<{
+    name?: string;
+    prefillName?: string;
+    prefillRoom?: string;
+    prefillTeacher?: string;
+    prefillDay?: string;
+    prefillSectionStart?: string;
+    prefillSectionEnd?: string;
+  }>();
+  const editName = params.name;
   const isEdit = !!editName;
 
   const scheme = useColorScheme();
@@ -124,17 +113,36 @@ export default function AddEditCourseScreen() {
     [editName, courses],
   );
 
-  const [name, setName] = useState(() =>
-    isEdit && existingRecords.length > 0 ? existingRecords[0].name : "",
-  );
-  const [teacher, setTeacher] = useState(() =>
-    isEdit && existingRecords.length > 0 ? existingRecords[0].teacher : "",
-  );
-  const [slots, setSlots] = useState<TimeSlot[]>(() =>
-    isEdit && existingRecords.length > 0
-      ? recordsToSlots(existingRecords)
-      : [createEmptySlot()],
-  );
+  const prefillSlot = useMemo<TimeSlot | null>(() => {
+    if (isEdit) return null;
+    const day = Number(params.prefillDay);
+    const ss = Number(params.prefillSectionStart);
+    const se = Number(params.prefillSectionEnd);
+    if (!day || !ss || !se) return null;
+    return {
+      day: Math.min(7, Math.max(1, day)),
+      sectionStart: ss,
+      sectionEnd: Math.max(ss, se),
+      room: params.prefillRoom ?? "",
+      weeks: new Set<number>(),
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEdit]);
+
+  const [name, setName] = useState(() => {
+    if (isEdit && existingRecords.length > 0) return existingRecords[0].name;
+    return params.prefillName ?? "";
+  });
+  const [teacher, setTeacher] = useState(() => {
+    if (isEdit && existingRecords.length > 0) return existingRecords[0].teacher;
+    return params.prefillTeacher ?? "";
+  });
+  const [slots, setSlots] = useState<TimeSlot[]>(() => {
+    if (isEdit && existingRecords.length > 0)
+      return recordsToSlots(existingRecords);
+    if (prefillSlot) return [prefillSlot];
+    return [createEmptySlot()];
+  });
   const [expandedIndex, setExpandedIndex] = useState<number | null>(() =>
     isEdit && existingRecords.length > 0 ? null : 0,
   );

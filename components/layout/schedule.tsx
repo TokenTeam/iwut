@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { useRouter } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   Modal,
@@ -18,6 +19,11 @@ import { t, useT } from "@/lib/i18n";
 import { formatCourseSectionTimeRange } from "@/services/course-time";
 import type { Course } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
+
+import {
+  QuickAddCourseModal,
+  type QuickAddSlot,
+} from "./quick-add-course-modal";
 
 const DAY_KEYS = [
   "schedule.weekday.mon",
@@ -43,7 +49,8 @@ const SECTION_GROUPS_FULL: number[][] = [
   [1, 2],
   [3, 4, 5],
   [6, 7],
-  [8, 9, 10, 11, 12],
+  [8, 9, 10],
+  [11, 12],
   [13],
   [14, 15, 16],
 ];
@@ -51,7 +58,8 @@ const SECTION_GROUPS_FULL: number[][] = [
 const SECTION_GROUPS_COMPACT: number[][] = [
   [1, 2],
   [3, 4, 5],
-  [8, 9, 10, 11, 12],
+  [8, 9, 10],
+  [11, 12],
   [14, 15, 16],
 ];
 
@@ -121,6 +129,22 @@ function getCourseColor(
   return paletteColors[(colorMap.get(courseName) ?? 0) % paletteColors.length];
 }
 
+// 把任意节次范围对齐到 section group 的边界，用于同时段加课预填。
+// 若 sectionStart 和 sectionEnd 落在不同 group，则取 [start所在group的首节, end所在group的尾节]。
+function alignToSectionGroup(
+  groups: number[][],
+  sectionStart: number,
+  sectionEnd: number,
+): { start: number; end: number } | null {
+  const startGroup = groups.find((g) => g.includes(sectionStart));
+  const endGroup = groups.find((g) => g.includes(sectionEnd));
+  if (!startGroup || !endGroup) return null;
+  return {
+    start: startGroup[0],
+    end: endGroup[endGroup.length - 1],
+  };
+}
+
 function buildDayCourses(courses: Course[]): Course[][] {
   const days: Course[][] = Array.from({ length: 7 }, () => []);
   for (const c of courses) {
@@ -170,11 +194,13 @@ export function Schedule({
   termStart?: string;
 }>) {
   const localT = useT();
+  const router = useRouter();
   const { width: screenWidth } = useWindowDimensions();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const [selected, setSelected] = useState<Course | null>(null);
   const [slotCourses, setSlotCourses] = useState<Course[] | null>(null);
+  const [quickAddSlot, setQuickAddSlot] = useState<QuickAddSlot | null>(null);
 
   const haptic = useHaptics();
   const scrollWeekend = useScheduleStore((s) => s.scrollWeekend);
@@ -321,6 +347,33 @@ export function Schedule({
     } else {
       setSelected(course);
     }
+  };
+
+  const handleEditCourse = (course: Course) => {
+    haptic();
+    setSelected(null);
+    setSlotCourses(null);
+    router.push({
+      pathname: "/(pages)/settings/course/add",
+      params: { name: course.name },
+    });
+  };
+
+  const openQuickAddForCourse = (course: Course) => {
+    const aligned = alignToSectionGroup(
+      layout.groups,
+      course.sectionStart,
+      course.sectionEnd,
+    );
+    if (!aligned) return;
+    haptic();
+    setSelected(null);
+    setSlotCourses(null);
+    setQuickAddSlot({
+      day: course.day,
+      sectionStart: aligned.start,
+      sectionEnd: aligned.end,
+    });
   };
 
   const renderCourseCell = (course: Course, key: string, isOther: boolean) => {
@@ -472,6 +525,8 @@ export function Schedule({
               layout.sectionTop[group[group.length - 1]] +
               layout.sectionPct -
               topVal;
+            const sectionStart = group[0];
+            const sectionEnd = group[group.length - 1];
             return (
               <View
                 key={group[0]}
@@ -483,12 +538,21 @@ export function Schedule({
                   right: 0,
                 }}
               >
-                <View
-                  style={{
+                <Pressable
+                  style={({ pressed }) => ({
                     flex: 1,
                     margin: 2,
                     backgroundColor: emptyBg,
                     borderRadius: 6,
+                    opacity: pressed ? 0.6 : 1,
+                  })}
+                  onPress={() => {
+                    haptic();
+                    setQuickAddSlot({
+                      day: dayIdx + 1,
+                      sectionStart,
+                      sectionEnd,
+                    });
                   }}
                 />
               </View>
@@ -604,6 +668,12 @@ export function Schedule({
           columnsContent
         )}
       </View>
+
+      <QuickAddCourseModal
+        slot={quickAddSlot}
+        currentWeek={week}
+        onClose={() => setQuickAddSlot(null)}
+      />
 
       <Modal
         visible={!!selected}
@@ -747,6 +817,29 @@ export function Schedule({
                     })
                   }
                   isDark={isDark}
+                />
+              </View>
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  gap: 8,
+                  paddingHorizontal: 16,
+                  paddingBottom: 16,
+                  paddingTop: 4,
+                }}
+              >
+                <DetailActionButton
+                  icon="create-outline"
+                  label={localT("schedule.editCourse")}
+                  isDark={isDark}
+                  onPress={() => handleEditCourse(selected)}
+                />
+                <DetailActionButton
+                  icon="add-circle-outline"
+                  label={localT("schedule.addAtSameSlot")}
+                  isDark={isDark}
+                  onPress={() => openQuickAddForCourse(selected)}
                 />
               </View>
             </View>
@@ -937,12 +1030,102 @@ export function Schedule({
                     </Pressable>
                   );
                 })}
+
+                {slotCourses.length > 0 && (
+                  <Pressable
+                    onPress={() => openQuickAddForCourse(slotCourses[0])}
+                    style={({ pressed }) => ({
+                      flexDirection: "row",
+                      alignItems: "center",
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      borderRadius: 12,
+                      backgroundColor: pressed
+                        ? isDark
+                          ? "rgba(255,255,255,0.05)"
+                          : "rgba(0,0,0,0.04)"
+                        : "transparent",
+                    })}
+                  >
+                    <View
+                      style={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderStyle: "dashed",
+                        borderColor: isDark
+                          ? "rgba(255,255,255,0.22)"
+                          : "rgba(0,0,0,0.22)",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        marginRight: 12,
+                      }}
+                    >
+                      <Ionicons name="add" size={18} color={subtleColor} />
+                    </View>
+                    <Text
+                      style={{
+                        flex: 1,
+                        fontSize: 14,
+                        color: mutedColor,
+                      }}
+                    >
+                      {localT("schedule.addAtSameSlot")}
+                    </Text>
+                  </Pressable>
+                )}
               </ScrollView>
             </View>
           )}
         </View>
       </Modal>
     </View>
+  );
+}
+
+function DetailActionButton({
+  icon,
+  label,
+  isDark,
+  onPress,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  label: string;
+  isDark: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flex: 1,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingVertical: 11,
+        borderRadius: 12,
+        backgroundColor: pressed
+          ? isDark
+            ? "rgba(255,255,255,0.08)"
+            : "rgba(0,0,0,0.06)"
+          : isDark
+            ? "rgba(255,255,255,0.05)"
+            : "rgba(0,0,0,0.04)",
+      })}
+    >
+      <Ionicons name={icon} size={16} color={isDark ? "#d4d4d4" : "#525252"} />
+      <Text
+        style={{
+          marginLeft: 6,
+          fontSize: 13,
+          fontWeight: "600",
+          color: isDark ? "#d4d4d4" : "#525252",
+        }}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
