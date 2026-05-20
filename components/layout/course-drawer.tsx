@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Modal,
   Pressable,
@@ -54,15 +54,29 @@ export function CourseDrawer({
   const topOffset = insets.top + HEADER_HEIGHT;
 
   // 控制 Modal 卸载时机，让退出动画能完整播放。
-  // 使用 render 阶段同步 state，避免在 effect 里 setState。
+  // - render 阶段：visible 变 true 时立刻 mount（避免 effect 同步 setState）
+  // - effect 阶段：写 SharedValue 启动动画（reanimated 不允许 render 阶段写 value）
+  // - 动画 callback：visible 变 false 且动画跑完后再异步 unmount
   const [mounted, setMounted] = useState(visible);
   const [prevVisible, setPrevVisible] = useState(visible);
   const progress = useSharedValue(visible ? 1 : 0);
 
   if (visible !== prevVisible) {
     setPrevVisible(visible);
+    if (visible) setMounted(true);
+  }
+
+  // 跳过首次 effect，避免初始 visible=false 启动一个"假"的 withTiming(0)：
+  // 那个 callback 会延迟到 EXIT_MS 后才跑，期间用户若点开抽屉，
+  // 旧 callback 会把刚 set 为 true 的 mounted 又改回 false，导致抽屉展不开。
+  const firstRunRef = useRef(true);
+
+  useEffect(() => {
+    if (firstRunRef.current) {
+      firstRunRef.current = false;
+      return;
+    }
     if (visible) {
-      setMounted(true);
       progress.value = withTiming(1, {
         duration: ENTER_MS,
         easing: Easing.out(Easing.cubic),
@@ -76,7 +90,7 @@ export function CourseDrawer({
         },
       );
     }
-  }
+  }, [visible, progress]);
 
   const overlayStyle = useAnimatedStyle(() => ({
     opacity: progress.value,
