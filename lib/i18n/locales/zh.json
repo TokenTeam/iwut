@@ -50,6 +50,11 @@
   },
   "course": {
     "selectImportType": "选择导入类型",
+    "drawer": {
+      "manage": "课程管理",
+      "reimport": "重新导入",
+      "settings": "课表设置"
+    },
     "bachelor": "本科生",
     "master": "研究生",
     "needBindTitle": "请先绑定智慧理工大账号",

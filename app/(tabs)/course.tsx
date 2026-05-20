@@ -12,6 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { CourseDrawer } from "@/components/layout/course-drawer";
 import { Schedule } from "@/components/layout/schedule";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -32,7 +33,6 @@ export default function CourseScreen() {
   const t = useT();
   const courses = useCourseStore((store) => store.courses);
   const termStart = useCourseStore((store) => store.termStart);
-  const lastImportType = useCourseStore((s) => s.lastImportType);
   const isBound = useUserBindStore((store) => store.isBound);
   const backgroundImageUri = useScheduleStore((s) => s.backgroundImageUri);
   const [week, setWeek] = useState<number>(() => getCurrentWeek(termStart));
@@ -40,6 +40,7 @@ export default function CourseScreen() {
   const haptic = useHaptics();
   const [showWeekPicker, setShowWeekPicker] = useState(false);
   const [showTypePicker, setShowTypePicker] = useState(false);
+  const [showDrawer, setShowDrawer] = useState(false);
 
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
@@ -90,16 +91,7 @@ export default function CourseScreen() {
     importerRef.current?.startImport(type);
   };
 
-  const handleRefreshPress = () => {
-    haptic();
-    if (lastImportType) {
-      doImport(lastImportType);
-    } else {
-      setShowTypePicker(true);
-    }
-  };
-
-  const handleRefreshLongPress = () => {
+  const handleReimport = () => {
     haptic();
     setShowTypePicker(true);
   };
@@ -122,17 +114,15 @@ export default function CourseScreen() {
       )}
       <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
         <View className="h-12 w-full flex-row items-center px-3">
-          {isBound && courses.some((c) => c.source === "imported") ? (
-            <Pressable
-              style={{ width: 48, alignItems: "center" }}
-              onPress={handleRefreshPress}
-              onLongPress={handleRefreshLongPress}
-            >
-              <Ionicons name="refresh" size={20} color={iconColor} />
-            </Pressable>
-          ) : (
-            <View style={{ width: 48 }} />
-          )}
+          <Pressable
+            style={{ width: 48, alignItems: "center" }}
+            onPress={() => {
+              haptic();
+              setShowDrawer(true);
+            }}
+          >
+            <Ionicons name="menu-outline" size={24} color={iconColor} />
+          </Pressable>
 
           <View className="flex-1 flex-row items-center justify-center">
             <Pressable
@@ -400,6 +390,15 @@ export default function CourseScreen() {
           </Text>
         </Pressable>
       </BottomSheet>
+
+      <CourseDrawer
+        visible={showDrawer}
+        onClose={() => setShowDrawer(false)}
+        isBound={isBound}
+        onManage={() => router.push("/(pages)/settings/course/manage")}
+        onReimport={handleReimport}
+        onOpenSettings={() => router.push("/(pages)/settings/calendar")}
+      />
     </View>
   );
 }

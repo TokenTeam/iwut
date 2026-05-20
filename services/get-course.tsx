@@ -407,7 +407,6 @@ export const GetCourse = forwardRef<GetCourseHandle>(
 
           const store = useCourseStore.getState();
           store.setImportedCourses(courses);
-          store.setLastImportType(importType);
           if (msg.termStart) store.setTermStart(msg.termStart);
           syncWidgetData().catch(() => {});
           finish(true);
@@ -434,7 +433,6 @@ export const GetCourse = forwardRef<GetCourseHandle>(
 
           const store = useCourseStore.getState();
           store.setImportedCourses(courses);
-          store.setLastImportType(importType);
           syncWidgetData().catch(() => {});
           finish(true);
         }

@@ -31,11 +31,9 @@ function coursesMatch(a: Course, b: Course): boolean {
 interface CourseStore {
   courses: Course[];
   termStart: string;
-  lastImportType: ImportType | null;
   setImportedCourses: (courses: Course[]) => void;
   setCourses: (courses: Course[]) => void;
   setTermStart: (termStart: string) => void;
-  setLastImportType: (type: ImportType) => void;
   addCourse: (course: Course) => void;
   removeCourse: (course: Course) => void;
   removeCoursesByName: (name: string) => void;
@@ -46,7 +44,6 @@ export const useCourseStore = create<CourseStore>()(
     (set, get) => ({
       courses: [],
       termStart: "",
-      lastImportType: null,
       setImportedCourses: (imported: Course[]) => {
         const manual = get().courses.filter((c) => c.source === "manual");
         const tagged = imported.map((c) => ({
@@ -57,7 +54,6 @@ export const useCourseStore = create<CourseStore>()(
       },
       setCourses: (courses: Course[]) => set({ courses }),
       setTermStart: (termStart: string) => set({ termStart }),
-      setLastImportType: (type: ImportType) => set({ lastImportType: type }),
       addCourse: (course: Course) =>
         set({ courses: [...get().courses, course] }),
       removeCourse: (target: Course) =>

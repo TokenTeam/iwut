@@ -50,6 +50,11 @@
   },
   "course": {
     "selectImportType": "Choose import type",
+    "drawer": {
+      "manage": "Courses",
+      "reimport": "Re-import",
+      "settings": "Schedule settings"
+    },
     "bachelor": "Undergraduate",
     "master": "Postgraduate",
     "needBindTitle": "Link your iWUT account first",

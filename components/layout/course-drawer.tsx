@@ -1,0 +1,275 @@
+import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
+import { useState } from "react";
+import {
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import Animated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useT } from "@/lib/i18n";
+
+const HEADER_HEIGHT = 40;
+
+interface Props {
+  visible: boolean;
+  onClose: () => void;
+  isBound: boolean;
+  onManage: () => void;
+  onReimport: () => void;
+  onOpenSettings: () => void;
+}
+
+const ENTER_MS = 240;
+const EXIT_MS = 200;
+
+export function CourseDrawer({
+  visible,
+  onClose,
+  isBound,
+  onManage,
+  onReimport,
+  onOpenSettings,
+}: Props) {
+  const t = useT();
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
+  const { width: screenWidth } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+
+  const drawerWidth = Math.round(screenWidth * 0.66);
+  const topOffset = insets.top + HEADER_HEIGHT;
+
+  // 控制 Modal 卸载时机，让退出动画能完整播放。
+  // 使用 render 阶段同步 state，避免在 effect 里 setState。
+  const [mounted, setMounted] = useState(visible);
+  const [prevVisible, setPrevVisible] = useState(visible);
+  const progress = useSharedValue(visible ? 1 : 0);
+
+  if (visible !== prevVisible) {
+    setPrevVisible(visible);
+    if (visible) {
+      setMounted(true);
+      progress.value = withTiming(1, {
+        duration: ENTER_MS,
+        easing: Easing.out(Easing.cubic),
+      });
+    } else {
+      progress.value = withTiming(
+        0,
+        { duration: EXIT_MS, easing: Easing.in(Easing.cubic) },
+        (finished) => {
+          if (finished) runOnJS(setMounted)(false);
+        },
+      );
+    }
+  }
+
+  const overlayStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+  }));
+
+  const drawerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: (progress.value - 1) * drawerWidth }],
+  }));
+
+  const cardSolid = isDark ? "rgba(28,28,30,1)" : "rgba(255,255,255,1)";
+  const cardClear = isDark ? "rgba(28,28,30,0)" : "rgba(255,255,255,0)";
+  const primaryText = isDark ? "#f5f5f5" : "#1c1c1e";
+  const chevronColor = isDark ? "#525252" : "#c4c4c4";
+
+  return (
+    <Modal
+      visible={mounted}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      {/* 遮罩仅覆盖 header 下方区域，不影响顶部菜单按钮和周数栏 */}
+      <Animated.View
+        style={[
+          {
+            position: "absolute",
+            top: topOffset,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          },
+          overlayStyle,
+        ]}
+      >
+        <BlurView
+          intensity={25}
+          tint={isDark ? "dark" : "default"}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+        <Pressable
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              backgroundColor: isDark ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.12)",
+            },
+          ]}
+          onPress={onClose}
+        />
+      </Animated.View>
+
+      {/* 左侧抽屉从 header 下方开始，高度跟随内容，底部渐变消散 */}
+      <Animated.View
+        style={[
+          {
+            position: "absolute",
+            top: topOffset,
+            left: 0,
+            width: drawerWidth,
+          },
+          drawerStyle,
+        ]}
+        pointerEvents="box-none"
+      >
+        <View style={{ backgroundColor: cardSolid }}>
+          <View
+            style={{
+              paddingTop: 12,
+              paddingBottom: 20,
+              paddingHorizontal: 10,
+              gap: 2,
+            }}
+          >
+            <DrawerItem
+              icon="list-outline"
+              label={t("course.drawer.manage")}
+              tint="#3b82f6"
+              textColor={primaryText}
+              chevronColor={chevronColor}
+              isDark={isDark}
+              onPress={() => {
+                onClose();
+                onManage();
+              }}
+            />
+            <DrawerItem
+              icon="refresh-outline"
+              label={t("course.drawer.reimport")}
+              tint="#10b981"
+              textColor={primaryText}
+              chevronColor={chevronColor}
+              isDark={isDark}
+              disabled={!isBound}
+              onPress={() => {
+                onClose();
+                onReimport();
+              }}
+            />
+            <DrawerItem
+              icon="settings-outline"
+              label={t("course.drawer.settings")}
+              tint="#8e8e93"
+              textColor={primaryText}
+              chevronColor={chevronColor}
+              isDark={isDark}
+              onPress={() => {
+                onClose();
+                onOpenSettings();
+              }}
+            />
+          </View>
+        </View>
+        {/* 底部渐变淡出让卡片消散而非硬切 */}
+        <LinearGradient
+          colors={[cardSolid, cardClear]}
+          style={{ height: 64 }}
+          pointerEvents="none"
+        />
+      </Animated.View>
+    </Modal>
+  );
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace("#", "");
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function DrawerItem({
+  icon,
+  label,
+  tint,
+  textColor,
+  chevronColor,
+  isDark,
+  onPress,
+  disabled,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  label: string;
+  tint: string;
+  textColor: string;
+  chevronColor: string;
+  isDark: boolean;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  const iconBg = hexToRgba(tint, isDark ? 0.22 : 0.14);
+  const hoverBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => ({
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 8,
+        paddingVertical: 8,
+        borderRadius: 12,
+        backgroundColor: pressed ? hoverBg : "transparent",
+        opacity: disabled ? 0.4 : 1,
+      })}
+    >
+      <View
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 9,
+          backgroundColor: iconBg,
+          alignItems: "center",
+          justifyContent: "center",
+          marginRight: 12,
+        }}
+      >
+        <Ionicons name={icon} size={18} color={tint} />
+      </View>
+      <Text
+        numberOfLines={1}
+        style={{
+          flex: 1,
+          fontSize: 15,
+          fontWeight: "500",
+          color: textColor,
+        }}
+      >
+        {label}
+      </Text>
+      <Ionicons name="chevron-forward" size={14} color={chevronColor} />
+    </Pressable>
+  );
+}
