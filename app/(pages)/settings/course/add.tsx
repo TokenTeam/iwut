@@ -252,6 +252,7 @@ export default function AddEditCourseScreen() {
       <Stack.Screen
         options={{
           title: isEdit ? t("courseAdd.titleEdit") : t("courseAdd.titleAdd"),
+          fullScreenGestureEnabled: false,
         }}
       />
       <KeyboardAvoidingView
