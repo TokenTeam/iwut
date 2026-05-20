@@ -61,6 +61,7 @@
     "importSuccessSub": "Nice!",
     "importFail": "Import failed",
     "importFailSub": "Please check your connection and try again",
+    "importCancelled": "Import cancelled",
     "smsCancelled": "SMS verification cancelled",
     "importTimeout": "Request timed out, check your connection and retry",
     "parseFailed": "Failed to parse timetable data",

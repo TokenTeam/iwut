@@ -59,7 +59,6 @@ const config: ExpoConfig = {
       backgroundImage: "./assets/images/android-icon-background.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",
     },
-    predictiveBackGestureEnabled: false,
   },
   locales: {
     en: "./assets/locales/app-meta-en.json",

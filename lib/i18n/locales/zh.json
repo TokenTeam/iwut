@@ -61,6 +61,7 @@
     "importSuccessSub": "好耶！",
     "importFail": "导入失败",
     "importFailSub": "请检查网络连接并重试",
+    "importCancelled": "已取消导入",
     "smsCancelled": "已取消短信验证",
     "importTimeout": "加载超时，请检查网络连接并重试",
     "parseFailed": "课表数据解析失败",
