@@ -120,7 +120,7 @@ export default function CourseScreen() {
           contentFit="cover"
         />
       )}
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
         <View className="h-12 w-full flex-row items-center px-3">
           {isBound && courses.some((c) => c.source === "imported") ? (
             <Pressable

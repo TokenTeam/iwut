@@ -103,7 +103,7 @@ export default function FunctionScreen() {
   const [uri, setUri] = useState("");
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 32 }}
