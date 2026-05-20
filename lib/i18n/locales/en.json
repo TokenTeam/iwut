@@ -118,7 +118,9 @@
       "added": "Added",
       "needName": "Please enter a course name",
       "needWeeks": "Please pick week range",
-      "conflict": "Week {weeks} already has a course; added anyway"
+      "conflictTitle": "Slot conflict",
+      "conflictDesc": "Week {weeks} already has a course at this slot. Adding will cause multiple courses overlapping.",
+      "conflictConfirm": "Add anyway"
     }
   },
   "fn": {

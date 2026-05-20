@@ -118,7 +118,9 @@
       "added": "已添加",
       "needName": "请输入课程名",
       "needWeeks": "请选择周次",
-      "conflict": "第 {weeks} 周已有课程，已覆盖式添加"
+      "conflictTitle": "时段冲突",
+      "conflictDesc": "第 {weeks} 周该时段已有课程，仍要添加会导致同一时段出现多门课。",
+      "conflictConfirm": "仍要添加"
     }
   },
   "fn": {

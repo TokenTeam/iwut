@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import Toast from "react-native-toast-message";
 
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { findConflictWeeks, MAX_WEEK, weeksToRanges } from "@/lib/course-weeks";
 import { type TKey, useT } from "@/lib/i18n";
@@ -111,6 +112,11 @@ function QuickAddBody({ slot, currentWeek, onClose }: BodyProps) {
   const [teacher, setTeacher] = useState("");
   const [showTeacher, setShowTeacher] = useState(false);
   const [weekMode, setWeekMode] = useState<WeekMode | null>(null);
+  // 冲突确认相关：保留冲突周次的展示标签和待提交的周次集合
+  const [pendingConflict, setPendingConflict] = useState<{
+    label: string;
+    weeks: Set<number>;
+  } | null>(null);
 
   const nameInputRef = useRef<TextInput | null>(null);
   const teacherInputRef = useRef<TextInput | null>(null);
@@ -166,6 +172,30 @@ function QuickAddBody({ slot, currentWeek, onClose }: BodyProps) {
     });
   };
 
+  const commitSave = (weeks: Set<number>) => {
+    const trimmed = name.trim();
+    const ranges = weeksToRanges(weeks);
+    for (const [ws, we] of ranges) {
+      addCourse({
+        name: trimmed,
+        room: room.trim(),
+        teacher: teacher.trim(),
+        day: slot.day,
+        weekStart: ws,
+        weekEnd: we,
+        sectionStart: slot.sectionStart,
+        sectionEnd: slot.sectionEnd,
+        source: "manual",
+      });
+    }
+    Toast.show({
+      type: "success",
+      text1: t("schedule.quickAdd.added"),
+      position: "bottom",
+    });
+    onClose();
+  };
+
   const handleSave = () => {
     const trimmed = name.trim();
     if (!trimmed) {
@@ -196,38 +226,15 @@ function QuickAddBody({ slot, currentWeek, onClose }: BodyProps) {
       weeks,
     );
 
-    const ranges = weeksToRanges(weeks);
-    for (const [ws, we] of ranges) {
-      addCourse({
-        name: trimmed,
-        room: room.trim(),
-        teacher: teacher.trim(),
-        day: slot.day,
-        weekStart: ws,
-        weekEnd: we,
-        sectionStart: slot.sectionStart,
-        sectionEnd: slot.sectionEnd,
-        source: "manual",
-      });
-    }
-
     if (conflicts.length > 0) {
       const label = weeksToRanges(new Set(conflicts))
         .map(([s, e]) => (s === e ? `${s}` : `${s}-${e}`))
         .join(", ");
-      Toast.show({
-        type: "info",
-        text1: t("schedule.quickAdd.conflict", { weeks: label }),
-        position: "bottom",
-      });
-    } else {
-      Toast.show({
-        type: "success",
-        text1: t("schedule.quickAdd.added"),
-        position: "bottom",
-      });
+      setPendingConflict({ label, weeks });
+      return;
     }
-    onClose();
+
+    commitSave(weeks);
   };
 
   const canSave = name.trim().length > 0 && weekMode !== null;
@@ -473,6 +480,22 @@ function QuickAddBody({ slot, currentWeek, onClose }: BodyProps) {
           </Text>
         </Pressable>
       </View>
+
+      <ConfirmSheet
+        visible={pendingConflict !== null}
+        onClose={() => setPendingConflict(null)}
+        title={t("schedule.quickAdd.conflictTitle")}
+        description={t("schedule.quickAdd.conflictDesc", {
+          weeks: pendingConflict?.label ?? "",
+        })}
+        confirmText={t("schedule.quickAdd.conflictConfirm")}
+        destructive
+        onConfirm={() => {
+          const weeks = pendingConflict?.weeks;
+          setPendingConflict(null);
+          if (weeks) commitSave(weeks);
+        }}
+      />
     </View>
   );
 }
