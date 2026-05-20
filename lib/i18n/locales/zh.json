@@ -92,7 +92,10 @@
     "weeks": "周次",
     "weeksValue": "第 {start}-{end} 周",
     "time": "时间",
-    "countdownEndTag": "end"
+    "countdownEndTag": "end",
+    "slotListTitle": "该时段课程",
+    "slotCountValue": "共 {n} 门",
+    "otherWeekTag": "非本周"
   },
   "fn": {
     "title": "功能",
@@ -177,6 +180,7 @@
     "displayGroup": "显示",
     "scrollWeekend": "周末课表滚动查看",
     "showMidday": "显示中课",
+    "showOtherWeek": "显示非本周课程",
     "syncGroup": "同步",
     "syncCalendar": "同步到系统日历",
     "syncedToast": "已同步到系统日历",

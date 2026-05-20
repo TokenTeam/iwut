@@ -46,6 +46,10 @@ export default function CalendarSettingsScreen() {
   const setScrollWeekend = useScheduleStore((s) => s.setScrollWeekend);
   const showMidday = useScheduleStore((s) => s.showMiddaySections);
   const setShowMidday = useScheduleStore((s) => s.setShowMiddaySections);
+  const showOtherWeekCourses = useScheduleStore((s) => s.showOtherWeekCourses);
+  const setShowOtherWeekCourses = useScheduleStore(
+    (s) => s.setShowOtherWeekCourses,
+  );
   const colorPalette = useScheduleStore((s) => s.colorPalette);
   const backgroundImageUri = useScheduleStore((s) => s.backgroundImageUri);
   const setBackgroundImageUri = useScheduleStore(
@@ -219,6 +223,18 @@ export default function CalendarSettingsScreen() {
             label={t("calendarSet.showMidday")}
             showArrow={false}
             right={<Switch value={showMidday} onValueChange={setShowMidday} />}
+          />
+          <MenuItem
+            icon="visibility"
+            iconBg="#8E8E93"
+            label={t("calendarSet.showOtherWeek")}
+            showArrow={false}
+            right={
+              <Switch
+                value={showOtherWeekCourses}
+                onValueChange={setShowOtherWeekCourses}
+              />
+            }
           />
         </MenuGroup>
 

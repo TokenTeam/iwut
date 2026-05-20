@@ -92,7 +92,10 @@
     "weeks": "Weeks",
     "weeksValue": "Weeks {start}-{end}",
     "time": "Time",
-    "countdownEndTag": "end"
+    "countdownEndTag": "end",
+    "slotListTitle": "Courses at this slot",
+    "slotCountValue": "{n} courses",
+    "otherWeekTag": "Other week"
   },
   "fn": {
     "title": "Apps",
@@ -177,6 +180,7 @@
     "displayGroup": "Display",
     "scrollWeekend": "Scroll horizontally on weekends",
     "showMidday": "Show midday periods",
+    "showOtherWeek": "Show other week courses",
     "syncGroup": "Sync",
     "syncCalendar": "Sync to system calendar",
     "syncedToast": "Synced to system calendar",
