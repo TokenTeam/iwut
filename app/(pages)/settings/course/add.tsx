@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import Toast from "react-native-toast-message";
 
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { MAX_SECTION, MAX_WEEK, weeksToRanges } from "@/lib/course-weeks";
 import { type TKey, useT } from "@/lib/i18n";
@@ -146,6 +147,7 @@ export default function AddEditCourseScreen() {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(() =>
     isEdit && existingRecords.length > 0 ? null : 0,
   );
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const toggleExpand = useCallback((index: number) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -193,6 +195,18 @@ export default function AddEditCourseScreen() {
   const chipBg = isDark ? "#262626" : "#f5f5f5";
   const chipText = isDark ? "#d4d4d4" : "#525252";
   const cardBg = isDark ? "#262626" : "#ffffff";
+
+  const handleDelete = () => {
+    if (!editName) return;
+    removeCoursesByName(editName);
+    setShowDeleteConfirm(false);
+    Toast.show({
+      type: "success",
+      text1: t("courseManage.deleted", { name: editName }),
+      position: "bottom",
+    });
+    router.back();
+  };
 
   const handleSave = () => {
     const trimmedName = name.trim();
@@ -363,8 +377,31 @@ export default function AddEditCourseScreen() {
               {t("common.save")}
             </Text>
           </Pressable>
+
+          {isEdit && (
+            <Pressable
+              onPress={() => setShowDeleteConfirm(true)}
+              className="mt-3 items-center rounded-xl py-3 active:bg-red-50 dark:active:bg-red-950"
+            >
+              <Text className="text-base font-medium text-red-500">
+                {t("courseManage.deleteCourseTitle")}
+              </Text>
+            </Pressable>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <ConfirmSheet
+        visible={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        title={t("courseManage.deleteCourseTitle")}
+        description={t("courseManage.deleteCourseDesc", {
+          name: editName ?? "",
+        })}
+        confirmText={t("common.delete")}
+        destructive
+        onConfirm={handleDelete}
+      />
     </>
   );
 }
