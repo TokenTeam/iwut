@@ -360,12 +360,13 @@ export function Schedule({
   };
 
   const openQuickAddForCourse = (course: Course) => {
+    // 始终用完整分组对齐，避免在 compact 模式下（layout.groups 不含 6/7/13 节）
+    // 课程 sectionStart 找不到分组导致"添加课程"按钮静默失效。
     const aligned = alignToSectionGroup(
-      layout.groups,
+      SECTION_GROUPS_FULL,
       course.sectionStart,
       course.sectionEnd,
-    );
-    if (!aligned) return;
+    ) ?? { start: course.sectionStart, end: course.sectionEnd };
     haptic();
     setSelected(null);
     setSlotCourses(null);
