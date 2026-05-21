@@ -9,8 +9,10 @@ const GATEWAY = "http://172.30.21.100";
 
 function getNasId(): Promise<string | null> {
   return new Promise((resolve, reject) => {
+    // 使用固定 IP 避免用户配置 DoT/DoH 时未认证状态下域名解析失败导致登录中断
     const socket = TcpSocket.createConnection(
-      { host: "connect.rom.miui.com", port: 80 },
+      // { host: "connect.rom.miui.com", port: 80 },
+      { host: "223.5.5.5", port: 80 },
       () => {
         socket.write(
           "GET /generate_204 HTTP/1.0\r\nHost: connect.rom.miui.com\r\nConnection: close\r\n\r\n",
@@ -54,6 +56,11 @@ export async function login(
   password: string,
 ): Promise<string | undefined> {
   if (Platform.OS === "android") {
+    const enabled = await WifiManager.isEnabled().catch(() => false);
+    if (!enabled) {
+      throw new Error(t("wlan.errNotCampus"));
+    }
+
     try {
       await WifiManager.forceWifiUsageWithOptions(true, { noInternet: true });
     } catch {
