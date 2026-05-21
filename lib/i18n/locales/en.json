@@ -151,6 +151,8 @@
     "bindScreenTitle": "Link iWUT",
     "bindSuccess": "Linked",
     "bindSuccessSub": "Account {username} linked",
+    "bindFailed": "Link failed",
+    "bindFailedSub": "iWUT is temporarily unavailable, please try again later",
     "menuTools": "Tools",
     "menuSettings": "Settings",
     "menuOther": "Other",

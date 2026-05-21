@@ -2,11 +2,16 @@ import { IS_DEV } from "@/constants/is-dev";
 import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
 import { useUserBindStore } from "@/store/user-bind";
+import CookieManager from "@preeternal/react-native-cookie-manager";
 import { router, Stack } from "expo-router";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { View } from "react-native";
 import Toast from "react-native-toast-message";
 import { WebView, type WebViewNavigation } from "react-native-webview";
+import type {
+  WebViewErrorEvent,
+  WebViewHttpErrorEvent,
+} from "react-native-webview/lib/WebViewTypes";
 
 const TALENT_HOST = "talent.whut.edu.cn";
 const CAS_LOGIN = "zhlgd.whut.edu.cn/tpass/login";
@@ -156,6 +161,41 @@ export default function BindScreen() {
     password: string;
   } | null>(null);
   const isBound = useRef(false);
+  const hasFailed = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (!isBound.current) {
+        CookieManager.clearAll(true).catch(() => {});
+      }
+    };
+  }, []);
+
+  const handleFailure = () => {
+    if (isBound.current || hasFailed.current) return;
+    hasFailed.current = true;
+    Toast.show({
+      type: "error",
+      text1: t("user.bindFailed"),
+      text2: t("user.bindFailedSub"),
+      position: "bottom",
+    });
+    if (router.canGoBack()) router.back();
+  };
+
+  const onError = (event: WebViewErrorEvent) => {
+    const { url } = event.nativeEvent;
+    if (url && url.includes(TALENT_HOST)) {
+      handleFailure();
+    }
+  };
+
+  const onHttpError = (event: WebViewHttpErrorEvent) => {
+    const { url, statusCode } = event.nativeEvent;
+    if (url && url.includes(TALENT_HOST) && statusCode >= 500) {
+      handleFailure();
+    }
+  };
 
   const onNavigationStateChange = (state: WebViewNavigation) => {
     if (isBound.current || state.url.startsWith("about:") || state.url === "")
@@ -226,6 +266,8 @@ export default function BindScreen() {
         injectedJavaScript={INJECTED_JS}
         onNavigationStateChange={onNavigationStateChange}
         onMessage={onMessage}
+        onError={onError}
+        onHttpError={onHttpError}
       />
     </View>
   );

@@ -151,6 +151,8 @@
     "bindScreenTitle": "智慧理工大绑定",
     "bindSuccess": "绑定成功",
     "bindSuccessSub": "已绑定账号 {username}",
+    "bindFailed": "绑定失败",
+    "bindFailedSub": "智慧理工大暂时无法访问，请稍后重试",
     "menuTools": "工具",
     "menuSettings": "设置",
     "menuOther": "其他",
