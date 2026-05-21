@@ -337,7 +337,8 @@
     "upToDate": "You're on the latest version",
     "linksGroup": "Links",
     "website": "Website",
-    "github": "GitHub"
+    "github": "GitHub",
+    "icp": "陕ICP备2025063787号-4A"
   },
   "update": {
     "modalTitleDefault": "New version v{v}",

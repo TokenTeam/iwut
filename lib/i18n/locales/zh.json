@@ -337,7 +337,8 @@
     "upToDate": "当前已是最新版本",
     "linksGroup": "链接",
     "website": "官方网站",
-    "github": "GitHub"
+    "github": "GitHub",
+    "icp": "陕ICP备2025063787号-4A"
   },
   "update": {
     "modalTitleDefault": "新版本 v{v}",

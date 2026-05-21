@@ -65,7 +65,7 @@ export default function AboutScreen() {
       <Stack.Screen options={{ title: t("about.title") }} />
       <ScrollView
         className="flex-1 bg-neutral-100 dark:bg-neutral-900"
-        contentContainerClassName="px-4 pt-4 pb-8"
+        contentContainerClassName="grow px-4 pt-4 pb-8"
       >
         <View className="mb-4 items-center rounded-2xl bg-white py-10 dark:bg-neutral-800">
           <Image
@@ -130,19 +130,20 @@ export default function AboutScreen() {
           />
         </MenuGroup>
 
-        <View className="flex-1" />
+        <View className="mt-auto items-center pt-6">
+          <Image
+            source={uniLabel}
+            style={{
+              width: 77,
+              height: 18,
+              tintColor: Colors[isDark ? "dark" : "light"].icon,
+            }}
+          />
+          <Text className="mt-3 text-xs text-neutral-400 dark:text-neutral-500">
+            {t("about.icp")}
+          </Text>
+        </View>
       </ScrollView>
-
-      <View className="absolute bottom-8 left-0 right-0 items-center">
-        <Image
-          source={uniLabel}
-          style={{
-            width: 77,
-            height: 18,
-            tintColor: Colors[isDark ? "dark" : "light"].icon,
-          }}
-        />
-      </View>
     </>
   );
 }
