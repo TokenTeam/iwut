@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useRef, useState } from "react";
 import {
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -19,6 +19,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useT } from "@/lib/i18n";
 
@@ -100,10 +101,24 @@ export function CourseDrawer({
     transform: [{ translateX: (progress.value - 1) * drawerWidth }],
   }));
 
-  const cardSolid = isDark ? "rgba(28,28,30,1)" : "rgba(255,255,255,1)";
-  const cardClear = isDark ? "rgba(28,28,30,0)" : "rgba(255,255,255,0)";
+  const cardSolid = Colors[isDark ? "dark" : "light"].background;
   const primaryText = isDark ? "#f5f5f5" : "#1c1c1e";
   const chevronColor = isDark ? "#525252" : "#c4c4c4";
+
+  // iOS 同一 presenter 同时只能持有一个 Modal，抽屉未 dismiss 完前打开下一个 Modal
+  // 会被 UIKit 拒绝。把 action 暂存到 ref，等 <Modal onDismiss>（iOS 在原生 dismiss
+  // 完成时触发）回调里再执行。Android 的 Modal 是 Dialog 模拟，无此限制。
+  const pendingActionRef = useRef<(() => void) | null>(null);
+
+  const dismissThen = (action: () => void) => {
+    if (Platform.OS === "ios") {
+      pendingActionRef.current = action;
+      onClose();
+    } else {
+      onClose();
+      action();
+    }
+  };
 
   return (
     <Modal
@@ -112,6 +127,11 @@ export function CourseDrawer({
       animationType="none"
       statusBarTranslucent
       onRequestClose={onClose}
+      onDismiss={() => {
+        const action = pendingActionRef.current;
+        pendingActionRef.current = null;
+        action?.();
+      }}
     >
       {/* 遮罩仅覆盖 header 下方区域，不影响顶部菜单按钮和周数栏 */}
       <Animated.View
@@ -143,7 +163,7 @@ export function CourseDrawer({
         />
       </Animated.View>
 
-      {/* 左侧抽屉从 header 下方开始，高度跟随内容，底部渐变消散 */}
+      {/* 左侧抽屉从 header 下方开始，高度跟随内容 */}
       <Animated.View
         style={[
           {
@@ -151,65 +171,51 @@ export function CourseDrawer({
             top: topOffset,
             left: 0,
             width: drawerWidth,
+            backgroundColor: cardSolid,
+            borderBottomRightRadius: 20,
+            overflow: "hidden",
           },
           drawerStyle,
         ]}
         pointerEvents="box-none"
       >
-        <View style={{ backgroundColor: cardSolid }}>
-          <View
-            style={{
-              paddingTop: 12,
-              paddingBottom: 20,
-              paddingHorizontal: 10,
-              gap: 2,
-            }}
-          >
-            <DrawerItem
-              icon="list-outline"
-              label={t("course.drawer.manage")}
-              tint="#3b82f6"
-              textColor={primaryText}
-              chevronColor={chevronColor}
-              isDark={isDark}
-              onPress={() => {
-                onClose();
-                onManage();
-              }}
-            />
-            <DrawerItem
-              icon="refresh-outline"
-              label={t("course.drawer.reimport")}
-              tint="#10b981"
-              textColor={primaryText}
-              chevronColor={chevronColor}
-              isDark={isDark}
-              disabled={!isBound}
-              onPress={() => {
-                onClose();
-                onReimport();
-              }}
-            />
-            <DrawerItem
-              icon="settings-outline"
-              label={t("course.drawer.settings")}
-              tint="#8e8e93"
-              textColor={primaryText}
-              chevronColor={chevronColor}
-              isDark={isDark}
-              onPress={() => {
-                onClose();
-                onOpenSettings();
-              }}
-            />
-          </View>
+        <View
+          style={{
+            paddingTop: 12,
+            paddingBottom: 20,
+            paddingHorizontal: 10,
+            gap: 2,
+          }}
+        >
+          <DrawerItem
+            icon="list-outline"
+            label={t("course.drawer.manage")}
+            tint="#3b82f6"
+            textColor={primaryText}
+            chevronColor={chevronColor}
+            isDark={isDark}
+            onPress={() => dismissThen(onManage)}
+          />
+          <DrawerItem
+            icon="refresh-outline"
+            label={t("course.drawer.reimport")}
+            tint="#10b981"
+            textColor={primaryText}
+            chevronColor={chevronColor}
+            isDark={isDark}
+            disabled={!isBound}
+            onPress={() => dismissThen(onReimport)}
+          />
+          <DrawerItem
+            icon="settings-outline"
+            label={t("course.drawer.settings")}
+            tint="#8e8e93"
+            textColor={primaryText}
+            chevronColor={chevronColor}
+            isDark={isDark}
+            onPress={() => dismissThen(onOpenSettings)}
+          />
         </View>
-        {/* 底部渐变淡出让卡片消散而非硬切 */}
-        <LinearGradient
-          colors={[cardSolid, cardClear]}
-          style={{ height: 64 }}
-          pointerEvents="none"
-        />
       </Animated.View>
     </Modal>
   );
