@@ -9,6 +9,9 @@ const GATEWAY = "http://172.30.21.100";
 
 function getNasId(): Promise<string | null> {
   return new Promise((resolve, reject) => {
+    let data = "";
+    let failed = false;
+
     // 使用固定 IP 避免用户配置 DoT/DoH 时未认证状态下域名解析失败导致登录中断
     const socket = TcpSocket.createConnection(
       // { host: "connect.rom.miui.com", port: 80 },
@@ -20,12 +23,27 @@ function getNasId(): Promise<string | null> {
       },
     );
 
-    let data = "";
+    socket.setTimeout(5000);
+
     socket.on("data", (chunk) => {
       data += chunk.toString();
     });
 
+    socket.on("timeout", () => {
+      failed = true;
+      socket.destroy();
+    });
+
+    socket.on("error", () => {
+      failed = true;
+    });
+
     socket.on("close", () => {
+      if (failed) {
+        reject(new Error(t("wlan.errNetwork")));
+        return;
+      }
+
       const location = data.match(/Location:\s*(.*)/i);
       if (!location) {
         resolve(null);
@@ -42,11 +60,6 @@ function getNasId(): Promise<string | null> {
       } catch {
         resolve(null);
       }
-    });
-
-    socket.on("error", () => {
-      socket.destroy();
-      reject(new Error(t("wlan.errNetwork")));
     });
   });
 }
@@ -68,9 +81,13 @@ export async function login(
     }
   }
 
+  let succeeded = false;
   try {
     const nasId = await getNasId();
-    if (!nasId) return undefined;
+    if (!nasId) {
+      succeeded = true;
+      return undefined;
+    }
 
     const csrf = await fetch(`${GATEWAY}/api/csrf-token`, {
       credentials: "include",
@@ -105,14 +122,12 @@ export async function login(
       throw new Error(msg);
     }
 
-    if (Platform.OS === "android") {
-      // 登录成功后通知系统重新评估 Wi-Fi 可用性
-      await reportWifiConnectivity(true);
-    }
-
+    succeeded = true;
     return msg;
   } finally {
     if (Platform.OS === "android") {
+      // 通知系统重新评估 Wi-Fi 可用性
+      if (succeeded) await reportWifiConnectivity(true);
       await WifiManager.forceWifiUsageWithOptions(false, { noInternet: true });
     }
   }
