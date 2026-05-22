@@ -1,0 +1,27 @@
+# 掌上吾理
+
+基于 React Native 的掌上吾理客户端
+
+![Alt](https://repobeats.axiom.co/api/embed/1b080c2f466837eaa8bb39eace229f2f952a07f2.svg "Repobeats analytics image")
+
+## 开发
+
+```bash
+bun install --frozen-lockfile
+```
+
+在有 [Expo Dev Client](https://docs.expo.dev/development/introduction/) 的情况下，运行以下命令启动 Metro 热重载：
+
+```bash
+bun start
+```
+
+或在已安装 Xcode / Android Studio 的环境下，直接构建并在模拟器或已连接的真机中运行：
+
+```bash
+bun run ios
+# 使用 --device 来选择设备
+bun run ios --device
+
+bun run android
+```
