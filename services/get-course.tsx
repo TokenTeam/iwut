@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, {
+import {
   forwardRef,
   useCallback,
   useEffect,
@@ -275,6 +275,8 @@ export const GetCourse = forwardRef<GetCourseHandle>(
 
     const finish = useCallback(
       (success: boolean, message?: string) => {
+        // 在 WebView 被卸载前清理 HTTP 缓存
+        webview.current?.clearCache(true);
         setImporting(false);
         injected.current = false;
         if (success) {
@@ -540,6 +542,8 @@ export const GetCourse = forwardRef<GetCourseHandle>(
               javaScriptEnabled
               domStorageEnabled
               thirdPartyCookiesEnabled
+              sharedCookiesEnabled
+              cacheEnabled={false}
               originWhitelist={["*"]}
               webviewDebuggingEnabled={IS_DEV}
               onLoadEnd={handleLoadEnd}

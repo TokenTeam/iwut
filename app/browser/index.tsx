@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useNavigation } from "expo-router";
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { View } from "react-native";
 import {
   WebView,
@@ -28,6 +28,13 @@ export default function BrowserScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({ title: uri.split("/").pop() });
   }, [navigation, uri]);
+
+  // 离开浏览器时清空 WebView 的 HTTP 缓存
+  useEffect(() => {
+    return () => {
+      webview.current?.clearCache(true);
+    };
+  }, []);
 
   const onNavigationStateChange = (navState: WebViewNavigation) => {
     if (navState.title) {

@@ -165,6 +165,7 @@ export default function BindScreen() {
 
   useEffect(() => {
     return () => {
+      webview.current?.clearCache(true);
       if (!isBound.current) {
         CookieManager.clearAll(true).catch(() => {});
       }
@@ -261,6 +262,7 @@ export default function BindScreen() {
         domStorageEnabled
         thirdPartyCookiesEnabled
         sharedCookiesEnabled
+        cacheEnabled={false}
         originWhitelist={["*"]}
         webviewDebuggingEnabled={IS_DEV}
         injectedJavaScript={INJECTED_JS}

@@ -17,6 +17,7 @@ Sentry.init({
 FileLogger.configure({
   dailyRolling: true,
   maximumFileSize: 1024 * 512,
+  maximumNumberOfFiles: 5,
   captureConsole: true,
 });
 
@@ -24,9 +25,9 @@ FileLogger.configure({
 import "@/lib/i18n/bootstrap";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { ThemeProvider } from "expo-router/react-navigation";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
+import { ThemeProvider } from "expo-router/react-navigation";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useRef } from "react";

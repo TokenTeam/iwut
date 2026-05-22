@@ -20,6 +20,7 @@ import {
 } from "react-native";
 import { FileLogger } from "react-native-file-logger";
 import Toast from "react-native-toast-message";
+import { WebView } from "react-native-webview";
 
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
@@ -55,6 +56,39 @@ export default function SettingsScreen() {
   const [reminderSheetVisible, setReminderSheetVisible] = useState(false);
   const [customMinutes, setCustomMinutes] = useState("");
   const customInputRef = useRef<TextInput>(null);
+
+  // 临时挂载隐藏 WebView 调 ref.clearCache(true)
+  const [cacheWebViewMounted, setCacheWebViewMounted] = useState(false);
+  const cacheClearedResolveRef = useRef<(() => void) | null>(null);
+
+  const clearWebViewCache = () =>
+    new Promise<void>((resolve) => {
+      // ref 回调没拿到实例也要在 2s 后放行避免卡死
+      const timer = setTimeout(() => {
+        cacheClearedResolveRef.current = null;
+        setCacheWebViewMounted(false);
+        resolve();
+      }, 2000);
+
+      cacheClearedResolveRef.current = () => {
+        clearTimeout(timer);
+        resolve();
+      };
+      setCacheWebViewMounted(true);
+    });
+
+  const handleCacheWebViewRef = (instance: WebView | null) => {
+    if (!instance) return;
+    // ref 已赋值意味着 native 视图构造完成，再给 50ms 缓冲后派发命令
+    setTimeout(() => {
+      instance.clearCache(true);
+      setTimeout(() => {
+        setCacheWebViewMounted(false);
+        cacheClearedResolveRef.current?.();
+        cacheClearedResolveRef.current = null;
+      }, 100);
+    }, 50);
+  };
 
   const handleCourseReminderChange = async (value: boolean) => {
     // 检查通知权限
@@ -101,7 +135,9 @@ export default function SettingsScreen() {
     setClearVisible(false);
     setClearing(true);
     try {
+      await FileLogger.deleteLogFiles();
       await Image.clearDiskCache();
+      await clearWebViewCache();
 
       const docDir = new Directory(Paths.document);
       const currentBgUri = useScheduleStore.getState().backgroundImageUri;
@@ -353,6 +389,24 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
       </BottomSheet>
+
+      {cacheWebViewMounted && (
+        <View
+          style={{
+            position: "absolute",
+            left: -9999,
+            top: 0,
+            width: 390,
+            height: 844,
+          }}
+          pointerEvents="none"
+        >
+          <WebView
+            ref={handleCacheWebViewRef}
+            source={{ uri: "about:blank" }}
+          />
+        </View>
+      )}
     </>
   );
 }
