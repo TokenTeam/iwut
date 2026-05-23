@@ -93,6 +93,7 @@
   },
   "patchedDependencies": {
     "@bacons/apple-targets@4.0.7": "patches/@bacons%2Fapple-targets@4.0.7.patch",
-    "@bsky.app/expo-image-crop-tool@0.5.1": "patches/@bsky.app%2Fexpo-image-crop-tool@0.5.1.patch"
+    "@bsky.app/expo-image-crop-tool@0.5.1": "patches/@bsky.app%2Fexpo-image-crop-tool@0.5.1.patch",
+    "react-native-webview@13.16.1": "patches/react-native-webview@13.16.1.patch"
   }
 }

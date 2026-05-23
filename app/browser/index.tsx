@@ -117,6 +117,7 @@ export default function BrowserScreen() {
         webviewDebuggingEnabled={IS_DEV}
         injectedJavaScriptBeforeContentLoaded={NATIVE_RPC_INJECTED_JAVASCRIPT}
         allowsBackForwardNavigationGestures={Platform.OS === "ios" && canGoBack}
+        pullToRefreshEnabled
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onNavigationStateChange={onNavigationStateChange}
         onLoadStart={progressBar.onLoadStart}

@@ -1,0 +1,178 @@
+﻿diff --git a/android/build.gradle b/android/build.gradle
+index cb3476a..01248d0 100644
+--- a/android/build.gradle
++++ b/android/build.gradle
+@@ -107,4 +107,5 @@ dependencies {
+     implementation 'com.facebook.react:react-native:+'
+     implementation "org.jetbrains.kotlin:kotlin-stdlib:${safeExtGet('kotlinVersion')}"
+     implementation "androidx.webkit:webkit:${safeExtGet('webkitVersion')}"
++    implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
+ }
+diff --git a/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt b/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt
+index f83033b..0bf0aec 100644
+--- a/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt
++++ b/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt
+@@ -721,4 +721,8 @@ class RNCWebViewManagerImpl(private val newArch: Boolean = false) {
+             WebSettingsCompat.setPaymentRequestEnabled(view.settings, enabled)
+         }
+     }
++
++    fun setPullToRefreshEnabled(viewWrapper: RNCWebViewWrapper, enabled: Boolean) {
++        viewWrapper.setPullToRefreshEnabled(enabled)
++    }
+ }
+diff --git a/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewWrapper.kt b/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewWrapper.kt
+index 9f9d6f3..569e835 100644
+--- a/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewWrapper.kt
++++ b/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewWrapper.kt
+@@ -2,9 +2,11 @@ package com.reactnativecommunity.webview
+ 
+ import android.content.Context
+ import android.graphics.Color
++import android.view.MotionEvent
+ import android.view.View
+ import android.webkit.WebView
+ import android.widget.FrameLayout
++import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+ 
+ /**
+  * A [FrameLayout] container to hold the [RNCWebView].
+@@ -13,14 +15,76 @@ import android.widget.FrameLayout
+  * The WebView will then create an empty offscreen surface and NPE.
+  */
+ class RNCWebViewWrapper(context: Context, webView: RNCWebView) : FrameLayout(context) {
++  /**
++   * Custom [SwipeRefreshLayout] that ignores pull-to-refresh when the touch point
++   * sits on an inner scrollable element whose scrollTop > 0 (e.g. modals, side
++   * sheets, or any div with overflow-y: auto/scroll). Without this guard any
++   * vertical scroll inside such an element triggers the refresh, which is the
++   * single most reported issue against react-native-webview PR #3895.
++   * See https://github.com/react-native-webview/react-native-webview/pull/3895
++   */
++  private inner class GuardedSwipeRefreshLayout(context: Context) : SwipeRefreshLayout(context) {
++    private var canInnerChildScrollUp = false
++    private var scrollCheckComplete = false
++
++    override fun canChildScrollUp(): Boolean {
++      if (!scrollCheckComplete) return webView.canScrollVertically(-1)
++      return webView.canScrollVertically(-1) || canInnerChildScrollUp
++    }
++
++    override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
++      if (ev.action == MotionEvent.ACTION_DOWN) {
++        scrollCheckComplete = false
++        val density = resources.displayMetrics.density
++        val x = (ev.x / density).toInt()
++        val y = (ev.y / density).toInt()
++        webView.evaluateJavascript(
++          """
++          (function() {
++            var el = document.elementFromPoint($x, $y);
++            while (el && el !== document.body && el !== document.documentElement) {
++              var style = window.getComputedStyle(el);
++              var overflowY = style.getPropertyValue('overflow-y');
++              if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
++                return el.scrollTop > 0;
++              }
++              el = el.parentElement;
++            }
++            return false;
++          })()
++          """.trimIndent()
++        ) { result ->
++          canInnerChildScrollUp = result == "true"
++          scrollCheckComplete = true
++        }
++      }
++      return super.onInterceptTouchEvent(ev)
++    }
++  }
++
++  private val swipeRefreshLayout: SwipeRefreshLayout = GuardedSwipeRefreshLayout(context)
++
+   init {
+     // We make the WebView as transparent on top of the container,
+     // and let React Native sets background color for the container.
+     webView.setBackgroundColor(Color.TRANSPARENT)
+-    addView(webView)
++
++    swipeRefreshLayout.layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
++    swipeRefreshLayout.addView(webView)
++    swipeRefreshLayout.setOnRefreshListener {
++      webView.reload()
++      swipeRefreshLayout.isRefreshing = false
++    }
++    swipeRefreshLayout.isEnabled = false
++
++    addView(swipeRefreshLayout)
+   }
+ 
+-  val webView: RNCWebView = getChildAt(0) as RNCWebView
++  val webView: RNCWebView = webView
++
++  fun setPullToRefreshEnabled(enabled: Boolean) {
++    swipeRefreshLayout.isEnabled = enabled
++  }
+ 
+   companion object {
+     /**
+@@ -33,7 +97,11 @@ class RNCWebViewWrapper(context: Context, webView: RNCWebView) : FrameLayout(con
+       // In exceptional cases, such as receiving WebView messaging after the view has been unmounted,
+       // the WebView will not have a parent.
+       // In this case, we simply return -1 to indicate that it was not found.
+-      return (webView.parent as? View)?.id ?: -1
++      var parent = webView.parent
++      if (parent is SwipeRefreshLayout) {
++        parent = parent.parent
++      }
++      return (parent as? View)?.id ?: -1
+     }
+   }
+ }
+diff --git a/android/src/newarch/com/reactnativecommunity/webview/RNCWebViewManager.java b/android/src/newarch/com/reactnativecommunity/webview/RNCWebViewManager.java
+index 4709e28..5762ab6 100644
+--- a/android/src/newarch/com/reactnativecommunity/webview/RNCWebViewManager.java
++++ b/android/src/newarch/com/reactnativecommunity/webview/RNCWebViewManager.java
+@@ -397,7 +397,10 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
+     public void setPagingEnabled(RNCWebViewWrapper view, boolean value) {}
+ 
+     @Override
+-    public void setPullToRefreshEnabled(RNCWebViewWrapper view, boolean value) {}
++    @ReactProp(name = "pullToRefreshEnabled")
++    public void setPullToRefreshEnabled(RNCWebViewWrapper view, boolean value) {
++        mRNCWebViewManagerImpl.setPullToRefreshEnabled(view, value);
++    }
+ 
+     @Override
+     public void setRefreshControlLightMode(RNCWebViewWrapper view, boolean value) {}
+diff --git a/android/src/oldarch/com/reactnativecommunity/webview/RNCWebViewManager.java b/android/src/oldarch/com/reactnativecommunity/webview/RNCWebViewManager.java
+index 974337f..60dfa00 100644
+--- a/android/src/oldarch/com/reactnativecommunity/webview/RNCWebViewManager.java
++++ b/android/src/oldarch/com/reactnativecommunity/webview/RNCWebViewManager.java
+@@ -279,6 +279,11 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper> {
+         mRNCWebViewManagerImpl.setPaymentRequestEnabled(view, value);
+     }
+ 
++    @ReactProp(name = "pullToRefreshEnabled")
++    public void setPullToRefreshEnabled(RNCWebViewWrapper view, boolean value) {
++        mRNCWebViewManagerImpl.setPullToRefreshEnabled(view, value);
++    }
++    
+     @Override
+     protected void addEventEmitters(@NonNull ThemedReactContext reactContext, RNCWebViewWrapper viewWrapper) {
+         // Do not register default touch emitter and let WebView implementation handle touches
+diff --git a/src/WebViewTypes.ts b/src/WebViewTypes.ts
+index eca8141..7c90425 100644
+--- a/src/WebViewTypes.ts
++++ b/src/WebViewTypes.ts
+@@ -656,8 +656,9 @@ export interface IOSWebViewProps extends WebViewSharedProps {
+   /**
+    * Boolean value that determines whether a pull to refresh gesture is
+    * available in the `WebView`. The default value is `false`.
+-   * If `true`, sets `bounces` automatically to `true`
++   * If `true`, sets `bounces` automatically to `true` on iOS.
+    * @platform ios
++   * @platform android
+    *
+    */
+   pullToRefreshEnabled?: boolean;
