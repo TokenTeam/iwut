@@ -367,7 +367,9 @@
     "viewDetail": "查看详情"
   },
   "browser": {
-    "openWeb": "打开网页"
+    "openWeb": "打开网页",
+    "externalOpenFailed": "无法打开该链接",
+    "externalOpenFailedSub": "没有可处理 {scheme} 的应用"
   },
   "notif": {
     "channelName": "课程提醒",

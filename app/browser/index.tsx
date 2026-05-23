@@ -1,21 +1,34 @@
 import { useLocalSearchParams, useNavigation } from "expo-router";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Platform, View } from "react-native";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { Linking, Platform, View } from "react-native";
+import Toast from "react-native-toast-message";
 import {
   WebView,
   type WebViewMessageEvent,
   type WebViewNavigation,
 } from "react-native-webview";
+import type { ShouldStartLoadRequest } from "react-native-webview/lib/WebViewTypes";
 
 import { IS_DEV } from "@/constants/is-dev";
 import { useWebViewBackHandler } from "@/hooks/use-webview-back-handler";
 import { useZhlgdAutoLogin } from "@/hooks/use-zhlgd-autologin";
+import { useT } from "@/lib/i18n";
 import {
   NATIVE_RPC_INJECTED_JAVASCRIPT,
   NativeRPCBridge,
 } from "@/lib/nativerpc";
 
+// 允许 WebView 自己加载的 scheme
+const IN_WEBVIEW_SCHEMES = ["http:", "https:", "about:", "data:", "file:"];
+
 export default function BrowserScreen() {
+  const t = useT();
   const { uri } = useLocalSearchParams<{ uri: string }>();
   const navigation = useNavigation();
   const webview = useRef<WebView>(null);
@@ -47,6 +60,26 @@ export default function BrowserScreen() {
     }
   };
 
+  // 非 http(s) 等浏览器 scheme 一律转交给系统，避免 WebView 自己报错
+  const onShouldStartLoadWithRequest = useCallback(
+    (request: ShouldStartLoadRequest) => {
+      const { url } = request;
+      const scheme = url.match(/^[a-z][a-z0-9+\-.]*:/i)?.[0]?.toLowerCase();
+      if (!scheme || IN_WEBVIEW_SCHEMES.includes(scheme)) return true;
+
+      Linking.openURL(url).catch(() => {
+        Toast.show({
+          type: "error",
+          text1: t("browser.externalOpenFailed"),
+          text2: t("browser.externalOpenFailedSub", { scheme }),
+          position: "bottom",
+        });
+      });
+      return false;
+    },
+    [t],
+  );
+
   const onMessage = async (event: WebViewMessageEvent) => {
     if (autoLoginOnMessage(event)) return;
 
@@ -75,6 +108,7 @@ export default function BrowserScreen() {
         webviewDebuggingEnabled={IS_DEV}
         injectedJavaScriptBeforeContentLoaded={NATIVE_RPC_INJECTED_JAVASCRIPT}
         allowsBackForwardNavigationGestures={Platform.OS === "ios" && canGoBack}
+        onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onNavigationStateChange={onNavigationStateChange}
         onLoadEnd={autoLoginOnLoadEnd}
         onMessage={onMessage}

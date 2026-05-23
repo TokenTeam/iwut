@@ -367,7 +367,9 @@
     "viewDetail": "View details"
   },
   "browser": {
-    "openWeb": "Open URL"
+    "openWeb": "Open URL",
+    "externalOpenFailed": "Can't open this link",
+    "externalOpenFailedSub": "No app available to handle {scheme}"
   },
   "notif": {
     "channelName": "Class reminders",
