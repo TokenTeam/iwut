@@ -105,6 +105,7 @@ const config: ExpoConfig = {
     "@bacons/apple-targets",
     "./plugins/with-gradle-props.js",
     "./plugins/with-gradle-wrapper.js",
+    "./plugins/with-fix-script-cycle.js",
   ],
   experiments: {
     typedRoutes: true,
