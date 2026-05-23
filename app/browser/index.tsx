@@ -13,10 +13,15 @@ import {
   type WebViewMessageEvent,
   type WebViewNavigation,
 } from "react-native-webview";
-import type { ShouldStartLoadRequest } from "react-native-webview/lib/WebViewTypes";
+import type {
+  ShouldStartLoadRequest,
+  WebViewErrorEvent,
+  WebViewNavigationEvent,
+} from "react-native-webview/lib/WebViewTypes";
 
 import { IS_DEV } from "@/constants/is-dev";
 import { useWebViewBackHandler } from "@/hooks/use-webview-back-handler";
+import { useWebViewProgressBar } from "@/hooks/use-webview-progress-bar";
 import { useZhlgdAutoLogin } from "@/hooks/use-zhlgd-autologin";
 import { useT } from "@/lib/i18n";
 import {
@@ -39,6 +44,7 @@ export default function BrowserScreen() {
     onMessage: autoLoginOnMessage,
     smsNode,
   } = useZhlgdAutoLogin(webview);
+  const progressBar = useWebViewProgressBar();
 
   useWebViewBackHandler(webview, canGoBack);
 
@@ -64,14 +70,14 @@ export default function BrowserScreen() {
   const onShouldStartLoadWithRequest = useCallback(
     (request: ShouldStartLoadRequest) => {
       const { url } = request;
-      const scheme = url.match(/^[a-z][a-z0-9+\-.]*:/i)?.[0]?.toLowerCase();
-      if (!scheme || IN_WEBVIEW_SCHEMES.includes(scheme)) return true;
+      const urlScheme = url.match(/^[a-z][a-z0-9+\-.]*:/i)?.[0]?.toLowerCase();
+      if (!urlScheme || IN_WEBVIEW_SCHEMES.includes(urlScheme)) return true;
 
       Linking.openURL(url).catch(() => {
         Toast.show({
           type: "error",
           text1: t("browser.externalOpenFailed"),
-          text2: t("browser.externalOpenFailedSub", { scheme }),
+          text2: t("browser.externalOpenFailedSub", { scheme: urlScheme }),
           position: "bottom",
         });
       });
@@ -79,6 +85,11 @@ export default function BrowserScreen() {
     },
     [t],
   );
+
+  const onLoadEnd = (e: WebViewNavigationEvent | WebViewErrorEvent) => {
+    autoLoginOnLoadEnd(e);
+    progressBar.onLoadEnd();
+  };
 
   const onMessage = async (event: WebViewMessageEvent) => {
     if (autoLoginOnMessage(event)) return;
@@ -88,9 +99,7 @@ export default function BrowserScreen() {
       { pageUrl: event.nativeEvent.url },
     );
 
-    if (!response) {
-      return;
-    }
+    if (!response) return;
 
     webview.current?.injectJavaScript(
       rpcBridge.current.buildDeliverScript(response),
@@ -110,9 +119,12 @@ export default function BrowserScreen() {
         allowsBackForwardNavigationGestures={Platform.OS === "ios" && canGoBack}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onNavigationStateChange={onNavigationStateChange}
-        onLoadEnd={autoLoginOnLoadEnd}
+        onLoadStart={progressBar.onLoadStart}
+        onLoadProgress={progressBar.onLoadProgress}
+        onLoadEnd={onLoadEnd}
         onMessage={onMessage}
       />
+      {progressBar.node}
       {smsNode}
     </View>
   );
