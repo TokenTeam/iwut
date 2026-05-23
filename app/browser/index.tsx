@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useNavigation } from "expo-router";
-import { useEffect, useLayoutEffect, useRef } from "react";
-import { View } from "react-native";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Platform, View } from "react-native";
 import {
   WebView,
   type WebViewMessageEvent,
@@ -8,6 +8,7 @@ import {
 } from "react-native-webview";
 
 import { IS_DEV } from "@/constants/is-dev";
+import { useWebViewBackHandler } from "@/hooks/use-webview-back-handler";
 import { useZhlgdAutoLogin } from "@/hooks/use-zhlgd-autologin";
 import {
   NATIVE_RPC_INJECTED_JAVASCRIPT,
@@ -19,11 +20,14 @@ export default function BrowserScreen() {
   const navigation = useNavigation();
   const webview = useRef<WebView>(null);
   const rpcBridge = useRef<NativeRPCBridge>(new NativeRPCBridge());
+  const [canGoBack, setCanGoBack] = useState(false);
   const {
     onLoadEnd: autoLoginOnLoadEnd,
     onMessage: autoLoginOnMessage,
     smsNode,
   } = useZhlgdAutoLogin(webview);
+
+  useWebViewBackHandler(webview, canGoBack);
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: uri.split("/").pop() });
@@ -37,6 +41,7 @@ export default function BrowserScreen() {
   }, []);
 
   const onNavigationStateChange = (navState: WebViewNavigation) => {
+    setCanGoBack(navState.canGoBack);
     if (navState.title) {
       navigation.setOptions({ title: navState.title });
     }
@@ -69,6 +74,7 @@ export default function BrowserScreen() {
         originWhitelist={["*"]}
         webviewDebuggingEnabled={IS_DEV}
         injectedJavaScriptBeforeContentLoaded={NATIVE_RPC_INJECTED_JAVASCRIPT}
+        allowsBackForwardNavigationGestures={Platform.OS === "ios" && canGoBack}
         onNavigationStateChange={onNavigationStateChange}
         onLoadEnd={autoLoginOnLoadEnd}
         onMessage={onMessage}
