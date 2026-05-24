@@ -37,18 +37,11 @@ index 9f9d6f3..569e835 100644
  
  /**
   * A [FrameLayout] container to hold the [RNCWebView].
-@@ -13,14 +15,76 @@ import android.widget.FrameLayout
+@@ -13,14 +15,71 @@ import android.widget.FrameLayout
   * The WebView will then create an empty offscreen surface and NPE.
   */
  class RNCWebViewWrapper(context: Context, webView: RNCWebView) : FrameLayout(context) {
-+  /**
-+   * Custom [SwipeRefreshLayout] that ignores pull-to-refresh when the touch point
-+   * sits on an inner scrollable element whose scrollTop > 0 (e.g. modals, side
-+   * sheets, or any div with overflow-y: auto/scroll). Without this guard any
-+   * vertical scroll inside such an element triggers the refresh, which is the
-+   * single most reported issue against react-native-webview PR #3895.
-+   * See https://github.com/react-native-webview/react-native-webview/pull/3895
-+   */
++  /** Prevent refresh while a touched inner element can scroll upward. */
 +  private inner class GuardedSwipeRefreshLayout(context: Context) : SwipeRefreshLayout(context) {
 +    private var canInnerChildScrollUp = false
 +    private var scrollCheckComplete = false
@@ -71,12 +64,14 @@ index 9f9d6f3..569e835 100644
 +            while (el && el !== document.body && el !== document.documentElement) {
 +              var style = window.getComputedStyle(el);
 +              var overflowY = style.getPropertyValue('overflow-y');
-+              if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
-+                return el.scrollTop > 0;
++              if ((overflowY === 'auto' || overflowY === 'scroll') &&
++                  el.scrollHeight > el.clientHeight && el.scrollTop > 0) {
++                return true;
 +              }
 +              el = el.parentElement;
 +            }
-+            return false;
++            var root = document.scrollingElement;
++            return !!root && root.scrollTop > 0;
 +          })()
 +          """.trimIndent()
 +        ) { result ->
@@ -116,7 +111,7 @@ index 9f9d6f3..569e835 100644
  
    companion object {
      /**
-@@ -33,7 +97,11 @@ class RNCWebViewWrapper(context: Context, webView: RNCWebView) : FrameLayout(con
+@@ -33,7 +92,11 @@ class RNCWebViewWrapper(context: Context, webView: RNCWebView) : FrameLayout(con
        // In exceptional cases, such as receiving WebView messaging after the view has been unmounted,
        // the WebView will not have a parent.
        // In this case, we simply return -1 to indicate that it was not found.
