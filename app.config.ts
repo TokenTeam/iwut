@@ -45,10 +45,23 @@ const config: ExpoConfig = {
       NSAppTransportSecurity: {
         NSAllowsArbitraryLoads: true,
         NSAllowsArbitraryLoadsInWebContent: true,
+        NSExceptionDomains: {
+          "223.5.5.5": {
+            NSExceptionAllowsInsecureHTTPLoads: true,
+            NSIncludesSubdomains: false,
+          },
+          "172.30.21.100": {
+            NSExceptionAllowsInsecureHTTPLoads: true,
+            NSIncludesSubdomains: false,
+          },
+        },
       },
     },
     entitlements: {
       "com.apple.security.application-groups": ["group.dev.tokenteam.iwut"],
+      "keychain-access-groups": [
+        "$(AppIdentifierPrefix)dev.tokenteam.iwut.wlan",
+      ],
     },
   },
   android: {
@@ -64,6 +77,7 @@ const config: ExpoConfig = {
     en: "./assets/locales/app-meta-en.json",
   },
   plugins: [
+    "./plugins/with-fix-script-cycle.js",
     ...(IS_DEV ? ["expo-dev-client"] : []),
     "expo-router",
     "expo-font",
@@ -71,6 +85,7 @@ const config: ExpoConfig = {
     "expo-image",
     "expo-secure-store",
     "expo-sharing",
+    "expo-background-task",
     [
       "expo-localization",
       {
@@ -101,11 +116,9 @@ const config: ExpoConfig = {
       },
     ],
     "@sentry/react-native",
-    "expo-background-task",
     "@bacons/apple-targets",
     "./plugins/with-gradle-props.js",
     "./plugins/with-gradle-wrapper.js",
-    "./plugins/with-fix-script-cycle.js",
   ],
   experiments: {
     typedRoutes: true,

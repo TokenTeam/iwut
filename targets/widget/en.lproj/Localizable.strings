@@ -22,3 +22,12 @@
 "widget.weekday.fri" = "Fri";
 "widget.weekday.sat" = "Sat";
 "widget.weekday.sun" = "Sun";
+
+"wlan.intent.title" = "Connect Campus Wi-Fi";
+"wlan.intent.description" = "Authenticate to campus Wi-Fi using your saved account";
+"wlan.intent.shortTitle" = "Connect Wi-Fi";
+"wlan.intent.noCredentials" = "Set up your campus Wi-Fi account in iWUT first.";
+"wlan.intent.connected" = "Campus Wi-Fi connected.";
+"wlan.intent.alreadyOnline" = "Network is already available. No sign-in needed.";
+"wlan.intent.authenticationFailed" = "Campus Wi-Fi authentication failed. Check your account and password.";
+"wlan.intent.networkUnavailable" = "Campus Wi-Fi is unavailable. Try again later.";

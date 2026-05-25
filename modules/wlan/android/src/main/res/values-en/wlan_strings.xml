@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wlan_shortcut_label">Campus Wi-Fi</string>
+    <string name="wlan_no_credentials">Set up your campus Wi-Fi account in iWUT first.</string>
+    <string name="wlan_connected">Campus Wi-Fi connected.</string>
+    <string name="wlan_already_online">Network is already available. No sign-in needed.</string>
+    <string name="wlan_not_on_wifi">Connect to campus Wi-Fi and try again.</string>
+    <string name="wlan_network_unavailable">Campus Wi-Fi is unavailable. Try again later.</string>
+    <string name="wlan_authentication_failed">Campus Wi-Fi authentication failed. Check your account and password.</string>
+</resources>

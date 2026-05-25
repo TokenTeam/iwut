@@ -22,3 +22,12 @@
 "widget.weekday.fri" = "周五";
 "widget.weekday.sat" = "周六";
 "widget.weekday.sun" = "周日";
+
+"wlan.intent.title" = "连接校园网";
+"wlan.intent.description" = "使用已保存的账号完成校园网认证";
+"wlan.intent.shortTitle" = "连接校园网";
+"wlan.intent.noCredentials" = "请先在掌上吾理中设置校园网账号和密码";
+"wlan.intent.connected" = "校园网连接成功";
+"wlan.intent.alreadyOnline" = "网络畅通，无需登录";
+"wlan.intent.authenticationFailed" = "校园网认证失败，请检查账号和密码";
+"wlan.intent.networkUnavailable" = "校园网连接不可用，请稍后重试";

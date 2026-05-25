@@ -1,0 +1,9 @@
+<resources>
+  <string name="wlan_shortcut_label">校园网连接</string>
+  <string name="wlan_no_credentials">请先在掌上吾理中设置校园网账号和密码</string>
+  <string name="wlan_connected">校园网连接成功</string>
+  <string name="wlan_already_online">网络畅通，无需登录</string>
+  <string name="wlan_not_on_wifi">请先连接校园网后重试</string>
+  <string name="wlan_network_unavailable">校园网连接不可用</string>
+  <string name="wlan_authentication_failed">校园网认证失败，请检查账号和密码</string>
+</resources>

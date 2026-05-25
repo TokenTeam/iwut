@@ -3,16 +3,19 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { zustandStorage } from "@/lib/storage";
+import {
+  clearCredentials,
+  getSavedUsername,
+  hasCredentials,
+  saveCredentials,
+} from "@/modules/wlan";
 
 interface WlanStore {
   username: string;
   hasSaved: boolean;
-  save: (username: string, password: string) => void;
-  clear: () => void;
-  getCredentials: () => Promise<{
-    username: string;
-    password: string;
-  } | null>;
+  save: (username: string, password: string) => Promise<void>;
+  clear: () => Promise<void>;
+  syncCredentials: () => Promise<void>;
 }
 
 export const useWlanStore = create<WlanStore>()(
@@ -21,22 +24,33 @@ export const useWlanStore = create<WlanStore>()(
       username: "",
       hasSaved: false,
 
-      save: (username, password) => {
-        SecureStore.setItemAsync("wlan_password", password);
+      save: async (username, password) => {
+        await saveCredentials(username, password);
+        await SecureStore.deleteItemAsync("wlan_password");
         set({ username, hasSaved: true });
       },
 
-      clear: () => {
-        SecureStore.deleteItemAsync("wlan_password");
+      clear: async () => {
+        await clearCredentials();
+        await SecureStore.deleteItemAsync("wlan_password");
         set({ username: "", hasSaved: false });
       },
 
-      getCredentials: async () => {
+      syncCredentials: async () => {
         const { hasSaved, username } = get();
-        if (!hasSaved || !username) return null;
-        const password = await SecureStore.getItemAsync("wlan_password");
-        if (!password) return null;
-        return { username, password };
+        if (await hasCredentials()) {
+          const savedUsername = await getSavedUsername();
+          if (savedUsername && (!hasSaved || username !== savedUsername)) {
+            set({ username: savedUsername, hasSaved: true });
+          }
+          return;
+        }
+        if (!hasSaved || !username) return;
+
+        const legacyPassword = await SecureStore.getItemAsync("wlan_password");
+        if (!legacyPassword) return;
+        await saveCredentials(username, legacyPassword);
+        await SecureStore.deleteItemAsync("wlan_password");
       },
     }),
     {

@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Stack } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -18,14 +18,14 @@ import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
-import { login } from "@/services/wlan";
+import { login, requestPinnedShortcut } from "@/modules/wlan";
 import { useWlanStore } from "@/store/wlan";
 
 export default function WlanScreen() {
   const t = useT();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
-  const { hasSaved, username, save, clear, getCredentials } = useWlanStore();
+  const { hasSaved, username, save, clear, syncCredentials } = useWlanStore();
 
   const [sheetVisible, setSheetVisible] = useState(false);
   const [clearVisible, setClearVisible] = useState(false);
@@ -36,6 +36,12 @@ export default function WlanScreen() {
   const passwordRef = useRef<TextInput>(null);
   const [showPassword, setShowPassword] = useState(false);
 
+  useEffect(() => {
+    syncCredentials().catch((error) => {
+      reportError(error, { module: "wlan-credentials" });
+    });
+  }, [syncCredentials]);
+
   const openSheet = useCallback(() => {
     setInputUser(username);
     setInputPass("");
@@ -43,7 +49,7 @@ export default function WlanScreen() {
     setSheetVisible(true);
   }, [username]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const trimmed = inputUser.trim();
     if (!trimmed || !inputPass) {
       Toast.show({
@@ -53,24 +59,54 @@ export default function WlanScreen() {
       });
       return;
     }
-    save(trimmed, inputPass);
-    setSheetVisible(false);
+    try {
+      await save(trimmed, inputPass);
+      setSheetVisible(false);
+    } catch (error) {
+      reportError(error, { module: "wlan-credentials" });
+      Toast.show({
+        type: "error",
+        text1: t("wlan.connectFail"),
+        position: "bottom",
+      });
+    }
   };
 
   const handleConnect = useCallback(async () => {
-    const cred = await getCredentials();
-    if (!cred) {
-      openSheet();
-      return;
-    }
-
     setConnecting(true);
 
     try {
-      const msg = await login(cred.username, cred.password);
+      await syncCredentials();
+      const result = await login();
+      if (result.status === "no-credentials") {
+        openSheet();
+        return;
+      }
+      if (result.status === "authentication-failed") {
+        throw new Error(result.message ?? t("wlan.connectFail"));
+      }
+      if (
+        result.status === "not-on-wifi" ||
+        result.status === "network-unavailable"
+      ) {
+        throw new Error(
+          result.message ??
+            t(
+              result.status === "not-on-wifi"
+                ? "wlan.errNotCampus"
+                : "wlan.errNetwork",
+            ),
+        );
+      }
       Toast.show({
         type: "success",
-        text1: msg ?? t("wlan.connectOk"),
+        text1:
+          result.message ??
+          t(
+            result.status === "connected"
+              ? "wlan.connectSuccess"
+              : "wlan.connectOk",
+          ),
         position: "bottom",
       });
     } catch (e: any) {
@@ -93,16 +129,40 @@ export default function WlanScreen() {
     } finally {
       setConnecting(false);
     }
-  }, [getCredentials, openSheet, t]);
+  }, [openSheet, syncCredentials, t]);
 
-  const handleClear = () => {
-    clear();
-    setClearVisible(false);
-    Toast.show({
-      type: "success",
-      text1: t("wlan.accountCleared"),
-      position: "bottom",
-    });
+  const handleClear = async () => {
+    try {
+      await clear();
+      setClearVisible(false);
+      Toast.show({
+        type: "success",
+        text1: t("wlan.accountCleared"),
+        position: "bottom",
+      });
+    } catch (error) {
+      reportError(error, { module: "wlan-credentials" });
+    }
+  };
+
+  const handleAddShortcut = async () => {
+    try {
+      const requested = await requestPinnedShortcut();
+      Toast.show({
+        type: requested ? "success" : "error",
+        text1: t(
+          requested ? "wlan.shortcutRequested" : "wlan.shortcutUnsupported",
+        ),
+        position: "bottom",
+      });
+    } catch (error) {
+      reportError(error, { module: "wlan-shortcut" });
+      Toast.show({
+        type: "error",
+        text1: t("wlan.shortcutUnsupported"),
+        position: "bottom",
+      });
+    }
   };
 
   return (
@@ -166,6 +226,17 @@ export default function WlanScreen() {
             />
           )}
         </MenuGroup>
+
+        {process.env.EXPO_OS === "android" && (
+          <MenuGroup title={t("wlan.shortcutGroup")}>
+            <MenuItem
+              icon="add-to-home-screen"
+              iconBg="#007AFF"
+              label={t("wlan.addShortcut")}
+              onPress={handleAddShortcut}
+            />
+          </MenuGroup>
+        )}
       </ScrollView>
 
       <BottomSheet
