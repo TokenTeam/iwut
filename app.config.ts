@@ -77,7 +77,6 @@ const config: ExpoConfig = {
     en: "./assets/locales/app-meta-en.json",
   },
   plugins: [
-    "./plugins/with-fix-script-cycle.js",
     ...(IS_DEV ? ["expo-dev-client"] : []),
     "expo-router",
     "expo-font",
