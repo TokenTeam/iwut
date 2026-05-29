@@ -39,18 +39,28 @@ internal class WlanAuthenticator(context: Context) {
         val network = wifiNetwork ?: return WlanLoginResult(STATUS_NOT_ON_WIFI)
         val client = createClient(network)
 
-        return try {
+        val result = try {
             val portal = locatePortal(client)
-                ?: return WlanLoginResult(STATUS_ALREADY_ONLINE)
-            val csrf = getCsrfToken(client)
-            val result = performLogin(client, credentials, portal, csrf)
-            if (result.status == STATUS_CONNECTED) {
-                NetworkReporter.reportConnectivity(context, network, true)
+            if (portal == null) {
+                WlanLoginResult(STATUS_ALREADY_ONLINE)
+            } else {
+                val csrf = getCsrfToken(client)
+                performLogin(client, credentials, portal, csrf)
             }
-            result
         } catch (error: Exception) {
             WlanLoginResult(STATUS_NETWORK_UNAVAILABLE)
         }
+        reportNetworkConnectivity(network, result)
+        return result
+    }
+
+    private fun reportNetworkConnectivity(network: Network, result: WlanLoginResult) {
+        val hasConnectivity = when (result.status) {
+            STATUS_CONNECTED,
+            STATUS_ALREADY_ONLINE -> true
+            else -> false
+        }
+        NetworkReporter.reportConnectivity(context, network, hasConnectivity)
     }
 
     private fun createClient(network: Network): OkHttpClient {
