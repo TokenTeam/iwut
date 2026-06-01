@@ -13,6 +13,10 @@ import Animated, {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CourseDrawer } from "@/components/layout/course-drawer";
+import {
+  GetCourse,
+  type GetCourseHandle,
+} from "@/components/layout/course-importer";
 import { Schedule } from "@/components/layout/schedule";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -22,7 +26,6 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { getCurrentDayOfWeek, getCurrentWeek } from "@/lib/date";
 import { useT } from "@/lib/i18n";
-import { GetCourse, type GetCourseHandle } from "@/services/get-course";
 import { type ImportType, useCourseStore } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 import { useUserBindStore } from "@/store/user-bind";

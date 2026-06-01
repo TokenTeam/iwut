@@ -54,8 +54,9 @@ export default function BrowserScreen() {
 
   // 离开浏览器时清空 WebView 的 HTTP 缓存
   useEffect(() => {
+    const currentWebView = webview.current;
     return () => {
-      webview.current?.clearCache(true);
+      currentWebView?.clearCache(true);
     };
   }, []);
 

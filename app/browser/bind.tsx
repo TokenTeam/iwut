@@ -164,8 +164,9 @@ export default function BindScreen() {
   const hasFailed = useRef(false);
 
   useEffect(() => {
+    const currentWebView = webview.current;
     return () => {
-      webview.current?.clearCache(true);
+      currentWebView?.clearCache(true);
       if (!isBound.current) {
         CookieManager.clearAll(true).catch(() => {});
       }
