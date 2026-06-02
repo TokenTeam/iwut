@@ -8,6 +8,7 @@
 
 ```bash
 bun install --frozen-lockfile
+cp .env.local.example .env.local
 ```
 
 在有 [Expo Dev Client](https://docs.expo.dev/development/introduction/) 的情况下，运行以下命令启动 Metro 热重载：
@@ -15,6 +16,8 @@ bun install --frozen-lockfile
 ```bash
 bun start
 ```
+
+> 您可 [点击此处](https://download.tokenteam.dev/iwut/latest/development.apk) 来下载最新的 Dev Client
 
 或在已安装 Xcode / Android Studio 的环境下，直接构建并在模拟器或已连接的真机中运行：
 
@@ -25,3 +28,6 @@ bun run ios --device
 
 bun run android
 ```
+
+> [!TIP]
+> 若对原生代码、Expo 配置插件或依赖中的原生模块进行了修改，请重新构建 Dev Client 后再启动 Metro 热重载，仅执行 `bun start` 不会让这些改动生效。

@@ -13,7 +13,7 @@ $:
       imports:
         - https://cnb.cool/TokenTeam/secrets/-/blob/main/expo.yml
       env:
-        CNB_WELCOME_EXECUTE_COMMAND: bash scripts/build-android.sh development
+        CNB_WELCOME_CMD: bash scripts/build-android.sh development
 
 main:
   push:
@@ -55,10 +55,10 @@ main:
           - /root/.gradle:copy-on-write
           - /root/.bun/install/cache:copy-on-write
           - node_modules:copy-on-write
-      imports:
-        - https://cnb.cool/TokenTeam/secrets/-/blob/main/expo.yml
       stages:
-        - script: |
+        - imports:
+            - https://cnb.cool/TokenTeam/secrets/-/blob/main/expo.yml
+          script: |
             IFS=',' read -ra PROFILES <<< "$BUILD_PROFILES"
             for profile in "${PROFILES[@]}"; do
               echo "=== Building $profile ==="
@@ -75,3 +75,22 @@ main:
             attachments:
               - "./iwut-*.apk"
             ttl: 7
+        - imports:
+            - https://cnb.cool/TokenTeam/secrets/-/blob/main/r2.yml
+          script: |
+            export BUN_INSTALL="$HOME/.bun"
+            export PATH="$BUN_INSTALL/bin:$PATH"
+            VERSION="$(bun -p "require('./package.json').version")"
+            ENDPOINT="https://${ACCOUNT_ID}.r2.cloudflarestorage.com"
+            for f in iwut-*.apk; do
+              [ -f "$f" ] || continue
+              NAME="${f#iwut-}"
+              aws s3 cp "$f" "s3://${BUCKET}/iwut/${VERSION}/${NAME}" \
+                --endpoint-url "$ENDPOINT" \
+                --content-type "application/vnd.android.package-archive" \
+                --only-show-errors
+              aws s3 cp "$f" "s3://${BUCKET}/iwut/latest/${NAME}" \
+                --endpoint-url "$ENDPOINT" \
+                --content-type "application/vnd.android.package-archive" \
+                --only-show-errors
+            done
