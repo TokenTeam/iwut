@@ -36,6 +36,7 @@ import { useScheduleStore } from "@/store/schedule";
 import { useSettingsStore } from "@/store/settings";
 
 const REMINDER_PRESETS = [15, 30, 60];
+const EMPTY_WEBVIEW_HTML = "<!doctype html><html><body></body></html>";
 
 export default function SettingsScreen() {
   const t = useT();
@@ -403,7 +404,7 @@ export default function SettingsScreen() {
         >
           <WebView
             ref={handleCacheWebViewRef}
-            source={{ uri: "about:blank" }}
+            source={{ html: EMPTY_WEBVIEW_HTML }}
           />
         </View>
       )}

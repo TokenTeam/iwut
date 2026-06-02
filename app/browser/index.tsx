@@ -30,7 +30,8 @@ import {
 } from "@/lib/nativerpc";
 
 // 允许 WebView 自己加载的 scheme
-const IN_WEBVIEW_SCHEMES = ["http:", "https:", "about:", "data:", "file:"];
+const BLANK_WEBVIEW_URL = "about:blank";
+const IN_WEBVIEW_SCHEMES = ["http:", "https:", "data:", "file:"];
 
 export default function BrowserScreen() {
   const t = useT();
@@ -61,6 +62,8 @@ export default function BrowserScreen() {
   }, []);
 
   const onNavigationStateChange = (navState: WebViewNavigation) => {
+    if (navState.url.toLowerCase() === BLANK_WEBVIEW_URL) return;
+
     setCanGoBack(navState.canGoBack);
     if (navState.title) {
       navigation.setOptions({ title: navState.title });
@@ -71,7 +74,10 @@ export default function BrowserScreen() {
   const onShouldStartLoadWithRequest = useCallback(
     (request: ShouldStartLoadRequest) => {
       const { url } = request;
+      if (url.toLowerCase() === BLANK_WEBVIEW_URL) return false;
+
       const urlScheme = url.match(/^[a-z][a-z0-9+\-.]*:/i)?.[0]?.toLowerCase();
+      if (urlScheme === "about:") return false;
       if (!urlScheme || IN_WEBVIEW_SCHEMES.includes(urlScheme)) return true;
 
       Linking.openURL(url).catch(() => {
