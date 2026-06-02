@@ -31,3 +31,11 @@ bun run android
 
 > [!TIP]
 > 若对原生代码、Expo 配置插件或依赖中的原生模块进行了修改，请重新构建 Dev Client 后再启动 Metro 热重载，仅执行 `bun start` 不会让这些改动生效。
+
+## 许可
+
+本项目基于 GNU Affero General Public License v3.0 或后续版本授权发布。
+
+如果您修改并通过网络向用户提供本项目的版本，应按 AGPLv3 的要求向这些用户提供对应源代码。
+
+详情请参阅 [LICENSE](./LICENSE)。

@@ -3,6 +3,7 @@
   "main": "expo-router/entry",
   "version": "0.3.4",
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
