@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { RangeSlider } from "@react-native-assets/slider";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   LayoutAnimation,
+  PanResponder,
   Platform,
   Pressable,
   ScrollView,
@@ -447,12 +448,97 @@ function SlotCard({
   notSelectedLabel: string;
   weeksSuffix: string;
 }) {
-  const toggleWeek = (w: number) => {
-    const next = new Set(slot.weeks);
-    if (next.has(w)) next.delete(w);
-    else next.add(w);
+  // 周次格子的相对布局，用于涂抹时根据触摸坐标命中格子
+  const cellLayouts = useRef<
+    Record<number, { x: number; y: number; w: number; h: number }>
+  >({});
+  // 网格容器自身尺寸，用于判断手指是否已滑出网格区域
+  const gridSize = useRef({ w: 0, h: 0 });
+  const downCoords = useRef({ x: 0, y: 0 });
+  // 本次手势按下时是否落在某个周次格子上
+  const startedOnCell = useRef(false);
+  // 手势开始时的已选周次快照 / 起点周次 A / 本次区间模式（true=选中, false=取消）
+  const baseWeeks = useRef<Set<number>>(new Set());
+  const startWeek = useRef<number | null>(null);
+  const paintMode = useRef<boolean | null>(null);
+  // 始终持有最新的已选周次，供手势回调读取
+  const weeksRef = useRef(slot.weeks);
+  useEffect(() => {
+    weeksRef.current = slot.weeks;
+  }, [slot.weeks]);
+
+  const findWeekAt = (x: number, y: number): number | null => {
+    for (const key in cellLayouts.current) {
+      const r = cellLayouts.current[key];
+      if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
+        return Number(key);
+      }
+    }
+    return null;
+  };
+
+  // 将 min(A,B)..max(A,B) 整段设为本次模式，区间外的格子回到快照状态
+  const applyRange = (b: number) => {
+    if (startWeek.current === null || paintMode.current === null) return;
+    const lo = Math.min(startWeek.current, b);
+    const hi = Math.max(startWeek.current, b);
+    const next = new Set(baseWeeks.current);
+    for (let w = lo; w <= hi; w++) {
+      if (paintMode.current) next.add(w);
+      else next.delete(w);
+    }
     onUpdate({ weeks: next });
   };
+
+  const panResponder = useRef(
+    // PanResponder 回调仅在手势事件触发时读取 ref，并非渲染期读取，规则为误报
+    // eslint-disable-next-line react-hooks/refs
+    PanResponder.create({
+      onStartShouldSetPanResponder: (e, gs) => {
+        const { locationX, locationY } = e.nativeEvent;
+        // 仅当按下点落在某个周次格子上时才接管，否则放行页面滚动
+        startedOnCell.current = findWeekAt(locationX, locationY) != null;
+        if (startedOnCell.current) {
+          downCoords.current = { x: locationX, y: locationY };
+        }
+        return startedOnCell.current;
+      },
+      onMoveShouldSetPanResponder: (_e, g) =>
+        startedOnCell.current && (Math.abs(g.dx) > 2 || Math.abs(g.dy) > 2),
+      onPanResponderGrant: (e) => {
+        baseWeeks.current = new Set(weeksRef.current);
+        const { locationX, locationY } = e.nativeEvent;
+        const w = findWeekAt(locationX, locationY);
+        startWeek.current = w;
+        // 模式由起点 A 当前状态决定：未选则本次为“选中”，已选则本次为“取消”
+        paintMode.current = w != null ? !baseWeeks.current.has(w) : null;
+        if (w != null) applyRange(w);
+      },
+      onPanResponderMove: (e, gs) => {
+        const currentGridX = downCoords.current.x + gs.dx;
+        const currentGridY = downCoords.current.y + gs.dy;
+        if (
+          currentGridX < 0 ||
+          currentGridX > gridSize.current.w ||
+          currentGridY < 0 ||
+          currentGridY > gridSize.current.h
+        ) {
+          return;
+        }
+        const { locationX, locationY } = e.nativeEvent;
+        const w = findWeekAt(locationX, locationY);
+        if (w != null) applyRange(w);
+      },
+      onPanResponderRelease: () => {
+        paintMode.current = null;
+        startWeek.current = null;
+      },
+      onPanResponderTerminate: () => {
+        paintMode.current = null;
+        startWeek.current = null;
+      },
+    }),
+  ).current;
 
   const selectAllWeeks = () => {
     onUpdate({
@@ -607,6 +693,12 @@ function SlotCard({
             </View>
           </View>
           <View
+            // eslint-disable-next-line react-hooks/refs
+            {...panResponder.panHandlers}
+            onLayout={(e) => {
+              const { width, height } = e.nativeEvent.layout;
+              gridSize.current = { w: width, h: height };
+            }}
             style={{
               flexDirection: "row",
               flexWrap: "wrap",
@@ -617,9 +709,13 @@ function SlotCard({
             {Array.from({ length: MAX_WEEK }, (_, i) => i + 1).map((w) => {
               const selected = slot.weeks.has(w);
               return (
-                <Pressable
+                <View
                   key={w}
-                  onPress={() => toggleWeek(w)}
+                  pointerEvents="none"
+                  onLayout={(e) => {
+                    const { x, y, width, height } = e.nativeEvent.layout;
+                    cellLayouts.current[w] = { x, y, w: width, h: height };
+                  }}
                   style={{
                     width: 44,
                     height: 36,
@@ -638,7 +734,7 @@ function SlotCard({
                   >
                     {w}
                   </Text>
-                </Pressable>
+                </View>
               );
             })}
           </View>
