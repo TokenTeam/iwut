@@ -16,6 +16,7 @@ import {
 import Toast from "react-native-toast-message";
 
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
+import { ScrollLockProvider, useScrollLock } from "@/components/ui/scroll-lock";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { MAX_SECTION, MAX_WEEK, weeksToRanges } from "@/lib/course-weeks";
 import { type TKey, useT } from "@/lib/i18n";
@@ -149,6 +150,8 @@ export default function AddEditCourseScreen() {
     isEdit && existingRecords.length > 0 ? null : 0,
   );
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  // 拖动节次滑块时临时禁用页面滚动，避免手势冲突
+  const [scrollEnabled, setScrollEnabled] = useState(true);
 
   const toggleExpand = useCallback((index: number) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -278,119 +281,122 @@ export default function AddEditCourseScreen() {
           fullScreenGestureEnabled: false,
         }}
       />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <ScrollView
-          className="flex-1 bg-neutral-100 dark:bg-neutral-900"
-          contentContainerClassName="px-4 pt-4 pb-8"
-          keyboardShouldPersistTaps="handled"
+      <ScrollLockProvider value={setScrollEnabled}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-          <View className="mb-4 overflow-hidden rounded-xl bg-white dark:bg-neutral-800">
-            <View className="px-4 py-3">
-              <Text
-                style={{ fontSize: 12, color: labelColor, marginBottom: 6 }}
-              >
-                {t("courseAdd.courseName")}
-              </Text>
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                placeholder={t("courseAdd.courseNamePlaceholder")}
-                placeholderTextColor={placeholderColor}
-                editable={!isEdit}
-                style={{
-                  fontSize: 16,
-                  color: isEdit ? placeholderColor : inputColor,
-                  backgroundColor: inputBg,
-                  borderRadius: 10,
-                  paddingHorizontal: 14,
-                  paddingVertical: 10,
-                }}
-              />
-            </View>
-            <View className="mx-4 border-b border-neutral-200 dark:border-neutral-700" />
-            <View className="px-4 py-3">
-              <Text
-                style={{ fontSize: 12, color: labelColor, marginBottom: 6 }}
-              >
-                {t("courseAdd.teacher")}
-              </Text>
-              <TextInput
-                value={teacher}
-                onChangeText={setTeacher}
-                placeholder={t("courseAdd.teacherPlaceholder")}
-                placeholderTextColor={placeholderColor}
-                style={{
-                  fontSize: 16,
-                  color: inputColor,
-                  backgroundColor: inputBg,
-                  borderRadius: 10,
-                  paddingHorizontal: 14,
-                  paddingVertical: 10,
-                }}
-              />
-            </View>
-          </View>
-
-          {/* 时段列表 */}
-          {slots.map((slot, index) => (
-            <SlotCard
-              key={index}
-              slot={slot}
-              index={index}
-              expanded={expandedIndex === index}
-              canDelete={slots.length > 1}
-              onToggle={() => toggleExpand(index)}
-              onUpdate={(patch) => updateSlot(index, patch)}
-              onDelete={() => removeSlot(index)}
-              isDark={isDark}
-              labelColor={labelColor}
-              chipBg={chipBg}
-              chipText={chipText}
-              inputBg={inputBg}
-              inputColor={inputColor}
-              placeholderColor={placeholderColor}
-              cardBg={cardBg}
-              dayOptions={dayOptions}
-              t={t}
-              notSelectedLabel={notSelectedLabel}
-              weeksSuffix={weeksSuffix}
-            />
-          ))}
-
-          <Pressable
-            className="mb-4 flex-row items-center justify-center rounded-xl border border-dashed border-blue-400 py-3 active:bg-blue-50 dark:border-blue-600 dark:active:bg-neutral-800"
-            onPress={addSlot}
+          <ScrollView
+            className="flex-1 bg-neutral-100 dark:bg-neutral-900"
+            contentContainerClassName="px-4 pt-4 pb-8"
+            keyboardShouldPersistTaps="handled"
+            scrollEnabled={scrollEnabled}
           >
-            <Ionicons name="add" size={18} color="#3b82f6" />
-            <Text className="ml-1 text-sm font-medium text-blue-500">
-              {t("courseAdd.addSlot")}
-            </Text>
-          </Pressable>
+            <View className="mb-4 overflow-hidden rounded-xl bg-white dark:bg-neutral-800">
+              <View className="px-4 py-3">
+                <Text
+                  style={{ fontSize: 12, color: labelColor, marginBottom: 6 }}
+                >
+                  {t("courseAdd.courseName")}
+                </Text>
+                <TextInput
+                  value={name}
+                  onChangeText={setName}
+                  placeholder={t("courseAdd.courseNamePlaceholder")}
+                  placeholderTextColor={placeholderColor}
+                  editable={!isEdit}
+                  style={{
+                    fontSize: 16,
+                    color: isEdit ? placeholderColor : inputColor,
+                    backgroundColor: inputBg,
+                    borderRadius: 10,
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                  }}
+                />
+              </View>
+              <View className="mx-4 border-b border-neutral-200 dark:border-neutral-700" />
+              <View className="px-4 py-3">
+                <Text
+                  style={{ fontSize: 12, color: labelColor, marginBottom: 6 }}
+                >
+                  {t("courseAdd.teacher")}
+                </Text>
+                <TextInput
+                  value={teacher}
+                  onChangeText={setTeacher}
+                  placeholder={t("courseAdd.teacherPlaceholder")}
+                  placeholderTextColor={placeholderColor}
+                  style={{
+                    fontSize: 16,
+                    color: inputColor,
+                    backgroundColor: inputBg,
+                    borderRadius: 10,
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                  }}
+                />
+              </View>
+            </View>
 
-          <Pressable
-            onPress={handleSave}
-            className="items-center rounded-xl bg-blue-500 py-3.5 active:bg-blue-600"
-          >
-            <Text className="text-base font-semibold text-white">
-              {t("common.save")}
-            </Text>
-          </Pressable>
+            {/* 时段列表 */}
+            {slots.map((slot, index) => (
+              <SlotCard
+                key={index}
+                slot={slot}
+                index={index}
+                expanded={expandedIndex === index}
+                canDelete={slots.length > 1}
+                onToggle={() => toggleExpand(index)}
+                onUpdate={(patch) => updateSlot(index, patch)}
+                onDelete={() => removeSlot(index)}
+                isDark={isDark}
+                labelColor={labelColor}
+                chipBg={chipBg}
+                chipText={chipText}
+                inputBg={inputBg}
+                inputColor={inputColor}
+                placeholderColor={placeholderColor}
+                cardBg={cardBg}
+                dayOptions={dayOptions}
+                t={t}
+                notSelectedLabel={notSelectedLabel}
+                weeksSuffix={weeksSuffix}
+              />
+            ))}
 
-          {isEdit && (
             <Pressable
-              onPress={() => setShowDeleteConfirm(true)}
-              className="mt-3 items-center rounded-xl py-3 active:bg-red-50 dark:active:bg-red-950"
+              className="mb-4 flex-row items-center justify-center rounded-xl border border-dashed border-blue-400 py-3 active:bg-blue-50 dark:border-blue-600 dark:active:bg-neutral-800"
+              onPress={addSlot}
             >
-              <Text className="text-base font-medium text-red-500">
-                {t("courseManage.deleteCourseTitle")}
+              <Ionicons name="add" size={18} color="#3b82f6" />
+              <Text className="ml-1 text-sm font-medium text-blue-500">
+                {t("courseAdd.addSlot")}
               </Text>
             </Pressable>
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
+
+            <Pressable
+              onPress={handleSave}
+              className="items-center rounded-xl bg-blue-500 py-3.5 active:bg-blue-600"
+            >
+              <Text className="text-base font-semibold text-white">
+                {t("common.save")}
+              </Text>
+            </Pressable>
+
+            {isEdit && (
+              <Pressable
+                onPress={() => setShowDeleteConfirm(true)}
+                className="mt-3 items-center rounded-xl py-3 active:bg-red-50 dark:active:bg-red-950"
+              >
+                <Text className="text-base font-medium text-red-500">
+                  {t("courseManage.deleteCourseTitle")}
+                </Text>
+              </Pressable>
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </ScrollLockProvider>
 
       <ConfirmSheet
         visible={showDeleteConfirm}
@@ -448,6 +454,8 @@ function SlotCard({
   notSelectedLabel: string;
   weeksSuffix: string;
 }) {
+  // 拖动节次滑块时锁定/解锁页面滚动，避免手势冲突
+  const setScrollEnabled = useScrollLock();
   // 周次格子的相对布局，用于涂抹时根据触摸坐标命中格子
   const cellLayouts = useRef<
     Record<number, { x: number; y: number; w: number; h: number }>
@@ -765,6 +773,8 @@ function SlotCard({
             onValueChange={([s, e]) =>
               onUpdate({ sectionStart: s, sectionEnd: e })
             }
+            onSlidingStart={() => setScrollEnabled(false)}
+            onSlidingComplete={() => setScrollEnabled(true)}
             inboundColor="#3b82f6"
             outboundColor={isDark ? "#404040" : "#d4d4d4"}
             thumbTintColor="#3b82f6"
