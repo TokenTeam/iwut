@@ -149,6 +149,71 @@ function alignToSectionGroup(
   };
 }
 
+function withColorOpacity(color: string, opacity: number): string {
+  const opacityMultiplier = Math.max(0, Math.min(1, opacity));
+  const rgbMatch = color.match(/^rgba?\(([^)]+)\)$/i);
+  if (rgbMatch) {
+    const parts = rgbMatch[1].split(",").map((p) => p.trim());
+    if (parts.length >= 3) {
+      const sourceAlpha =
+        parts.length >= 4 ? Number.parseFloat(parts[3]) || 0 : 1;
+      const alpha = Math.max(0, Math.min(1, sourceAlpha * opacityMultiplier));
+      return `rgba(${parts[0]},${parts[1]},${parts[2]},${alpha})`;
+    }
+  }
+
+  const shortHexMatch = color.match(/^#([0-9a-f]{3})$/i);
+  if (shortHexMatch) {
+    const [r, g, b] = shortHexMatch[1].split("").map((c) => c + c);
+    return `rgba(${parseInt(r, 16)},${parseInt(g, 16)},${parseInt(
+      b,
+      16,
+    )},${opacityMultiplier})`;
+  }
+
+  const hexMatch = color.match(/^#([0-9a-f]{6})$/i);
+  if (hexMatch) {
+    const hex = hexMatch[1];
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    return `rgba(${r},${g},${b},${opacityMultiplier})`;
+  }
+
+  return color;
+}
+
+function withColorAlpha(color: string, opacity: number): string {
+  const alpha = Math.max(0, Math.min(1, opacity));
+  const rgbMatch = color.match(/^rgba?\(([^)]+)\)$/i);
+  if (rgbMatch) {
+    const parts = rgbMatch[1].split(",").map((p) => p.trim());
+    if (parts.length >= 3) {
+      return `rgba(${parts[0]},${parts[1]},${parts[2]},${alpha})`;
+    }
+  }
+
+  const shortHexMatch = color.match(/^#([0-9a-f]{3})$/i);
+  if (shortHexMatch) {
+    const [r, g, b] = shortHexMatch[1].split("").map((c) => c + c);
+    return `rgba(${parseInt(r, 16)},${parseInt(g, 16)},${parseInt(
+      b,
+      16,
+    )},${alpha})`;
+  }
+
+  const hexMatch = color.match(/^#([0-9a-f]{6})$/i);
+  if (hexMatch) {
+    const hex = hexMatch[1];
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  return color;
+}
+
 function buildDayCourses(courses: Course[]): Course[][] {
   const days: Course[][] = Array.from({ length: 7 }, () => []);
   for (const c of courses) {
@@ -214,18 +279,21 @@ export function Schedule({
   const colorPalette = useScheduleStore((s) => s.colorPalette);
   const courseColorOverrides = useScheduleStore((s) => s.courseColorOverrides);
   const backgroundImageUri = useScheduleStore((s) => s.backgroundImageUri);
+  const courseCellOpacity = useScheduleStore((s) => s.courseCellOpacity);
+  const otherWeekCellOpacity = useScheduleStore((s) => s.otherWeekCellOpacity);
+  const locatorCellOpacity = useScheduleStore((s) => s.locatorCellOpacity);
   const paletteColors = colorPalette.colors;
   const hasBgImage = !!backgroundImageUri;
-  const emptyBg = hasBgImage
-    ? "rgba(255,255,255,0.08)"
-    : isDark
-      ? "rgba(255,255,255,0.03)"
-      : "rgba(0,0,0,0.02)";
   const mutedColor = isDark ? "#a3a3a3" : "#737373";
   const subtleColor = isDark ? "#525252" : "#a3a3a3";
   const primaryTextColor = isDark ? "#e5e5e5" : "#1c1c1e";
-  const otherWeekTextColor = isDark ? "#737373" : "#c4c4c4";
-  const otherWeekColor = isDark ? "#525252" : "#9ca3af";
+  const otherWeekCardColor = isDark ? "#545458" : "#ebebf5";
+  const otherWeekAccentColor = isDark ? "#525252" : "#9ca3af";
+  const otherWeekTextColor = isDark ? "#d4d4d4" : "#737373";
+  const locatorBaseColor = hasBgImage || isDark ? "#ffffff" : "#000000";
+  const locatorBg = withColorAlpha(locatorBaseColor, locatorCellOpacity);
+  const otherWeekBg = withColorAlpha(otherWeekCardColor, otherWeekCellOpacity);
+  const otherWeekBorderColor = withColorAlpha(otherWeekCardColor, 0.32);
 
   const dayLabels = useMemo(() => DAY_KEYS.map((k) => localT(k)), [localT]);
   const monthLabelSuffix = localT("common.monthSuffix");
@@ -392,7 +460,9 @@ export function Schedule({
     const topVal = layout.sectionTop[course.sectionStart];
     const heightVal =
       layout.sectionTop[course.sectionEnd] + layout.sectionPct - topVal;
-    const bg = isOther ? emptyBg : colorOf(course.name);
+    const bg = isOther
+      ? otherWeekBg
+      : withColorOpacity(colorOf(course.name), courseCellOpacity);
     const span = course.sectionEnd - course.sectionStart + 1;
     const nameLines = 2 * span - 1;
     const nameColor = isOther ? otherWeekTextColor : "#fff";
@@ -415,6 +485,8 @@ export function Schedule({
             flex: 1,
             margin: 2,
             backgroundColor: bg,
+            borderWidth: isOther ? 1 : 0,
+            borderColor: isOther ? otherWeekBorderColor : "transparent",
             borderRadius: 6,
             padding: 4,
             overflow: "hidden",
@@ -548,7 +620,7 @@ export function Schedule({
                   style={({ pressed }) => ({
                     flex: 1,
                     margin: 2,
-                    backgroundColor: emptyBg,
+                    backgroundColor: locatorBg,
                     borderRadius: 6,
                     opacity: pressed ? 0.6 : 1,
                   })}
@@ -719,7 +791,7 @@ export function Schedule({
                 style={{
                   backgroundColor: isInCurrentWeek(selected)
                     ? colorOf(selected.name)
-                    : otherWeekColor,
+                    : otherWeekAccentColor,
                   paddingHorizontal: 22,
                   paddingTop: 22,
                   paddingBottom: 18,
@@ -935,7 +1007,9 @@ export function Schedule({
               <ScrollView contentContainerStyle={{ padding: 8 }}>
                 {slotCourses.map((c, i) => {
                   const other = !isInCurrentWeek(c);
-                  const tileColor = other ? otherWeekColor : colorOf(c.name);
+                  const tileColor = other
+                    ? otherWeekAccentColor
+                    : colorOf(c.name);
                   return (
                     <Pressable
                       key={`${c.name}-${c.weekStart}-${c.sectionStart}-${i}`}

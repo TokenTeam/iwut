@@ -266,6 +266,12 @@ export default function CalendarSettingsScreen() {
             href="/settings/course/palette"
           />
           <MenuItem
+            icon="tune"
+            iconBg="#0EA5E9"
+            label={t("calendarSet.visualStyle")}
+            href="/settings/schedule-visual"
+          />
+          <MenuItem
             icon="image"
             iconBg="#FF2D55"
             label={t("calendarSet.bg")}

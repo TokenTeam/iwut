@@ -217,6 +217,7 @@
     "syncRemoved": "Removed from system calendar",
     "customGroup": "Personalize",
     "palette": "Color palette",
+    "visualStyle": "Schedule appearance",
     "bg": "Background",
     "bgSet": "Set",
     "bgNone": "None",
@@ -229,6 +230,19 @@
     "bgRemoved": "Background removed",
     "bgPickerCancel": "Cancel",
     "bgPickerDone": "Done"
+  },
+  "scheduleVisual": {
+    "title": "Schedule appearance",
+    "backgroundGroup": "Background",
+    "cellsGroup": "Cells",
+    "actionsGroup": "Actions",
+    "bgOpacity": "Background image",
+    "bgBlur": "Background blur",
+    "blurValue": "{n}px",
+    "courseCellOpacity": "Course cells",
+    "otherWeekCellOpacity": "Other-week courses",
+    "locatorCellOpacity": "Locator cells",
+    "reset": "Reset to default"
   },
   "courseAdd": {
     "titleAdd": "Add course",

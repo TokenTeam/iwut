@@ -38,6 +38,12 @@ export default function CourseScreen() {
   const termStart = useCourseStore((store) => store.termStart);
   const isBound = useUserBindStore((store) => store.isBound);
   const backgroundImageUri = useScheduleStore((s) => s.backgroundImageUri);
+  const backgroundImageOpacity = useScheduleStore(
+    (s) => s.backgroundImageOpacity,
+  );
+  const backgroundImageBlurRadius = useScheduleStore(
+    (s) => s.backgroundImageBlurRadius,
+  );
   const [week, setWeek] = useState<number>(() => getCurrentWeek(termStart));
   const today = getCurrentDayOfWeek();
   const haptic = useHaptics();
@@ -110,9 +116,10 @@ export default function CourseScreen() {
             left: 0,
             right: 0,
             bottom: 0,
-            opacity: 0.25,
+            opacity: backgroundImageOpacity,
           }}
           contentFit="cover"
+          blurRadius={backgroundImageBlurRadius}
         />
       )}
       <SafeAreaView edges={["top"]} style={{ flex: 1 }}>

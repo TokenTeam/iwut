@@ -7,6 +7,22 @@ import {
 } from "@/constants/course-palettes";
 import { zustandStorage } from "@/lib/storage";
 
+export interface ScheduleVisualSettings {
+  backgroundImageOpacity: number;
+  backgroundImageBlurRadius: number;
+  courseCellOpacity: number;
+  otherWeekCellOpacity: number;
+  locatorCellOpacity: number;
+}
+
+export const DEFAULT_SCHEDULE_VISUAL: ScheduleVisualSettings = {
+  backgroundImageOpacity: 0.25,
+  backgroundImageBlurRadius: 0,
+  courseCellOpacity: 1,
+  otherWeekCellOpacity: 0.14,
+  locatorCellOpacity: 0.08,
+};
+
 interface ScheduleStore {
   scrollWeekend: boolean;
   showMiddaySections: boolean;
@@ -15,6 +31,11 @@ interface ScheduleStore {
   customPalettes: ColorPalette[];
   courseColorOverrides: Record<string, string>;
   backgroundImageUri: string | null;
+  backgroundImageOpacity: number;
+  backgroundImageBlurRadius: number;
+  courseCellOpacity: number;
+  otherWeekCellOpacity: number;
+  locatorCellOpacity: number;
   setScrollWeekend: (value: boolean) => void;
   setShowMiddaySections: (value: boolean) => void;
   setShowOtherWeekCourses: (value: boolean) => void;
@@ -24,6 +45,12 @@ interface ScheduleStore {
   setCourseColorOverride: (name: string, color: string) => void;
   removeCourseColorOverride: (name: string) => void;
   setBackgroundImageUri: (uri: string | null) => void;
+  setBackgroundImageOpacity: (value: number) => void;
+  setBackgroundImageBlurRadius: (value: number) => void;
+  setCourseCellOpacity: (value: number) => void;
+  setOtherWeekCellOpacity: (value: number) => void;
+  setLocatorCellOpacity: (value: number) => void;
+  resetScheduleVisual: () => void;
 }
 
 export const useScheduleStore = create<ScheduleStore>()(
@@ -36,6 +63,7 @@ export const useScheduleStore = create<ScheduleStore>()(
       customPalettes: [],
       courseColorOverrides: {},
       backgroundImageUri: null,
+      ...DEFAULT_SCHEDULE_VISUAL,
       setScrollWeekend: (value: boolean) => set({ scrollWeekend: value }),
       setShowMiddaySections: (value: boolean) =>
         set({ showMiddaySections: value }),
@@ -67,6 +95,17 @@ export const useScheduleStore = create<ScheduleStore>()(
       },
       setBackgroundImageUri: (uri: string | null) =>
         set({ backgroundImageUri: uri }),
+      setBackgroundImageOpacity: (value: number) =>
+        set({ backgroundImageOpacity: value }),
+      setBackgroundImageBlurRadius: (value: number) =>
+        set({ backgroundImageBlurRadius: value }),
+      setCourseCellOpacity: (value: number) =>
+        set({ courseCellOpacity: value }),
+      setOtherWeekCellOpacity: (value: number) =>
+        set({ otherWeekCellOpacity: value }),
+      setLocatorCellOpacity: (value: number) =>
+        set({ locatorCellOpacity: value }),
+      resetScheduleVisual: () => set({ ...DEFAULT_SCHEDULE_VISUAL }),
     }),
     {
       name: "schedule",
