@@ -20,8 +20,35 @@ export const DEFAULT_SCHEDULE_VISUAL: ScheduleVisualSettings = {
   backgroundImageBlurRadius: 0,
   courseCellOpacity: 1,
   otherWeekCellOpacity: 0.14,
-  locatorCellOpacity: 0.08,
+  locatorCellOpacity: 1,
 };
+
+const SCHEDULE_PERSIST_VERSION = 1;
+
+function clampUnit(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+function migrateScheduleState(persistedState: unknown, version: number) {
+  if (
+    version >= SCHEDULE_PERSIST_VERSION ||
+    typeof persistedState !== "object" ||
+    persistedState === null
+  ) {
+    return persistedState;
+  }
+
+  const state = persistedState as Partial<ScheduleStore>;
+  const oldLocatorOpacity =
+    typeof state.locatorCellOpacity === "number"
+      ? state.locatorCellOpacity
+      : DEFAULT_SCHEDULE_VISUAL.locatorCellOpacity;
+
+  return {
+    ...state,
+    locatorCellOpacity: clampUnit(oldLocatorOpacity / 0.08),
+  };
+}
 
 interface ScheduleStore {
   scrollWeekend: boolean;
@@ -110,6 +137,8 @@ export const useScheduleStore = create<ScheduleStore>()(
     {
       name: "schedule",
       storage: zustandStorage,
+      version: SCHEDULE_PERSIST_VERSION,
+      migrate: migrateScheduleState,
     },
   ),
 );
