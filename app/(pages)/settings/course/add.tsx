@@ -192,11 +192,11 @@ export default function AddEditCourseScreen() {
     [slots.length, t],
   );
 
-  const inputBg = isDark ? "#262626" : "#f5f5f5";
+  const inputBg = isDark ? "#333333" : "#f5f5f5";
   const inputColor = isDark ? "#e5e5e5" : "#1c1c1e";
   const placeholderColor = isDark ? "#525252" : "#a3a3a3";
   const labelColor = isDark ? "#a3a3a3" : "#525252";
-  const chipBg = isDark ? "#262626" : "#f5f5f5";
+  const chipBg = isDark ? "#333333" : "#f5f5f5";
   const chipText = isDark ? "#d4d4d4" : "#525252";
   const cardBg = isDark ? "#262626" : "#ffffff";
 
