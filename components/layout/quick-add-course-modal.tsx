@@ -15,6 +15,10 @@ import {
 import Toast from "react-native-toast-message";
 
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
+import {
+  getAndroidBlurProps,
+  useAndroidBlurTarget,
+} from "@/components/ui/app-blur-target";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { findConflictWeeks, MAX_WEEK, weeksToRanges } from "@/lib/course-weeks";
 import { type TKey, useT } from "@/lib/i18n";
@@ -48,6 +52,7 @@ interface Props {
 }
 
 export function QuickAddCourseModal({ slot, currentWeek, onClose }: Props) {
+  const blurTarget = useAndroidBlurTarget();
   const slotKey = slot
     ? `${slot.day}-${slot.sectionStart}-${slot.sectionEnd}`
     : null;
@@ -72,6 +77,7 @@ export function QuickAddCourseModal({ slot, currentWeek, onClose }: Props) {
           }}
         >
           <BlurView
+            {...getAndroidBlurProps(blurTarget)}
             intensity={30}
             tint="dark"
             style={StyleSheet.absoluteFill}

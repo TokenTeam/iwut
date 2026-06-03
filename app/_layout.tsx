@@ -39,6 +39,7 @@ import {
 } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
+import { AppBlurTargetProvider } from "@/components/ui/app-blur-target";
 import { UpdateModal } from "@/components/ui/update-modal";
 import { Themes } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -149,16 +150,18 @@ function RootLayout() {
         <ThemeProvider
           value={Themes[colorScheme === "dark" ? "dark" : "default"]}
         >
-          <Stack
-            screenOptions={{
-              headerBackButtonDisplayMode: "minimal",
-            }}
-          >
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          </Stack>
-          <StatusBar style="auto" />
-          <Toast />
-          <UpdateModal />
+          <AppBlurTargetProvider>
+            <Stack
+              screenOptions={{
+                headerBackButtonDisplayMode: "minimal",
+              }}
+            >
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            </Stack>
+            <StatusBar style="auto" />
+            <Toast />
+            <UpdateModal />
+          </AppBlurTargetProvider>
         </ThemeProvider>
       </View>
     </SafeAreaProvider>

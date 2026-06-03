@@ -24,6 +24,10 @@ import {
   QuickAddCourseModal,
   type QuickAddSlot,
 } from "./quick-add-course-modal";
+import {
+  getAndroidBlurProps,
+  useAndroidBlurTarget,
+} from "@/components/ui/app-blur-target";
 
 const DAY_KEYS = [
   "schedule.weekday.mon",
@@ -198,6 +202,7 @@ export function Schedule({
   const { width: screenWidth } = useWindowDimensions();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const blurTarget = useAndroidBlurTarget();
   const [selected, setSelected] = useState<Course | null>(null);
   const [slotCourses, setSlotCourses] = useState<Course[] | null>(null);
   const [quickAddSlot, setQuickAddSlot] = useState<QuickAddSlot | null>(null);
@@ -691,6 +696,7 @@ export function Schedule({
           }}
         >
           <BlurView
+            {...getAndroidBlurProps(blurTarget)}
             intensity={30}
             tint="dark"
             style={StyleSheet.absoluteFill}
@@ -863,6 +869,7 @@ export function Schedule({
           }}
         >
           <BlurView
+            {...getAndroidBlurProps(blurTarget)}
             intensity={30}
             tint="dark"
             style={StyleSheet.absoluteFill}

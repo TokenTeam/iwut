@@ -19,6 +19,10 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import {
+  getAndroidBlurProps,
+  useAndroidBlurTarget,
+} from "@/components/ui/app-blur-target";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useT } from "@/lib/i18n";
@@ -50,6 +54,7 @@ export function CourseDrawer({
   const isDark = scheme === "dark";
   const { width: screenWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const blurTarget = useAndroidBlurTarget();
 
   const drawerWidth = Math.round(screenWidth * 0.66);
   const topOffset = insets.top + HEADER_HEIGHT;
@@ -133,7 +138,7 @@ export function CourseDrawer({
         action?.();
       }}
     >
-      {/* 遮罩仅覆盖 header 下方区域，不影响顶部菜单按钮和周数栏 */}
+      {/* 遮罩仅覆盖 header 下方区域，顶部菜单区域由 Modal 内的热区处理。 */}
       <Animated.View
         style={[
           {
@@ -147,6 +152,7 @@ export function CourseDrawer({
         ]}
       >
         <BlurView
+          {...getAndroidBlurProps(blurTarget)}
           intensity={25}
           tint={isDark ? "dark" : "default"}
           style={StyleSheet.absoluteFill}
@@ -162,6 +168,19 @@ export function CourseDrawer({
           onPress={onClose}
         />
       </Animated.View>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t("common.cancel")}
+        style={{
+          position: "absolute",
+          top: insets.top,
+          left: 12,
+          width: 48,
+          height: HEADER_HEIGHT,
+        }}
+        onPress={onClose}
+      />
 
       {/* 左侧抽屉从 header 下方开始，高度跟随内容 */}
       <Animated.View

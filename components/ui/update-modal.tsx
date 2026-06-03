@@ -14,6 +14,10 @@ import {
 import Markdown from "react-native-markdown-renderer";
 import Toast from "react-native-toast-message";
 
+import {
+  getAndroidBlurProps,
+  useAndroidBlurTarget,
+} from "@/components/ui/app-blur-target";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { getResolvedLang, useT } from "@/lib/i18n";
@@ -65,6 +69,7 @@ export function UpdateModal() {
   const lang = getResolvedLang();
   const haptic = useHaptics();
   const isDark = useColorScheme() === "dark";
+  const blurTarget = useAndroidBlurTarget();
 
   // IMPORTANT: subscribe to primitive / stable-reference fields one by one.
   // Returning a freshly-allocated object from a selector causes zustand's
@@ -175,6 +180,7 @@ export function UpdateModal() {
     >
       <View className="flex-1 items-center justify-center px-6">
         <BlurView
+          {...getAndroidBlurProps(blurTarget)}
           intensity={30}
           tint="dark"
           style={StyleSheet.absoluteFill}

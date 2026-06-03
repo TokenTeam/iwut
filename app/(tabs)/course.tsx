@@ -121,7 +121,7 @@ export default function CourseScreen() {
             style={{ width: 48, alignItems: "center" }}
             onPress={() => {
               haptic();
-              setShowDrawer(true);
+              setShowDrawer((visible) => !visible);
             }}
           >
             <Ionicons name="menu-outline" size={24} color={iconColor} />
