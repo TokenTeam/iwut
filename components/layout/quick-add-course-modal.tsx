@@ -305,7 +305,6 @@ function QuickAddBody({ slot, currentWeek, onClose }: BodyProps) {
       <View style={{ padding: 18, gap: 12 }}>
         <TextInput
           ref={nameInputRef}
-          autoFocus
           value={name}
           onChangeText={setName}
           placeholder={t("schedule.quickAdd.namePlaceholder")}
