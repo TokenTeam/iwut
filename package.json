@@ -38,6 +38,7 @@
     "expo-linear-gradient": "~56.0.4",
     "expo-linking": "~56.0.13",
     "expo-localization": "~56.0.6",
+    "expo-observe": "~56.0.18",
     "expo-router": "~56.2.8",
     "expo-secure-store": "~56.0.4",
     "expo-sharing": "~56.0.15",

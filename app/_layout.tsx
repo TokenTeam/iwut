@@ -26,10 +26,12 @@ import "@/lib/i18n/bootstrap";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useFonts } from "expo-font";
+import { Observe, ObserveRoot } from "expo-observe";
 import { Stack } from "expo-router";
 import { ThemeProvider } from "expo-router/react-navigation";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
+import * as Updates from "expo-updates";
 import { useCallback, useEffect, useRef } from "react";
 import { AppState, Appearance, Platform, View } from "react-native";
 import "react-native-reanimated";
@@ -65,6 +67,12 @@ export const unstable_settings = {
   anchor: "(tabs)",
 };
 
+Observe.configure({
+  environment: Updates.channel ?? "development",
+  dispatchingEnabled: !__DEV__,
+  integrations: { "expo-router": true },
+});
+
 void SplashScreen.preventAutoHideAsync().catch(() => {
   // Ignore if the splash screen was already hidden by the platform/runtime.
 });
@@ -73,6 +81,7 @@ function RootLayout() {
   const colorScheme = useColorScheme();
   const themeMode = useThemeStore((s) => s.themeMode);
   const isFirstMount = useRef(true);
+  const hasMarkedInteractive = useRef(false);
   const [fontsLoaded, fontError] = useFonts({
     ...Ionicons.font,
     ...MaterialIcons.font,
@@ -136,7 +145,13 @@ function RootLayout() {
 
   const onLayoutRootView = useCallback(() => {
     if (fontsLoaded || fontError) {
-      void SplashScreen.hideAsync();
+      void SplashScreen.hideAsync()
+        .catch(() => {})
+        .finally(() => {
+          if (hasMarkedInteractive.current) return;
+          hasMarkedInteractive.current = true;
+          Observe.markInteractive();
+        });
     }
   }, [fontError, fontsLoaded]);
 
@@ -168,4 +183,4 @@ function RootLayout() {
   );
 }
 
-export default Sentry.wrap(RootLayout);
+export default Sentry.wrap(ObserveRoot.wrap(RootLayout));
