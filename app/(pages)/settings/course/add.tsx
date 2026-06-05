@@ -150,8 +150,27 @@ export default function AddEditCourseScreen() {
     isEdit && existingRecords.length > 0 ? null : 0,
   );
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  // 拖动节次滑块时临时禁用页面滚动，避免手势冲突
+  // 拖动周次网格或节次滑块时临时禁用页面滚动，避免手势冲突
   const [scrollEnabled, setScrollEnabled] = useState(true);
+  const scrollLockCount = useRef(0);
+
+  const acquireScrollLock = useCallback(() => {
+    scrollLockCount.current += 1;
+    setScrollEnabled(false);
+  }, []);
+
+  const releaseScrollLock = useCallback(() => {
+    scrollLockCount.current = Math.max(0, scrollLockCount.current - 1);
+    setScrollEnabled(scrollLockCount.current === 0);
+  }, []);
+
+  const scrollLock = useMemo(
+    () => ({
+      acquire: acquireScrollLock,
+      release: releaseScrollLock,
+    }),
+    [acquireScrollLock, releaseScrollLock],
+  );
 
   const toggleExpand = useCallback((index: number) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -281,7 +300,7 @@ export default function AddEditCourseScreen() {
           fullScreenGestureEnabled: false,
         }}
       />
-      <ScrollLockProvider value={setScrollEnabled}>
+      <ScrollLockProvider value={scrollLock}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -454,8 +473,8 @@ function SlotCard({
   notSelectedLabel: string;
   weeksSuffix: string;
 }) {
-  // 拖动节次滑块时锁定/解锁页面滚动，避免手势冲突
-  const setScrollEnabled = useScrollLock();
+  // 拖动周次网格或节次滑块时锁定/解锁页面滚动，避免手势冲突
+  const scrollLock = useScrollLock();
   // 周次格子的相对布局，用于涂抹时根据触摸坐标命中格子
   const cellLayouts = useRef<
     Record<number, { x: number; y: number; w: number; h: number }>
@@ -469,6 +488,9 @@ function SlotCard({
   const baseWeeks = useRef<Set<number>>(new Set());
   const startWeek = useRef<number | null>(null);
   const paintMode = useRef<boolean | null>(null);
+  const weekGestureLocked = useRef(false);
+  const sliderTouchLocked = useRef(false);
+  const sliderSlidingLocked = useRef(false);
   // 始终持有最新的已选周次，供手势回调读取
   const weeksRef = useRef(slot.weeks);
   useEffect(() => {
@@ -483,6 +505,58 @@ function SlotCard({
       }
     }
     return null;
+  };
+
+  const lockWeekGesture = () => {
+    if (weekGestureLocked.current) return;
+    weekGestureLocked.current = true;
+    scrollLock.acquire();
+  };
+
+  const releaseWeekGesture = () => {
+    if (!weekGestureLocked.current) return;
+    weekGestureLocked.current = false;
+    scrollLock.release();
+  };
+
+  const lockSliderTouch = () => {
+    if (sliderTouchLocked.current) return;
+    sliderTouchLocked.current = true;
+    scrollLock.acquire();
+  };
+
+  const releaseSliderTouch = () => {
+    if (!sliderTouchLocked.current) return;
+    sliderTouchLocked.current = false;
+    scrollLock.release();
+  };
+
+  const lockSliderSliding = () => {
+    if (sliderSlidingLocked.current) return;
+    sliderSlidingLocked.current = true;
+    scrollLock.acquire();
+  };
+
+  const releaseSliderSliding = () => {
+    if (!sliderSlidingLocked.current) return;
+    sliderSlidingLocked.current = false;
+    scrollLock.release();
+  };
+
+  const resetWeekGesture = () => {
+    paintMode.current = null;
+    startWeek.current = null;
+    startedOnCell.current = false;
+    releaseWeekGesture();
+  };
+
+  const shouldStartWeekGesture = (x: number, y: number) => {
+    startedOnCell.current = findWeekAt(x, y) != null;
+    if (startedOnCell.current) {
+      downCoords.current = { x, y };
+      lockWeekGesture();
+    }
+    return startedOnCell.current;
   };
 
   // 将 min(A,B)..max(A,B) 整段设为本次模式，区间外的格子回到快照状态
@@ -502,18 +576,18 @@ function SlotCard({
     // PanResponder 回调仅在手势事件触发时读取 ref，并非渲染期读取，规则为误报
     // eslint-disable-next-line react-hooks/refs
     PanResponder.create({
-      onStartShouldSetPanResponder: (e, gs) => {
+      onStartShouldSetPanResponderCapture: (e) => {
         const { locationX, locationY } = e.nativeEvent;
-        // 仅当按下点落在某个周次格子上时才接管，否则放行页面滚动
-        startedOnCell.current = findWeekAt(locationX, locationY) != null;
-        if (startedOnCell.current) {
-          downCoords.current = { x: locationX, y: locationY };
-        }
-        return startedOnCell.current;
+        return shouldStartWeekGesture(locationX, locationY);
+      },
+      onStartShouldSetPanResponder: (e) => {
+        const { locationX, locationY } = e.nativeEvent;
+        return shouldStartWeekGesture(locationX, locationY);
       },
       onMoveShouldSetPanResponder: (_e, g) =>
         startedOnCell.current && (Math.abs(g.dx) > 2 || Math.abs(g.dy) > 2),
       onPanResponderGrant: (e) => {
+        lockWeekGesture();
         baseWeeks.current = new Set(weeksRef.current);
         const { locationX, locationY } = e.nativeEvent;
         const w = findWeekAt(locationX, locationY);
@@ -537,14 +611,9 @@ function SlotCard({
         const w = findWeekAt(locationX, locationY);
         if (w != null) applyRange(w);
       },
-      onPanResponderRelease: () => {
-        paintMode.current = null;
-        startWeek.current = null;
-      },
-      onPanResponderTerminate: () => {
-        paintMode.current = null;
-        startWeek.current = null;
-      },
+      onPanResponderRelease: resetWeekGesture,
+      onPanResponderTerminate: resetWeekGesture,
+      onPanResponderTerminationRequest: () => false,
     }),
   ).current;
 
@@ -765,23 +834,32 @@ function SlotCard({
               end: slot.sectionEnd,
             })}
           </Text>
-          <RangeSlider
-            range={[slot.sectionStart, slot.sectionEnd]}
-            minimumValue={1}
-            maximumValue={MAX_SECTION}
-            step={1}
-            onValueChange={([s, e]) =>
-              onUpdate({ sectionStart: s, sectionEnd: e })
-            }
-            onSlidingStart={() => setScrollEnabled(false)}
-            onSlidingComplete={() => setScrollEnabled(true)}
-            inboundColor="#3b82f6"
-            outboundColor={isDark ? "#404040" : "#d4d4d4"}
-            thumbTintColor="#3b82f6"
-            thumbSize={22}
-            trackHeight={4}
-            style={{ height: 40 }}
-          />
+          <View
+            onStartShouldSetResponderCapture={() => {
+              lockSliderTouch();
+              return false;
+            }}
+            onTouchEnd={releaseSliderTouch}
+            onTouchCancel={releaseSliderTouch}
+          >
+            <RangeSlider
+              range={[slot.sectionStart, slot.sectionEnd]}
+              minimumValue={1}
+              maximumValue={MAX_SECTION}
+              step={1}
+              onValueChange={([s, e]) =>
+                onUpdate({ sectionStart: s, sectionEnd: e })
+              }
+              onSlidingStart={lockSliderSliding}
+              onSlidingComplete={releaseSliderSliding}
+              inboundColor="#3b82f6"
+              outboundColor={isDark ? "#404040" : "#d4d4d4"}
+              thumbTintColor="#3b82f6"
+              thumbSize={22}
+              trackHeight={4}
+              style={{ height: 40 }}
+            />
+          </View>
         </View>
       )}
     </View>
