@@ -13,6 +13,7 @@ import {
   type ColorPalette,
   validateColorPalette,
 } from "@/constants/course-palettes";
+import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import { useScheduleStore } from "@/store/schedule";
 
@@ -80,6 +81,7 @@ function PaletteRow({
 }
 
 export default function PaletteScreen() {
+  useMarkRouteInteractive();
   const t = useT();
   const colorPalette = useScheduleStore((s) => s.colorPalette);
   const setColorPalette = useScheduleStore((s) => s.setColorPalette);

@@ -1,4 +1,5 @@
 import { IS_DEV } from "@/constants/is-dev";
+import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
 import { useUserBindStore } from "@/store/user-bind";
@@ -154,6 +155,7 @@ const INJECTED_JS = `(function(){
 })();true;`;
 
 export default function BindScreen() {
+  useMarkRouteInteractive();
   const t = useT();
   const webview = useRef<WebView>(null);
   const pendingCredentials = useRef<{

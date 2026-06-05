@@ -25,6 +25,7 @@ import { WebView } from "react-native-webview";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
+import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
 import {
@@ -39,6 +40,7 @@ const REMINDER_PRESETS = [15, 30, 60];
 const EMPTY_WEBVIEW_HTML = "<!doctype html><html><body></body></html>";
 
 export default function SettingsScreen() {
+  useMarkRouteInteractive();
   const t = useT();
   const hapticFeedback = useSettingsStore((s) => s.hapticFeedback);
   const setHapticFeedback = useSettingsStore((s) => s.setHapticFeedback);

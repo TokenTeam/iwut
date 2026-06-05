@@ -20,6 +20,7 @@ import Svg, {
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import { useUserBindStore } from "@/store/user-bind";
 
@@ -314,6 +315,7 @@ function UserHero() {
 }
 
 export default function UserScreen() {
+  useMarkRouteInteractive();
   const t = useT();
   const isDark = useColorScheme() === "dark";
   return (

@@ -81,7 +81,6 @@ function RootLayout() {
   const colorScheme = useColorScheme();
   const themeMode = useThemeStore((s) => s.themeMode);
   const isFirstMount = useRef(true);
-  const hasMarkedInteractive = useRef(false);
   const [fontsLoaded, fontError] = useFonts({
     ...Ionicons.font,
     ...MaterialIcons.font,
@@ -145,13 +144,7 @@ function RootLayout() {
 
   const onLayoutRootView = useCallback(() => {
     if (fontsLoaded || fontError) {
-      void SplashScreen.hideAsync()
-        .catch(() => {})
-        .finally(() => {
-          if (hasMarkedInteractive.current) return;
-          hasMarkedInteractive.current = true;
-          Observe.markInteractive();
-        });
+      void SplashScreen.hideAsync();
     }
   }, [fontError, fontsLoaded]);
 

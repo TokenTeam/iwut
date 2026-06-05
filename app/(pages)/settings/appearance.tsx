@@ -7,11 +7,13 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { type Lang, useT } from "@/lib/i18n";
 import { useSettingsStore } from "@/store/settings";
 import { type ThemeMode, useThemeStore } from "@/store/theme";
 
 export default function AppearanceScreen() {
+  useMarkRouteInteractive();
   const t = useT();
   const scheme = useColorScheme();
   const iconColor = Colors[scheme === "dark" ? "dark" : "light"].icon;

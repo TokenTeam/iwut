@@ -20,6 +20,7 @@ import type {
 } from "react-native-webview/lib/WebViewTypes";
 
 import { IS_DEV } from "@/constants/is-dev";
+import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useWebViewBackHandler } from "@/hooks/use-webview-back-handler";
 import { useWebViewProgressBar } from "@/hooks/use-webview-progress-bar";
 import { useZhlgdAutoLogin } from "@/hooks/use-zhlgd-autologin";
@@ -34,6 +35,7 @@ const BLANK_WEBVIEW_URL = "about:blank";
 const IN_WEBVIEW_SCHEMES = ["http:", "https:", "data:", "file:"];
 
 export default function BrowserScreen() {
+  useMarkRouteInteractive();
   const t = useT();
   const { uri } = useLocalSearchParams<{ uri: string }>();
   const navigation = useNavigation();

@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { IS_DEV } from "@/constants/is-dev";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { type TKey, useT } from "@/lib/i18n";
 
 type WebApp = {
@@ -95,6 +96,7 @@ function openWebApp(uri: string) {
 }
 
 export default function FunctionScreen() {
+  useMarkRouteInteractive();
   const t = useT();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";

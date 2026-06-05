@@ -24,6 +24,7 @@ import { ScrollPicker } from "@/components/ui/scroll-picker";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
+import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { getCurrentDayOfWeek, getCurrentWeek } from "@/lib/date";
 import { useT } from "@/lib/i18n";
 import { type ImportType, useCourseStore } from "@/store/course";
@@ -33,6 +34,7 @@ import { useUserBindStore } from "@/store/user-bind";
 const MAX_WEEK = 20;
 
 export default function CourseScreen() {
+  useMarkRouteInteractive();
   const t = useT();
   const courses = useCourseStore((store) => store.courses);
   const termStart = useCourseStore((store) => store.termStart);

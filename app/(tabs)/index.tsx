@@ -21,6 +21,7 @@ import { getDayLabels } from "@/components/layout/schedule";
 import { AnnouncementBanner } from "@/components/ui/announcement-banner";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
+import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import {
   getCurrentDayOfWeek,
   getCurrentWeek,
@@ -127,6 +128,7 @@ function getGreetingSlot(): GreetingSlot {
 }
 
 export default function HomeScreen() {
+  useMarkRouteInteractive();
   const t = useT();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";

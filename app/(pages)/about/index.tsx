@@ -16,6 +16,7 @@ import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { IS_DEV } from "@/constants/is-dev";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import { useUpdateStore } from "@/store/update";
 
@@ -23,6 +24,7 @@ const icon = require("@/assets/images/icon.png");
 const uniLabel = require("@/assets/images/icon_uni_label.svg");
 
 export default function AboutScreen() {
+  useMarkRouteInteractive();
   const t = useT();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";

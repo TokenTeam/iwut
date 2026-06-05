@@ -7,10 +7,12 @@ import Toast from "react-native-toast-message";
 import { getDayLabels } from "@/components/layout/schedule";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import { useCourseStore } from "@/store/course";
 
 export default function ManageCourseScreen() {
+  useMarkRouteInteractive();
   const t = useT();
   const router = useRouter();
   const isDark = useColorScheme() === "dark";

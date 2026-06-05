@@ -18,6 +18,7 @@ import Toast from "react-native-toast-message";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { ScrollLockProvider, useScrollLock } from "@/components/ui/scroll-lock";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { MAX_SECTION, MAX_WEEK, weeksToRanges } from "@/lib/course-weeks";
 import { type TKey, useT } from "@/lib/i18n";
 import { type Course, useCourseStore } from "@/store/course";
@@ -86,6 +87,7 @@ function formatWeeks(
 }
 
 export default function AddEditCourseScreen() {
+  useMarkRouteInteractive();
   const t = useT();
   const router = useRouter();
   const params = useLocalSearchParams<{

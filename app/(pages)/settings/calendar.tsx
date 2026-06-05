@@ -16,6 +16,7 @@ import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { BUILTIN_PALETTE_NAME_KEYS } from "@/constants/course-palettes";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import {
   deleteAppCalendar,
@@ -36,6 +37,7 @@ function isCropCancelled(error: unknown) {
 }
 
 export default function CalendarSettingsScreen() {
+  useMarkRouteInteractive();
   const t = useT();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const scheme = useColorScheme();

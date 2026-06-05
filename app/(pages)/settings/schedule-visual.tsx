@@ -6,10 +6,12 @@ import { ScrollView, Text, View } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import { useScheduleStore } from "@/store/schedule";
 
 export default function ScheduleVisualScreen() {
+  useMarkRouteInteractive();
   const t = useT();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";

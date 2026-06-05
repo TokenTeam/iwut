@@ -16,12 +16,14 @@ import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
 import { login, requestPinnedShortcut } from "@/modules/wlan";
 import { useWlanStore } from "@/store/wlan";
 
 export default function WlanScreen() {
+  useMarkRouteInteractive();
   const t = useT();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
