@@ -31,7 +31,16 @@ body:
     attributes:
       label: 应用版本
       description: 可在「关于」页面查看版本号
-      placeholder: 例如：0.1.1-patch.3
+      placeholder: 例如：0.1.1
+    validations:
+      required: true
+
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+      description: 可在「关于」页面查看 Commit，点击可复制完整值
+      placeholder: 例如：61cabba390e800320954e976988f237850c4e70f
     validations:
       required: true
 
