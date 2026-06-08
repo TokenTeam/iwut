@@ -5,4 +5,6 @@ const { withNativewind } = require("nativewind/metro");
 /** @type {import('expo/metro-config').MetroConfig} */
 const config = getSentryExpoConfig(__dirname);
 
+config.resolver.assetExts.push("md");
+
 module.exports = withNativewind(config);

@@ -1,11 +1,12 @@
 import * as Clipboard from "expo-clipboard";
 import Constants from "expo-constants";
 import { Image } from "expo-image";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useCallback } from "react";
 import {
   ActivityIndicator,
   Linking,
+  Pressable,
   ScrollView,
   Text,
   View,
@@ -16,6 +17,7 @@ import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { IS_DEV } from "@/constants/is-dev";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import { useUpdateStore } from "@/store/update";
@@ -26,6 +28,7 @@ const uniLabel = require("@/assets/images/icon_uni_label.svg");
 export default function AboutScreen() {
   useMarkRouteInteractive();
   const t = useT();
+  const haptic = useHaptics();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
   const version = Constants.expoConfig?.version ?? "N/A";
@@ -141,9 +144,45 @@ export default function AboutScreen() {
               tintColor: Colors[isDark ? "dark" : "light"].icon,
             }}
           />
-          <Text className="mt-3 text-xs text-neutral-400 dark:text-neutral-500">
-            {t("about.icp")}
-          </Text>
+          <View className="mt-3 flex-row items-center">
+            <Pressable
+              hitSlop={8}
+              onPress={() => {
+                haptic();
+                router.push("/legal/user-agreement");
+              }}
+            >
+              <Text className="text-xs leading-4 text-neutral-400 dark:text-neutral-500">
+                {t("about.userAgreement")}
+              </Text>
+            </Pressable>
+            <Text className="px-1.5 text-xs leading-4 text-neutral-300 dark:text-neutral-600">
+              ·
+            </Text>
+            <Pressable
+              hitSlop={8}
+              onPress={() => {
+                haptic();
+                router.push("/legal/privacy-policy");
+              }}
+            >
+              <Text className="text-xs leading-4 text-neutral-400 dark:text-neutral-500">
+                {t("about.privacyPolicy")}
+              </Text>
+            </Pressable>
+          </View>
+          <Pressable
+            className="mt-2"
+            hitSlop={8}
+            onPress={() => {
+              haptic();
+              Linking.openURL("https://beian.miit.gov.cn/").catch(() => {});
+            }}
+          >
+            <Text className="text-xs leading-4 text-neutral-400 dark:text-neutral-500">
+              {t("about.icp")}
+            </Text>
+          </Pressable>
         </View>
       </ScrollView>
     </>
