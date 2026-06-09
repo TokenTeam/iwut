@@ -66,8 +66,13 @@ public class NotificationModule: Module {
         let content = ActivityContent(state: state, staleDate: targetDate)
 
         if let activity = self.loadLiveActivity(for: id) {
-            await activity.update(content)
-            return
+            if activity.attributes.title == title && activity.attributes.subtitle == body {
+                await activity.update(content)
+                return
+            }
+
+            await activity.end(nil, dismissalPolicy: .immediate)
+            self.removeActivityMapping(id: id)
         }
 
         let attributes = CountdownActivityAttributes(title: title, subtitle: body)
