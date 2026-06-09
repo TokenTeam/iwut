@@ -9,7 +9,7 @@ const IS_DEV = !PROFILE || PROFILE === "development";
 const config: ExpoConfig = {
   name: IS_DEV ? "掌上吾理 Dev" : "掌上吾理 Pro",
   slug: "iwut",
-  version: "0.3.5",
+  version: "0.3.6",
   runtimeVersion: {
     policy: "appVersion",
   },
@@ -81,6 +81,7 @@ const config: ExpoConfig = {
     "expo-router",
     "expo-font",
     "expo-web-browser",
+    "expo-asset",
     "expo-image",
     "expo-secure-store",
     "expo-sharing",
