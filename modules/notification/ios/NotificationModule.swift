@@ -21,7 +21,7 @@ public class NotificationModule: Module {
             let targetDate = Date(timeIntervalSince1970: targetTimeMs / 1000.0)
 
             if #available(iOS 16.2, *) {
-                try self.startLiveActivity(id: id, title: title, body: body, targetDate: targetDate)
+                try await self.startOrUpdateLiveActivity(id: id, title: title, body: body, targetDate: targetDate)
             } else {
                 self.showLocalNotification(id: id, title: title, body: body, triggerDate: nil, autoDismiss: autoDismiss)
             }
@@ -34,7 +34,7 @@ public class NotificationModule: Module {
             if #available(iOS 16.2, *) {
                 let now = Date()
                 if triggerDate <= now {
-                    try self.startLiveActivity(id: id, title: title, body: body, targetDate: targetDate)
+                    try await self.startOrUpdateLiveActivity(id: id, title: title, body: body, targetDate: targetDate)
                 } else {
                     self.scheduleLiveActivityViaNotification(id: id, title: title, body: body, triggerDate: triggerDate, targetDate: targetDate)
                 }
@@ -59,13 +59,23 @@ public class NotificationModule: Module {
     }
 
     @available(iOS 16.2, *)
-    private func startLiveActivity(id: Int, title: String, body: String, targetDate: Date) throws {
+    private func startOrUpdateLiveActivity(id: Int, title: String, body: String, targetDate: Date) async throws {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
 
-        let attributes = CountdownActivityAttributes(title: title, subtitle: body)
         let state = CountdownActivityAttributes.ContentState(targetTime: targetDate)
-
         let content = ActivityContent(state: state, staleDate: targetDate)
+
+        if let activity = self.loadLiveActivity(for: id) {
+            if activity.attributes.title == title && activity.attributes.subtitle == body {
+                await activity.update(content)
+                return
+            }
+
+            await activity.end(nil, dismissalPolicy: .immediate)
+            self.removeActivityMapping(id: id)
+        }
+
+        let attributes = CountdownActivityAttributes(title: title, subtitle: body)
         let activity = try Activity<CountdownActivityAttributes>.request(
             attributes: attributes,
             content: content,
@@ -73,6 +83,18 @@ public class NotificationModule: Module {
         )
 
         self.saveActivityMapping(id: id, activityId: activity.id)
+    }
+
+    @available(iOS 16.2, *)
+    private func loadLiveActivity(for id: Int) -> Activity<CountdownActivityAttributes>? {
+        guard let activityId = self.loadActivityId(for: id) else { return nil }
+
+        if let activity = Activity<CountdownActivityAttributes>.activities.first(where: { $0.id == activityId }) {
+            return activity
+        }
+
+        self.removeActivityMapping(id: id)
+        return nil
     }
 
     @available(iOS 16.2, *)
@@ -108,8 +130,11 @@ public class NotificationModule: Module {
         let interval = triggerDate.timeIntervalSinceNow
         guard interval > 0 else { return }
 
+        let identifier = "notification_\(id)"
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
-        let request = UNNotificationRequest(identifier: "notification_\(id)", content: content, trigger: trigger)
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
+        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [identifier])
         UNUserNotificationCenter.current().add(request)
     }
 
@@ -128,7 +153,10 @@ public class NotificationModule: Module {
             trigger = nil
         }
 
-        let request = UNNotificationRequest(identifier: "notification_\(id)", content: content, trigger: trigger)
+        let identifier = "notification_\(id)"
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
+        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [identifier])
         UNUserNotificationCenter.current().add(request)
     }
 

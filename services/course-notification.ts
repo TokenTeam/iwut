@@ -19,6 +19,58 @@ const BACKGROUND_TASK_NAME = "course-reminder-refresh";
 const SCHEDULE_WEEKS = 2;
 const LIVE_ACTIVITY_ID = 9999;
 
+function hashReminderId(input: string): number {
+  let hash = 0x811c9dc5;
+
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+
+  return hash & 0x7fffffff;
+}
+
+function getReminderId(
+  termStart: string,
+  week: number,
+  course: {
+    name: string;
+    room: string;
+    teacher: string;
+    day: number;
+    sectionStart: number;
+    sectionEnd: number;
+  },
+  classStartMs: number,
+): number {
+  const id = hashReminderId(
+    [
+      termStart,
+      week,
+      course.day,
+      course.sectionStart,
+      course.sectionEnd,
+      classStartMs,
+      course.name,
+      course.room,
+      course.teacher,
+    ].join("|"),
+  );
+
+  return id === LIVE_ACTIVITY_ID ? LIVE_ACTIVITY_ID + 1 : id;
+}
+
+function reserveReminderId(baseId: number, scheduledIds: Set<number>): number {
+  let id = baseId;
+
+  while (scheduledIds.has(id) || id === LIVE_ACTIVITY_ID) {
+    id = (id + 1) & 0x7fffffff;
+  }
+
+  scheduledIds.add(id);
+  return id;
+}
+
 TaskManager.defineTask(BACKGROUND_TASK_NAME, async () => {
   try {
     await initNotificationChannel();
@@ -132,7 +184,7 @@ export async function scheduleWeeklyReminders(): Promise<void> {
 
   const currentWeek = getCurrentWeek(termStart);
   const now = Date.now();
-  let idCounter = 0;
+  const scheduledIds = new Set<number>();
 
   for (let offset = 0; offset < SCHEDULE_WEEKS; offset++) {
     const week = currentWeek + offset;
@@ -157,8 +209,13 @@ export async function scheduleWeeklyReminders(): Promise<void> {
 
       if (triggerAtMs <= now) continue;
 
+      const id = reserveReminderId(
+        getReminderId(termStart, week, course, classStartMs),
+        scheduledIds,
+      );
+
       await scheduleCountdown(
-        idCounter++,
+        id,
         CHANNEL_ID,
         course.name,
         `${course.room} · ${startTimeStr}`,

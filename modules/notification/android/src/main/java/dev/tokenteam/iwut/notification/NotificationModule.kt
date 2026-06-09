@@ -36,7 +36,7 @@ class NotificationModule : Module() {
             val context = appContext.reactContext ?: return@AsyncFunction null
             val target = targetTimeMs.toLong()
 
-            val notification = buildCountdownNotification(context, channelId, title, body, target, ongoing)
+            val notification = buildCountdownNotification(context, channelId, title, body, target, ongoing, autoDismiss)
             notificationManager?.notify(id, notification)
             null
         }
@@ -46,7 +46,7 @@ class NotificationModule : Module() {
             val trigger = triggerAtMs.toLong()
 
             val intent = Intent(context, CountdownReceiver::class.java).apply {
-                action = "dev.tokenteam.iwut.notification.SHOW_COUNTDOWN"
+                action = CountdownReceiver.ACTION_SHOW_COUNTDOWN
                 putExtra("id", id)
                 putExtra("channelId", channelId)
                 putExtra("title", title)
@@ -92,6 +92,7 @@ class NotificationModule : Module() {
         body: String,
         targetTimeMs: Long,
         ongoing: Boolean,
+        autoDismiss: Boolean,
     ): android.app.Notification {
         val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
         val contentIntent = PendingIntent.getActivity(
@@ -114,7 +115,7 @@ class NotificationModule : Module() {
             .setContentIntent(contentIntent)
             .setAutoCancel(!ongoing)
             .apply {
-                if (timeoutMs > 0) setTimeoutAfter(timeoutMs)
+                if (autoDismiss && timeoutMs > 0) setTimeoutAfter(timeoutMs)
             }
 
         if (Build.VERSION.SDK_INT >= 36) {
@@ -126,12 +127,17 @@ class NotificationModule : Module() {
     }
 
     private fun cancelScheduledAlarm(context: Context, id: Int) {
-        val intent = Intent(context, CountdownReceiver::class.java)
+        val intent = Intent(context, CountdownReceiver::class.java).apply {
+            action = CountdownReceiver.ACTION_SHOW_COUNTDOWN
+        }
         val pendingIntent = PendingIntent.getBroadcast(
             context, id, intent,
             PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
         )
-        pendingIntent?.let { alarmManager?.cancel(it) }
+        pendingIntent?.let {
+            alarmManager?.cancel(it)
+            it.cancel()
+        }
     }
 
     private fun cancelAllScheduledAlarms(context: Context) {
@@ -139,12 +145,20 @@ class NotificationModule : Module() {
         for (id in ids) {
             cancelScheduledAlarm(context, id)
         }
+        cancelLegacySequentialAlarms(context)
         clearTrackedIds(context)
+    }
+
+    private fun cancelLegacySequentialAlarms(context: Context) {
+        for (id in 0 until LEGACY_SEQUENTIAL_ID_LIMIT) {
+            cancelScheduledAlarm(context, id)
+        }
     }
 
     companion object {
         private const val PREFS_NAME = "notification_ids"
         private const val KEY_IDS = "scheduled_ids"
+        private const val LEGACY_SEQUENTIAL_ID_LIMIT = 1024
 
         fun trackScheduledId(context: Context, id: Int) {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
