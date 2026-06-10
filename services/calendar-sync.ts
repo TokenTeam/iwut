@@ -28,6 +28,9 @@ const CALENDAR_COLOR = "#007AFF";
 const APP_ACCOUNT_NAME = "iwut.tokenteam.dev";
 // Android Calendars.NAME 与 Calendar.title 独立，便于多语言切换后定位。
 const CALENDAR_INTERNAL_NAME = "iwut_schedule";
+// expo-calendar/next 在 Android 上会把 relativeOffset 直接写入
+// CalendarContract.Reminders.MINUTES，而 iOS 仍使用 EventKit 的相对起始时间偏移。
+const COURSE_REMINDER_OFFSET_MINUTES = Platform.OS === "android" ? 30 : -30;
 
 export async function requestCalendarPermission(): Promise<boolean> {
   const { status } = await requestCalendarPermissions();
@@ -238,7 +241,7 @@ function createEventsForCourse(
       // next API 会把 Date 转成 ISO 字符串；Android 原生 EventInputRecord 需要 string。
       startDate,
       endDate,
-      alarms: [{ relativeOffset: -15 }],
+      alarms: [{ relativeOffset: COURSE_REMINDER_OFFSET_MINUTES }],
       notes: course.teacher
         ? t("calSync.teacherNotes", { teacher: course.teacher })
         : undefined,
