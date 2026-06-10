@@ -18,12 +18,14 @@ import { IS_DEV } from "@/constants/is-dev";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { type TKey, useT } from "@/lib/i18n";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 
 type WebApp = {
   icon: React.ComponentProps<typeof Ionicons>["name"];
   labelKey: TKey;
   color: string;
   uri: string;
+  lan: boolean;
 };
 
 type Section = {
@@ -40,24 +42,28 @@ const SECTIONS: Section[] = [
         labelKey: "fn.app.classroom",
         color: "#0d9488",
         uri: "https://classroom-iwut.tokenteam.net",
+        lan: false,
       },
       {
         icon: "easel-outline",
         labelKey: "fn.app.icSpace",
         color: "#06b6d4",
         uri: "https://zhlgd.whut.edu.cn/tpass/login?service=https%3A%2F%2Fzw.whut.edu.cn%2Frem%2Fstatic%2Fsso%2FwebOAuthRed",
+        lan: true,
       },
       {
         icon: "school-outline",
         labelKey: "fn.app.jwxt",
         color: "#8b5cf6",
         uri: "https://zhlgd.whut.edu.cn/tpass/login?service=https%3A%2F%2Fjwxt.whut.edu.cn%2Fjwapp%2Fsys%2Fhomeapp%2Findex.do%3FforceCas%3D1",
+        lan: false,
       },
       {
         icon: "library-outline",
         labelKey: "fn.app.library",
         color: "#3b82f6",
         uri: "https://library-info-iwut.tokenteam.net",
+        lan: true,
       },
     ],
   },
@@ -69,12 +75,14 @@ const SECTIONS: Section[] = [
         labelKey: "fn.app.card",
         color: "#10b981",
         uri: "https://cardcare-iwut.tokenteam.net",
+        lan: false,
       },
       {
         icon: "flash-outline",
         labelKey: "fn.app.elec",
         color: "#eab308",
         uri: "https://zhlgd.whut.edu.cn/tpass/login?service=http://nyyzf.whut.edu.cn/MobileWebOnlineHall/#/",
+        lan: false,
       },
     ],
   },
@@ -86,6 +94,7 @@ const SECTIONS: Section[] = [
         labelKey: "fn.app.campusNews",
         color: "#f97316",
         uri: "http://i.whut.edu.cn",
+        lan: true,
       },
     ],
   },
@@ -103,6 +112,22 @@ export default function FunctionScreen() {
   const { height } = useWindowDimensions();
   const [showBrowser, setShowBrowser] = useState(false);
   const [uri, setUri] = useState("");
+  const [pendingLanApp, setPendingLanApp] = useState<WebApp | null>(null);
+
+  const handleOpenApp = (app: WebApp) => {
+    if (app.lan) {
+      setPendingLanApp(app);
+      return;
+    }
+    openWebApp(app.uri);
+  };
+
+  const handleConfirmLan = () => {
+    if (!pendingLanApp) return;
+    const nextUri = pendingLanApp.uri;
+    setPendingLanApp(null);
+    openWebApp(nextUri);
+  };
 
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
@@ -156,7 +181,7 @@ export default function FunctionScreen() {
                   app={app}
                   label={t(app.labelKey)}
                   isDark={isDark}
-                  onPress={() => openWebApp(app.uri)}
+                  onPress={() => handleOpenApp(app)}
                 />
               ))}
             </View>
@@ -225,6 +250,17 @@ export default function FunctionScreen() {
           </KeyboardAvoidingView>
         </Modal>
       )}
+
+      <ConfirmSheet
+        visible={pendingLanApp !== null}
+        onClose={() => setPendingLanApp(null)}
+        title={t("fn.lanTitle")}
+        description={t("fn.lanDesc", {
+          app: pendingLanApp ? t(pendingLanApp.labelKey) : "",
+        })}
+        confirmText={t("fn.lanConfirm")}
+        onConfirm={handleConfirmLan}
+      />
     </SafeAreaView>
   );
 }

@@ -140,7 +140,10 @@
       "elec": "Electricity",
       "campusNews": "Campus News"
     },
-    "openUrl": "Open URL"
+    "openUrl": "Open URL",
+    "lanTitle": "Confirm campus network",
+    "lanDesc": "{app} is only available on the campus network. Please confirm you are connected before continuing.",
+    "lanConfirm": "Connected, open"
   },
   "user": {
     "bindTitle": "Link iWUT account",

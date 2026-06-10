@@ -140,7 +140,10 @@
       "elec": "电费查询",
       "campusNews": "校园公告"
     },
-    "openUrl": "打开网页"
+    "openUrl": "打开网页",
+    "lanTitle": "请确认校园网环境",
+    "lanDesc": "「{app}」需要在校园网环境下访问。请确认当前已连接校园网后继续打开。",
+    "lanConfirm": "已连接，继续打开"
   },
   "user": {
     "bindTitle": "绑定智慧理工大",
