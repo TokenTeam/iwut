@@ -239,7 +239,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <>
+    <View style={{ flex: 1 }}>
       <Stack.Screen options={{ title: t("settings.generalTitle") }} />
       <ScrollView
         className="flex-1 bg-neutral-100 dark:bg-neutral-900"
@@ -397,10 +397,10 @@ export default function SettingsScreen() {
         <View
           style={{
             position: "absolute",
-            left: -9999,
             top: 0,
-            width: 390,
-            height: 844,
+            right: 0,
+            width: 1,
+            height: 1,
           }}
           pointerEvents="none"
         >
@@ -410,6 +410,6 @@ export default function SettingsScreen() {
           />
         </View>
       )}
-    </>
+    </View>
   );
 }
