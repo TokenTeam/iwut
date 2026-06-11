@@ -18,6 +18,25 @@
     "function": "功能",
     "user": "我的"
   },
+  "onboarding": {
+    "appName": "掌上吾理",
+    "legalAcceptPrefix": "我已阅读并同意",
+    "legalAcceptAnd": "和",
+    "legalRequired": "请先阅读并同意用户协议和隐私政策",
+    "login": "登录账号",
+    "setupTitle": "完成设置",
+    "setupSubtitle": "导入课表并开启可选功能，后续你可以在设置中调整。",
+    "scheduleSection": "课表",
+    "optionsSection": "可选设置",
+    "courseEntries": "{n} 条",
+    "selected": "已选择",
+    "needTimetableShort": "需导入课表",
+    "importNow": "立即导入",
+    "importDoneTitle": "课表导入成功",
+    "importLater": "稍后导入",
+    "calendarNeedsCourses": "请先导入课表再同步到系统日历",
+    "startUsing": "开始使用"
+  },
   "home": {
     "greetEarlyMorning": "早安",
     "greetEarlyMorningSub": "新的一天，从此刻开始",
@@ -177,6 +196,7 @@
     "storage": "存储",
     "clearCache": "清除缓存",
     "exportLogs": "导出日志",
+    "replayOnboarding": "重新查看首次引导",
     "clearCacheTitle": "清除缓存",
     "clearCacheDesc": "将清除缓存和临时数据，不会影响已保存的内容。",
     "clearCacheConfirm": "清除",

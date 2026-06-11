@@ -3,7 +3,7 @@ import Constants from "expo-constants";
 import * as Device from "expo-device";
 import { Directory, File, Paths } from "expo-file-system";
 import { Image } from "expo-image";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import * as Sharing from "expo-sharing";
 import JSZip from "jszip";
 import { useRef, useState } from "react";
@@ -33,6 +33,7 @@ import {
   scheduleWeeklyReminders,
   unregisterBackgroundRefresh,
 } from "@/services/course-notification";
+import { useOnboardingStore } from "@/store/onboarding";
 import { useScheduleStore } from "@/store/schedule";
 import { useSettingsStore } from "@/store/settings";
 
@@ -238,6 +239,11 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleReplayOnboarding = () => {
+    useOnboardingStore.getState().reset();
+    router.replace("/onboarding" as never);
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <Stack.Screen options={{ title: t("settings.generalTitle") }} />
@@ -317,6 +323,12 @@ export default function SettingsScreen() {
             showArrow={false}
             right={exporting ? <ActivityIndicator size="small" /> : undefined}
             onPress={handleExportLogs}
+          />
+          <MenuItem
+            icon="restart-alt"
+            iconBg="#8E8E93"
+            label={t("settings.replayOnboarding")}
+            onPress={handleReplayOnboarding}
           />
         </MenuGroup>
       </ScrollView>

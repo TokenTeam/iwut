@@ -27,7 +27,7 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useFonts } from "expo-font";
 import { Observe, ObserveRoot } from "expo-observe";
-import { Stack } from "expo-router";
+import { Stack, router, useSegments } from "expo-router";
 import { ThemeProvider } from "expo-router/react-navigation";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -56,9 +56,11 @@ import {
 import { syncWidgetData } from "@/services/widget-sync";
 import { useAnnouncementStore } from "@/store/announcements";
 import { useCourseStore } from "@/store/course";
+import { useOnboardingStore } from "@/store/onboarding";
 import { useSettingsStore } from "@/store/settings";
 import { useThemeStore } from "@/store/theme";
 import { useUpdateStore } from "@/store/update";
+import { useUserBindStore } from "@/store/user-bind";
 
 import "../global.css";
 /* eslint-enable import/first */
@@ -80,6 +82,11 @@ void SplashScreen.preventAutoHideAsync().catch(() => {
 function RootLayout() {
   const colorScheme = useColorScheme();
   const themeMode = useThemeStore((s) => s.themeMode);
+  const segments = useSegments();
+  const onboardingCompleted = useOnboardingStore((s) => s.completed);
+  const completeOnboarding = useOnboardingStore((s) => s.complete);
+  const isBound = useUserBindStore((s) => s.isBound);
+  const courseCount = useCourseStore((s) => s.courses.length);
   const isFirstMount = useRef(true);
   const [fontsLoaded, fontError] = useFonts({
     ...Ionicons.font,
@@ -101,6 +108,28 @@ function RootLayout() {
     useUpdateStore.getState().check();
     useAnnouncementStore.getState().fetch();
   }, []);
+
+  useEffect(() => {
+    const firstSegment = segments[0] as string | undefined;
+    const inOnboarding = firstSegment === "onboarding";
+    const isSetupSideRoute =
+      firstSegment === "browser" || firstSegment === "(pages)";
+
+    if (
+      !onboardingCompleted &&
+      (isBound || courseCount > 0) &&
+      !inOnboarding &&
+      !isSetupSideRoute
+    ) {
+      completeOnboarding();
+      return;
+    }
+
+    if (!onboardingCompleted && !inOnboarding && !isSetupSideRoute) {
+      router.replace("/onboarding" as never);
+      return;
+    }
+  }, [completeOnboarding, courseCount, isBound, onboardingCompleted, segments]);
 
   useEffect(() => {
     initNotificationChannel().catch(() => {});
@@ -164,6 +193,10 @@ function RootLayout() {
                 headerBackButtonDisplayMode: "minimal",
               }}
             >
+              <Stack.Screen
+                name="onboarding"
+                options={{ headerShown: false }}
+              />
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             </Stack>
             <StatusBar style="auto" />

@@ -18,6 +18,25 @@
     "function": "Apps",
     "user": "Profile"
   },
+  "onboarding": {
+    "appName": "iWUT",
+    "legalAcceptPrefix": "I have read and agree to the ",
+    "legalAcceptAnd": " and ",
+    "legalRequired": "Please agree to the user agreement and privacy policy first",
+    "login": "Sign in",
+    "setupTitle": "Finish setup",
+    "setupSubtitle": "Import your timetable and enable optional features. You can adjust them later in Settings.",
+    "scheduleSection": "Timetable",
+    "optionsSection": "Optional settings",
+    "courseEntries": "{n} entries",
+    "selected": "Selected",
+    "needTimetableShort": "Needs timetable",
+    "importNow": "Import now",
+    "importDoneTitle": "Timetable imported",
+    "importLater": "Import later",
+    "calendarNeedsCourses": "Import your timetable before syncing to the system calendar",
+    "startUsing": "Start using iWUT"
+  },
   "home": {
     "greetEarlyMorning": "Good morning",
     "greetEarlyMorningSub": "A brand new day begins now",
@@ -177,6 +196,7 @@
     "storage": "Storage",
     "clearCache": "Clear cache",
     "exportLogs": "Export logs",
+    "replayOnboarding": "Replay onboarding",
     "clearCacheTitle": "Clear cache",
     "clearCacheDesc": "This will clear cached and temporary data. Saved content won't be affected.",
     "clearCacheConfirm": "Clear",
