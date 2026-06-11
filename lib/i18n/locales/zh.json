@@ -196,7 +196,6 @@
     "storage": "存储",
     "clearCache": "清除缓存",
     "exportLogs": "导出日志",
-    "replayOnboarding": "重新查看首次引导",
     "clearCacheTitle": "清除缓存",
     "clearCacheDesc": "将清除缓存和临时数据，不会影响已保存的内容。",
     "clearCacheConfirm": "清除",

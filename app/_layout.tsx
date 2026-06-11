@@ -129,6 +129,10 @@ function RootLayout() {
       router.replace("/onboarding" as never);
       return;
     }
+
+    if (onboardingCompleted && inOnboarding) {
+      router.replace("/");
+    }
   }, [completeOnboarding, courseCount, isBound, onboardingCompleted, segments]);
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -45,7 +45,6 @@ function getInitialStep(isBound: boolean, hasCourses: boolean): StepId {
 export default function OnboardingScreen() {
   useMarkRouteInteractive();
   const t = useT();
-  const params = useLocalSearchParams<{ preview?: string }>();
   const haptic = useHaptics();
   const isDark = useColorScheme() === "dark";
   const isBound = useUserBindStore((s) => s.isBound);
@@ -64,11 +63,7 @@ export default function OnboardingScreen() {
   const [notificationBusy, setNotificationBusy] = useState(false);
   const [calendarBusy, setCalendarBusy] = useState(false);
 
-  const previewAccount = params.preview === "account";
-  const step =
-    previewAccount || (selectedStep === "account" && !isBound)
-      ? "account"
-      : "setup";
+  const step = selectedStep === "account" && !isBound ? "account" : "setup";
 
   const handleLogin = () => {
     if (!acceptedLegal) {
@@ -357,30 +352,32 @@ function SetupScreen({
         backgroundColor: isDark ? "#171717" : "#F5F5F5",
         paddingHorizontal: 16,
         paddingBottom: insets.bottom + 20,
-        paddingTop: insets.top + 44,
+        paddingTop: insets.top + 32,
       }}
     >
       <View style={{ flex: 1 }}>
-        <Text
-          style={{
-            color: isDark ? "#FAFAFA" : "#171717",
-            fontSize: 32,
-            fontWeight: "700",
-            letterSpacing: 0,
-          }}
-        >
-          {t("onboarding.setupTitle")}
-        </Text>
-        <Text
-          style={{
-            marginTop: 6,
-            color: isDark ? "#A3A3A3" : "#737373",
-            fontSize: 15,
-            lineHeight: 21,
-          }}
-        >
-          {t("onboarding.setupSubtitle")}
-        </Text>
+        <View style={{ paddingHorizontal: 8 }}>
+          <Text
+            style={{
+              color: isDark ? "#FAFAFA" : "#171717",
+              fontSize: 32,
+              fontWeight: "700",
+              letterSpacing: 0,
+            }}
+          >
+            {t("onboarding.setupTitle")}
+          </Text>
+          <Text
+            style={{
+              marginTop: 6,
+              color: isDark ? "#A3A3A3" : "#737373",
+              fontSize: 15,
+              lineHeight: 21,
+            }}
+          >
+            {t("onboarding.setupSubtitle")}
+          </Text>
+        </View>
 
         <View style={{ marginTop: 24 }}>
           <MenuGroup title={t("onboarding.scheduleSection")}>

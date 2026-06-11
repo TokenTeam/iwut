@@ -196,7 +196,6 @@
     "storage": "Storage",
     "clearCache": "Clear cache",
     "exportLogs": "Export logs",
-    "replayOnboarding": "Replay onboarding",
     "clearCacheTitle": "Clear cache",
     "clearCacheDesc": "This will clear cached and temporary data. Saved content won't be affected.",
     "clearCacheConfirm": "Clear",
