@@ -17,6 +17,28 @@ public class NotificationModule: Module {
         AsyncFunction("createChannel") { (_: String, _: String, _: String) in
         }
 
+        AsyncFunction("requestAuthorization") { () async -> Bool in
+            let center = UNUserNotificationCenter.current()
+            let settings = await self.getNotificationSettings()
+
+            switch settings.authorizationStatus {
+            case .authorized, .provisional:
+                return true
+            case .denied:
+                return false
+            case .notDetermined:
+                return await withCheckedContinuation { continuation in
+                    center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+                        continuation.resume(returning: granted)
+                    }
+                }
+            case .ephemeral:
+                return true
+            @unknown default:
+                return false
+            }
+        }
+
         AsyncFunction("showCountdown") { (id: Int, _: String, title: String, body: String, targetTimeMs: Double, _: Bool, autoDismiss: Bool) in
             let targetDate = Date(timeIntervalSince1970: targetTimeMs / 1000.0)
 
@@ -168,6 +190,14 @@ public class NotificationModule: Module {
     private func cancelAllLocalNotifications() {
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
         UNUserNotificationCenter.current().removeAllDeliveredNotifications()
+    }
+
+    private func getNotificationSettings() async -> UNNotificationSettings {
+        await withCheckedContinuation { continuation in
+            UNUserNotificationCenter.current().getNotificationSettings { settings in
+                continuation.resume(returning: settings)
+            }
+        }
     }
 
     private static let suiteName = "group.dev.tokenteam.iwut"

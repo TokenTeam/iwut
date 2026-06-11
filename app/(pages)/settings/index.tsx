@@ -9,8 +9,7 @@ import JSZip from "jszip";
 import { useRef, useState } from "react";
 import {
   ActivityIndicator,
-  PermissionsAndroid,
-  Platform,
+  Linking,
   Pressable,
   ScrollView,
   Switch,
@@ -29,6 +28,7 @@ import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
 import {
+  ensureCourseNotificationPermission,
   registerBackgroundRefresh,
   scheduleWeeklyReminders,
   unregisterBackgroundRefresh,
@@ -57,6 +57,7 @@ export default function SettingsScreen() {
   const [clearing, setClearing] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [reminderSheetVisible, setReminderSheetVisible] = useState(false);
+  const [permissionSheetVisible, setPermissionSheetVisible] = useState(false);
   const [customMinutes, setCustomMinutes] = useState("");
   const customInputRef = useRef<TextInput>(null);
 
@@ -94,12 +95,12 @@ export default function SettingsScreen() {
   };
 
   const handleCourseReminderChange = async (value: boolean) => {
-    // 检查通知权限
-    if (value && Platform.OS === "android") {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-      );
-      if (granted !== PermissionsAndroid.RESULTS.GRANTED) return;
+    if (value) {
+      const granted = await ensureCourseNotificationPermission();
+      if (!granted) {
+        setPermissionSheetVisible(true);
+        return;
+      }
     }
 
     setCourseReminder(value);
@@ -238,6 +239,11 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleOpenNotificationSettings = () => {
+    setPermissionSheetVisible(false);
+    Linking.openSettings().catch(() => {});
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <Stack.Screen options={{ title: t("settings.generalTitle") }} />
@@ -329,6 +335,16 @@ export default function SettingsScreen() {
         confirmText={t("settings.clearCacheConfirm")}
         destructive
         onConfirm={handleClearCache}
+      />
+
+      <ConfirmSheet
+        visible={permissionSheetVisible}
+        onClose={() => setPermissionSheetVisible(false)}
+        title={t("notif.permissionDeniedTitle")}
+        description={t("notif.permissionDeniedDesc")}
+        confirmText={t("notif.permissionDeniedOpenSettings")}
+        cancelText={t("notif.permissionDeniedCancel")}
+        onConfirm={handleOpenNotificationSettings}
       />
 
       <BottomSheet

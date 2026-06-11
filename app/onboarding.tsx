@@ -4,8 +4,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  PermissionsAndroid,
-  Platform,
+  Linking,
   Pressable,
   Switch,
   Text,
@@ -15,6 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -25,6 +25,7 @@ import {
   syncCoursesToCalendar,
 } from "@/services/calendar-sync";
 import {
+  ensureCourseNotificationPermission,
   registerBackgroundRefresh,
   scheduleWeeklyReminders,
 } from "@/services/course-notification";
@@ -61,6 +62,7 @@ export default function OnboardingScreen() {
   );
   const [acceptedLegal, setAcceptedLegal] = useState(false);
   const [notificationBusy, setNotificationBusy] = useState(false);
+  const [permissionSheetVisible, setPermissionSheetVisible] = useState(false);
   const [calendarBusy, setCalendarBusy] = useState(false);
 
   const step = selectedStep === "account" && !isBound ? "account" : "setup";
@@ -89,11 +91,12 @@ export default function OnboardingScreen() {
   const handleReminderToggle = async (value: boolean) => {
     setNotificationBusy(true);
     try {
-      if (value && Platform.OS === "android") {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-        );
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) return;
+      if (value) {
+        const granted = await ensureCourseNotificationPermission();
+        if (!granted) {
+          setPermissionSheetVisible(true);
+          return;
+        }
       }
 
       setCourseReminder(value);
@@ -146,6 +149,11 @@ export default function OnboardingScreen() {
     router.replace("/");
   };
 
+  const handleOpenNotificationSettings = () => {
+    setPermissionSheetVisible(false);
+    Linking.openSettings().catch(() => {});
+  };
+
   if (step === "account") {
     return (
       <AccountWelcome
@@ -160,19 +168,30 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <SetupScreen
-      calendarBusy={calendarBusy}
-      calendarSync={calendarSync}
-      courseCount={courseCount}
-      courseReminder={courseReminder}
-      hasCourses={hasCourses}
-      isDark={isDark}
-      notificationBusy={notificationBusy}
-      onCalendarToggle={handleCalendarToggle}
-      onFinish={finish}
-      onImport={handleImport}
-      onReminderToggle={handleReminderToggle}
-    />
+    <>
+      <SetupScreen
+        calendarBusy={calendarBusy}
+        calendarSync={calendarSync}
+        courseCount={courseCount}
+        courseReminder={courseReminder}
+        hasCourses={hasCourses}
+        isDark={isDark}
+        notificationBusy={notificationBusy}
+        onCalendarToggle={handleCalendarToggle}
+        onFinish={finish}
+        onImport={handleImport}
+        onReminderToggle={handleReminderToggle}
+      />
+      <ConfirmSheet
+        visible={permissionSheetVisible}
+        onClose={() => setPermissionSheetVisible(false)}
+        title={t("notif.permissionDeniedTitle")}
+        description={t("notif.permissionDeniedDesc")}
+        confirmText={t("notif.permissionDeniedOpenSettings")}
+        cancelText={t("notif.permissionDeniedCancel")}
+        onConfirm={handleOpenNotificationSettings}
+      />
+    </>
   );
 }
 

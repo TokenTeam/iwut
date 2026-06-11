@@ -416,7 +416,11 @@
   },
   "notif": {
     "channelName": "课程提醒",
-    "channelDesc": "在课程开始前显示倒计时通知"
+    "channelDesc": "在课程开始前显示倒计时通知",
+    "permissionDeniedTitle": "无法开启课前提醒",
+    "permissionDeniedDesc": "通知权限已关闭，请在系统设置中允许通知后再开启课前提醒。",
+    "permissionDeniedCancel": "稍后再说",
+    "permissionDeniedOpenSettings": "去设置"
   },
   "calSync": {
     "title": "掌上吾理-我的课表",

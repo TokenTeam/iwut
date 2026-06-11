@@ -1,6 +1,8 @@
 import { requireNativeModule } from "expo-modules-core";
 
 interface NotificationNativeModule {
+  requestAuthorization?: () => Promise<boolean>;
+
   createChannel(id: string, name: string, description: string): Promise<void>;
 
   showCountdown(
@@ -33,6 +35,8 @@ const NativeModule =
   requireNativeModule<NotificationNativeModule>("Notification");
 
 export const createChannel = NativeModule.createChannel;
+export const requestAuthorization =
+  NativeModule.requestAuthorization ?? (async () => true);
 export const showCountdown = NativeModule.showCountdown;
 export const scheduleCountdown = NativeModule.scheduleCountdown;
 export const cancel = NativeModule.cancel;

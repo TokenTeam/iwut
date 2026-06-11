@@ -416,7 +416,11 @@
   },
   "notif": {
     "channelName": "Class reminders",
-    "channelDesc": "Shows countdown notifications before class starts"
+    "channelDesc": "Shows countdown notifications before class starts",
+    "permissionDeniedTitle": "Can't enable class reminders",
+    "permissionDeniedDesc": "Notifications are turned off. Allow notifications in system settings, then enable class reminders again.",
+    "permissionDeniedCancel": "Not now",
+    "permissionDeniedOpenSettings": "Open Settings"
   },
   "calSync": {
     "title": "iWUT - My timetable",

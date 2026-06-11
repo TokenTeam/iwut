@@ -1,12 +1,13 @@
 import * as BackgroundTask from "expo-background-task";
 import * as TaskManager from "expo-task-manager";
-import { Platform } from "react-native";
+import { PermissionsAndroid, Platform } from "react-native";
 
 import { getCurrentWeek, getTermWeekMonday } from "@/lib/date";
 import { t } from "@/lib/i18n";
 import {
   cancelAll,
   createChannel,
+  requestAuthorization,
   scheduleCountdown,
   showCountdown,
 } from "@/modules/notification";
@@ -18,6 +19,32 @@ const CHANNEL_ID = "course_reminder";
 const BACKGROUND_TASK_NAME = "course-reminder-refresh";
 const SCHEDULE_WEEKS = 2;
 const LIVE_ACTIVITY_ID = 9999;
+
+export async function ensureCourseNotificationPermission(): Promise<boolean> {
+  if (Platform.OS === "android") {
+    if (typeof Platform.Version === "number" && Platform.Version < 33) {
+      return true;
+    }
+
+    const permission = PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS;
+    const alreadyGranted = await PermissionsAndroid.check(permission);
+    if (alreadyGranted) return true;
+
+    const result = await PermissionsAndroid.request(permission);
+    if (result === PermissionsAndroid.RESULTS.GRANTED) return true;
+
+    return false;
+  }
+
+  if (Platform.OS === "ios") {
+    const granted = await requestAuthorization();
+    if (granted) return true;
+
+    return false;
+  }
+
+  return true;
+}
 
 function hashReminderId(input: string): number {
   let hash = 0x811c9dc5;
