@@ -219,7 +219,19 @@
     "language": "语言",
     "langSystem": "跟随系统",
     "langZh": "简体中文",
-    "langEn": "English"
+    "langEn": "English",
+    "bg": "背景",
+    "bgSet": "已设置",
+    "bgNone": "无",
+    "bgSheetTitle": "背景",
+    "bgPickFromAlbum": "从相册选择",
+    "bgRemove": "移除背景",
+    "bgSetSuccess": "背景已设置",
+    "bgSetFailed": "背景设置失败",
+    "bgSetFailedSub": "图片裁剪或保存时出现问题",
+    "bgRemoved": "背景已移除",
+    "bgPickerCancel": "取消",
+    "bgPickerDone": "完成"
   },
   "calendarSet": {
     "title": "课表设置",
@@ -240,19 +252,7 @@
     "syncRemoved": "已从系统日历移除",
     "customGroup": "个性化",
     "palette": "配色方案",
-    "visualStyle": "课表外观",
-    "bg": "课表背景",
-    "bgSet": "已设置",
-    "bgNone": "无",
-    "bgSheetTitle": "课表背景",
-    "bgPickFromAlbum": "从相册选择",
-    "bgRemove": "移除背景",
-    "bgSetSuccess": "背景已设置",
-    "bgSetFailed": "背景设置失败",
-    "bgSetFailedSub": "图片裁剪或保存时出现问题",
-    "bgRemoved": "背景已移除",
-    "bgPickerCancel": "取消",
-    "bgPickerDone": "完成"
+    "visualStyle": "课表外观"
   },
   "scheduleVisual": {
     "title": "课表外观",

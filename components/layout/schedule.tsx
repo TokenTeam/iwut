@@ -18,10 +18,10 @@ import { useHaptics } from "@/hooks/use-haptics";
 import { buildColorMap, getCourseColor } from "@/lib/course-colors";
 import { getTermWeekDayNumbers, getTermWeekMonthLabel } from "@/lib/date";
 import { t, useT } from "@/lib/i18n";
-import { formatCourseSectionTimeRange } from "@/services/course-time";
 import type { Course } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 
+import { CourseDetailModal } from "./course-detail-modal";
 import {
   QuickAddCourseModal,
   type QuickAddSlot,
@@ -616,178 +616,20 @@ export function Schedule({
         onClose={() => setQuickAddSlot(null)}
       />
 
-      <Modal
-        visible={!!selected}
-        transparent
-        animationType="fade"
-        statusBarTranslucent
-        onRequestClose={() => setSelected(null)}
-      >
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <BlurView
-            {...getAndroidBlurProps(blurTarget)}
-            intensity={30}
-            tint="dark"
-            style={StyleSheet.absoluteFill}
-            pointerEvents="none"
-          />
-          <Pressable
-            style={StyleSheet.absoluteFill}
-            onPress={() => setSelected(null)}
-          />
-          {selected && (
-            <View
-              style={{
-                width: 300,
-                backgroundColor: isDark ? "#1c1c1e" : "#fff",
-                borderRadius: 20,
-                overflow: "hidden",
-              }}
-            >
-              <View
-                style={{
-                  backgroundColor: isInCurrentWeek(selected)
-                    ? colorOf(selected.name)
-                    : otherWeekAccentColor,
-                  paddingHorizontal: 22,
-                  paddingTop: 22,
-                  paddingBottom: 18,
-                }}
-              >
-                <Pressable
-                  onPress={() => setSelected(null)}
-                  style={{ position: "absolute", top: 12, right: 12 }}
-                  hitSlop={8}
-                >
-                  <Ionicons
-                    name="close-circle"
-                    size={26}
-                    color="rgba(255,255,255,0.7)"
-                  />
-                </Pressable>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    marginRight: 28,
-                  }}
-                >
-                  <Text
-                    numberOfLines={2}
-                    style={{
-                      flexShrink: 1,
-                      fontSize: 19,
-                      fontWeight: "700",
-                      color: "#fff",
-                      lineHeight: 26,
-                    }}
-                  >
-                    {selected.name}
-                  </Text>
-                  {!isInCurrentWeek(selected) && (
-                    <Text
-                      style={{
-                        marginLeft: 8,
-                        fontSize: 10,
-                        fontWeight: "600",
-                        paddingHorizontal: 6,
-                        paddingVertical: 1,
-                        borderRadius: 4,
-                        overflow: "hidden",
-                        color: "#fff",
-                        backgroundColor: "rgba(255,255,255,0.22)",
-                      }}
-                    >
-                      {localT("schedule.otherWeekTag")}
-                    </Text>
-                  )}
-                </View>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: "rgba(255,255,255,0.8)",
-                    marginTop: 6,
-                  }}
-                >
-                  {localT("schedule.weekdayWithSection", {
-                    weekday: dayLabels[selected.day - 1],
-                    start: selected.sectionStart,
-                    end: selected.sectionEnd,
-                  })}
-                </Text>
-              </View>
-
-              <View style={{ padding: 20, gap: 14 }}>
-                <DetailRow
-                  icon="location-outline"
-                  label={localT("schedule.room")}
-                  value={selected.room}
-                  isDark={isDark}
-                />
-                <DetailRow
-                  icon="person-outline"
-                  label={localT("schedule.teacher")}
-                  value={selected.teacher}
-                  isDark={isDark}
-                />
-                <DetailRow
-                  icon="calendar-outline"
-                  label={localT("schedule.weeks")}
-                  value={localT("schedule.weeksValue", {
-                    start: selected.weekStart,
-                    end: selected.weekEnd,
-                  })}
-                  isDark={isDark}
-                />
-                <DetailRow
-                  icon="time-outline"
-                  label={localT("schedule.time")}
-                  value={
-                    formatCourseSectionTimeRange(
-                      selected.sectionStart,
-                      selected.sectionEnd,
-                    ) ||
-                    localT("schedule.sectionRange", {
-                      start: selected.sectionStart,
-                      end: selected.sectionEnd,
-                    })
-                  }
-                  isDark={isDark}
-                />
-              </View>
-
-              <View
-                style={{
-                  flexDirection: "row",
-                  gap: 8,
-                  paddingHorizontal: 16,
-                  paddingBottom: 16,
-                  paddingTop: 4,
-                }}
-              >
-                <DetailActionButton
-                  icon="create-outline"
-                  label={localT("schedule.editCourse")}
-                  isDark={isDark}
-                  onPress={() => handleEditCourse(selected)}
-                />
-                <DetailActionButton
-                  icon="add-circle-outline"
-                  label={localT("schedule.addAtSameSlot")}
-                  isDark={isDark}
-                  onPress={() => openQuickAddForCourse(selected)}
-                />
-              </View>
-            </View>
-          )}
-        </View>
-      </Modal>
+      <CourseDetailModal
+        course={selected}
+        headerColor={
+          selected
+            ? isInCurrentWeek(selected)
+              ? colorOf(selected.name)
+              : otherWeekAccentColor
+            : "transparent"
+        }
+        showOtherWeekTag={!!selected && !isInCurrentWeek(selected)}
+        onClose={() => setSelected(null)}
+        onEdit={handleEditCourse}
+        onAddAtSameSlot={openQuickAddForCourse}
+      />
 
       <Modal
         visible={!!slotCourses}
@@ -1025,107 +867,6 @@ export function Schedule({
           )}
         </View>
       </Modal>
-    </View>
-  );
-}
-
-function DetailActionButton({
-  icon,
-  label,
-  isDark,
-  onPress,
-}: {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
-  label: string;
-  isDark: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flex: 1,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        paddingVertical: 11,
-        borderRadius: 12,
-        backgroundColor: pressed
-          ? isDark
-            ? "rgba(255,255,255,0.08)"
-            : "rgba(0,0,0,0.06)"
-          : isDark
-            ? "rgba(255,255,255,0.05)"
-            : "rgba(0,0,0,0.04)",
-      })}
-    >
-      <Ionicons name={icon} size={16} color={isDark ? "#d4d4d4" : "#525252"} />
-      <Text
-        style={{
-          marginLeft: 6,
-          fontSize: 13,
-          fontWeight: "600",
-          color: isDark ? "#d4d4d4" : "#525252",
-        }}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-function DetailRow({
-  icon,
-  label,
-  value,
-  isDark,
-}: {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
-  label: string;
-  value: string;
-  isDark: boolean;
-}) {
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center" }}>
-      <View
-        style={{
-          width: 34,
-          height: 34,
-          borderRadius: 10,
-          backgroundColor: isDark
-            ? "rgba(255,255,255,0.08)"
-            : "rgba(0,0,0,0.04)",
-          justifyContent: "center",
-          alignItems: "center",
-          marginRight: 12,
-        }}
-      >
-        <Ionicons
-          name={icon}
-          size={17}
-          color={isDark ? "#a3a3a3" : "#737373"}
-        />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text
-          style={{
-            fontSize: 11,
-            color: isDark ? "#737373" : "#a3a3a3",
-            marginBottom: 1,
-          }}
-        >
-          {label}
-        </Text>
-        <Text
-          style={{
-            fontSize: 15,
-            fontWeight: "500",
-            color: isDark ? "#e5e5e5" : "#1c1c1e",
-          }}
-        >
-          {value}
-        </Text>
-      </View>
     </View>
   );
 }

@@ -1,21 +1,10 @@
 import { Stack } from "expo-router";
 import { useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Switch,
-  Text,
-  useWindowDimensions,
-} from "react-native";
+import { ActivityIndicator, ScrollView, Switch } from "react-native";
 import Toast from "react-native-toast-message";
 
-import { BottomSheet } from "@/components/ui/bottom-sheet";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { BUILTIN_PALETTE_NAME_KEYS } from "@/constants/course-palettes";
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import {
@@ -26,23 +15,9 @@ import { useCourseStore } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 import { useSettingsStore } from "@/store/settings";
 
-function isCropCancelled(error: unknown) {
-  const re = /cancell?ed/i;
-  if (error && typeof error === "object" && "code" in error) {
-    if (re.test(String((error as { code: unknown }).code))) return true;
-  }
-  if (error instanceof Error) return re.test(error.message);
-  if (typeof error === "string") return re.test(error);
-  return false;
-}
-
 export default function CalendarSettingsScreen() {
   useMarkRouteInteractive();
   const t = useT();
-  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
-  const scheme = useColorScheme();
-  const isDark = scheme === "dark";
-  const iconColor = Colors[isDark ? "dark" : "light"].icon;
 
   const scrollWeekend = useScheduleStore((s) => s.scrollWeekend);
   const setScrollWeekend = useScheduleStore((s) => s.setScrollWeekend);
@@ -53,16 +28,11 @@ export default function CalendarSettingsScreen() {
     (s) => s.setShowOtherWeekCourses,
   );
   const colorPalette = useScheduleStore((s) => s.colorPalette);
-  const backgroundImageUri = useScheduleStore((s) => s.backgroundImageUri);
-  const setBackgroundImageUri = useScheduleStore(
-    (s) => s.setBackgroundImageUri,
-  );
 
   const courses = useCourseStore((s) => s.courses);
   const calendarSync = useSettingsStore((s) => s.calendarSync);
   const setCalendarSync = useSettingsStore((s) => s.setCalendarSync);
 
-  const [showBgPicker, setShowBgPicker] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
   const courseCount = useMemo(() => {
@@ -106,89 +76,6 @@ export default function CalendarSettingsScreen() {
         position: "bottom",
       });
     }
-  };
-
-  const deleteOldBg = async (uri: string | null) => {
-    if (!uri) return;
-    try {
-      const { File } = await import("expo-file-system");
-      const old = new File(uri);
-      if (old.exists) old.delete();
-    } catch {}
-  };
-
-  const handlePickImage = async () => {
-    // 先关闭 BottomSheet，避免 expo-image-picker 在 RN Modal上下文
-    // 调用 .launch() 触发 unregistered ActivityResultLauncher
-    setShowBgPicker(false);
-    let tempCroppedUri: string | null = null;
-    try {
-      const ImagePicker = await import("expo-image-picker");
-      const { File, Paths } = await import("expo-file-system");
-      const ExpoImageCropTool = (await import("@bsky.app/expo-image-crop-tool"))
-        .default;
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        quality: 1,
-      });
-      if (result.canceled) return;
-
-      const asset = result.assets[0];
-      const cropped = await ExpoImageCropTool.openCropperAsync({
-        imageUri: asset.uri,
-        shape: "rectangle",
-        aspectRatio:
-          windowWidth > 0 && windowHeight > 0
-            ? windowWidth / windowHeight
-            : undefined,
-        format: "jpeg",
-        compressImageQuality: 0.85,
-        cancelButtonText: t("calendarSet.bgPickerCancel"),
-        doneButtonText: t("calendarSet.bgPickerDone"),
-      });
-
-      tempCroppedUri = cropped.path;
-      const source = new File(cropped.path);
-
-      const dest = new File(Paths.document, `schedule-bg-${Date.now()}.jpg`);
-      await source.copy(dest);
-      await deleteOldBg(backgroundImageUri);
-
-      setBackgroundImageUri(dest.uri);
-      Toast.show({
-        type: "success",
-        text1: t("calendarSet.bgSetSuccess"),
-        position: "bottom",
-      });
-    } catch (error) {
-      if (isCropCancelled(error)) return;
-      Toast.show({
-        type: "error",
-        text1: t("calendarSet.bgSetFailed"),
-        text2: t("calendarSet.bgSetFailedSub"),
-        position: "bottom",
-      });
-    } finally {
-      if (tempCroppedUri) {
-        try {
-          const { File } = await import("expo-file-system");
-          const temp = new File(tempCroppedUri);
-          if (temp.exists) temp.delete();
-        } catch {}
-      }
-    }
-  };
-
-  const handleRemoveBg = async () => {
-    await deleteOldBg(backgroundImageUri);
-    setBackgroundImageUri(null);
-    setShowBgPicker(false);
-    Toast.show({
-      type: "success",
-      text1: t("calendarSet.bgRemoved"),
-      position: "bottom",
-    });
   };
 
   const paletteKey = BUILTIN_PALETTE_NAME_KEYS[colorPalette.name];
@@ -279,46 +166,8 @@ export default function CalendarSettingsScreen() {
             label={t("calendarSet.visualStyle")}
             href="/settings/schedule-visual"
           />
-          <MenuItem
-            icon="image"
-            iconBg="#FF2D55"
-            label={t("calendarSet.bg")}
-            value={
-              backgroundImageUri
-                ? t("calendarSet.bgSet")
-                : t("calendarSet.bgNone")
-            }
-            onPress={() => setShowBgPicker(true)}
-          />
         </MenuGroup>
       </ScrollView>
-
-      <BottomSheet
-        visible={showBgPicker}
-        onClose={() => setShowBgPicker(false)}
-        title={t("calendarSet.bgSheetTitle")}
-      >
-        <Pressable
-          className="flex-row items-center px-5 py-3.5 active:bg-neutral-100 dark:active:bg-neutral-700"
-          onPress={handlePickImage}
-        >
-          <IconSymbol name="photo-library" size={22} color={iconColor} />
-          <Text className="ml-3 flex-1 text-base text-neutral-800 dark:text-neutral-200">
-            {t("calendarSet.bgPickFromAlbum")}
-          </Text>
-        </Pressable>
-        {backgroundImageUri && (
-          <Pressable
-            className="flex-row items-center px-5 py-3.5 active:bg-neutral-100 dark:active:bg-neutral-700"
-            onPress={handleRemoveBg}
-          >
-            <IconSymbol name="delete-outline" size={22} color="#ef4444" />
-            <Text className="ml-3 flex-1 text-base text-red-500">
-              {t("calendarSet.bgRemove")}
-            </Text>
-          </Pressable>
-        )}
-      </BottomSheet>
     </>
   );
 }
