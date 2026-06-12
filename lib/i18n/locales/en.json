@@ -235,6 +235,7 @@
     "syncCalendar": "Sync to system calendar",
     "syncedToast": "Synced to system calendar",
     "syncedSub": "{n} class entries written",
+    "syncedPartialSub": "{n} class entries written, {m} failed",
     "syncFailed": "Sync failed",
     "syncRemoved": "Removed from system calendar",
     "customGroup": "Personalize",

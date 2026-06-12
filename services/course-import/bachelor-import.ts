@@ -1,5 +1,7 @@
 import type { Course } from "@/store/course";
 
+import { parseImportedCourse } from "./normalize";
+
 export const BACHELOR_LOGIN_URL =
   "https://zhlgd.whut.edu.cn/tpass/login?service=https%3A%2F%2Fjwxt.whut.edu.cn%2Fjwapp%2Fsys%2Fhomeapp%2Findex.do%3FforceCas%3D1";
 export const BACHELOR_HOME_PREFIX =
@@ -113,17 +115,9 @@ export function normalizeBachelorCoursesMessage(
   msg: BachelorCoursesMessage,
 ): BachelorCoursesImportResult {
   const raw = Array.isArray(msg.data) ? msg.data : [];
-  const courses: Course[] = raw.map((course: any) => ({
-    name: course.name,
-    room: course.room,
-    teacher: course.teacher,
-    day: course.day,
-    sectionStart: course.sectionStart,
-    sectionEnd: course.sectionEnd,
-    weekStart: course.weekStart,
-    weekEnd: course.weekEnd,
-    source: "imported" as const,
-  }));
+  const courses: Course[] = raw
+    .map(parseImportedCourse)
+    .filter((c): c is Course => c !== null);
 
   return {
     courses,

@@ -11,16 +11,41 @@ import {
 } from "expo-calendar/next";
 import { Platform } from "react-native";
 
-import { getTermWeekMonday } from "@/lib/date";
+import { getTermClassTimeMs } from "@/lib/date";
 import { t } from "@/lib/i18n";
+import enJson from "@/lib/i18n/locales/en.json";
+import zhJson from "@/lib/i18n/locales/zh.json";
 import { reportError } from "@/lib/report";
+import { getMMKV } from "@/lib/storage";
+import { createTaskQueue } from "@/lib/task-queue";
 import { SECTION_TIMES } from "@/services/course-time";
 import { type Course, useCourseStore } from "@/store/course";
+import { useSettingsStore } from "@/store/settings";
 
 // Calendar entries are re-created on every sync, so we use the current locale
 // at sync time rather than caching a value at module load.
 function getCalendarTitle(): string {
   return t("calSync.title");
+}
+
+// iOS 无法像 Android 那样用固定 name 定位日历，因此持久化创建出的日历 id，
+// 并用所有语言的标题做兜底匹配，避免切换语言后产生残留/重复日历。
+const CALENDAR_ID_STORAGE_KEY = "calendar-sync.calendarId";
+const KNOWN_CALENDAR_TITLES = new Set([
+  zhJson.calSync.title,
+  enJson.calSync.title,
+]);
+
+function getStoredCalendarId(): string | null {
+  return getMMKV().getString(CALENDAR_ID_STORAGE_KEY) ?? null;
+}
+
+function setStoredCalendarId(id: string | null): void {
+  if (id == null) {
+    getMMKV().remove(CALENDAR_ID_STORAGE_KEY);
+  } else {
+    getMMKV().set(CALENDAR_ID_STORAGE_KEY, id);
+  }
 }
 const CALENDAR_COLOR = "#007AFF";
 // Android 上用作 ACCOUNT_NAME / OWNER_ACCOUNT 的固定标识，使用 ASCII 字符以
@@ -28,9 +53,6 @@ const CALENDAR_COLOR = "#007AFF";
 const APP_ACCOUNT_NAME = "iwut.tokenteam.dev";
 // Android Calendars.NAME 与 Calendar.title 独立，便于多语言切换后定位。
 const CALENDAR_INTERNAL_NAME = "iwut_schedule";
-// expo-calendar/next 在 Android 上会把 relativeOffset 直接写入
-// CalendarContract.Reminders.MINUTES，而 iOS 仍使用 EventKit 的相对起始时间偏移。
-const COURSE_REMINDER_OFFSET_MINUTES = Platform.OS === "android" ? 30 : -30;
 
 export async function requestCalendarPermission(): Promise<boolean> {
   const { status } = await requestCalendarPermissions();
@@ -43,7 +65,9 @@ function isAppCalendar(c: ExpoCalendar): boolean {
       c.name === CALENDAR_INTERNAL_NAME || c.source?.name === APP_ACCOUNT_NAME
     );
   }
-  return (c.title ?? "") === t("calSync.title");
+  const storedId = getStoredCalendarId();
+  if (storedId && c.id === storedId) return true;
+  return KNOWN_CALENDAR_TITLES.has(c.title ?? "");
 }
 
 async function findAppCalendars(): Promise<ExpoCalendar[]> {
@@ -109,18 +133,6 @@ function formatLocation(room: string | undefined): string | undefined {
   return room;
 }
 
-function buildEventDate(
-  monday: Date,
-  dayOfWeek: number,
-  timeStr: string,
-): Date {
-  const date = new Date(monday);
-  date.setDate(date.getDate() + (dayOfWeek - 1));
-  const [h, m] = timeStr.split(":").map(Number);
-  date.setHours(h, m, 0, 0);
-  return date;
-}
-
 function formatEventDateForReport(value: unknown): string {
   if (value instanceof Date) return value.toISOString();
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -129,45 +141,79 @@ function formatEventDateForReport(value: unknown): string {
   return String(value);
 }
 
-export async function syncCoursesToCalendar(): Promise<{
+// 同步与删除都是"先清理再重建/移除"的多步流程，必须串行执行，
+// 否则课程变更连续触发时可能产生重复日历或残留事件。
+const calendarQueue = createTaskQueue();
+
+export function syncCoursesToCalendar(): Promise<{
   success: boolean;
   count: number;
+  failed: number;
+  error?: string;
+}> {
+  return calendarQueue(doSyncCoursesToCalendar);
+}
+
+async function doSyncCoursesToCalendar(): Promise<{
+  success: boolean;
+  count: number;
+  failed: number;
   error?: string;
 }> {
   const hasPermission = await requestCalendarPermission();
   if (!hasPermission) {
-    return { success: false, count: 0, error: t("calSync.errNoPermission") };
+    return {
+      success: false,
+      count: 0,
+      failed: 0,
+      error: t("calSync.errNoPermission"),
+    };
   }
 
   const { courses, termStart } = useCourseStore.getState();
   if (!termStart || courses.length === 0) {
-    return { success: false, count: 0, error: t("calSync.errNoData") };
+    return {
+      success: false,
+      count: 0,
+      failed: 0,
+      error: t("calSync.errNoData"),
+    };
   }
+
+  const reminderMinutes = useSettingsStore.getState().reminderMinutes;
+  // expo-calendar/next 在 Android 上把 relativeOffset 直接写入 Reminders.MINUTES，
+  // iOS 仍是 EventKit 的相对起始时间偏移。
+  const reminderOffset =
+    Platform.OS === "android" ? reminderMinutes : -reminderMinutes;
 
   // 每次同步先彻底清理旧日历再重建
   const stale = await findAppCalendars();
   for (const cal of stale) {
     await deleteCalendarSafe(cal);
   }
+  setStoredCalendarId(null);
 
   let calendar: ExpoCalendar | null = null;
 
   try {
     calendar = await createAppCalendar();
+    setStoredCalendarId(calendar.id);
 
     if (Platform.OS === "android") {
       await new Promise((r) => setTimeout(r, 200));
     }
 
     let count = 0;
+    let failed = 0;
     let reported = false;
     for (const course of courses) {
-      const events = createEventsForCourse(course, termStart);
+      const events = createEventsForCourse(course, termStart, reminderOffset);
       for (const eventData of events) {
         try {
           await calendar.createEvent(eventData);
           count++;
         } catch (e) {
+          failed++;
           if (!reported) {
             // 仅上报首个失败事件，附带足以定位的上下文
             reported = true;
@@ -191,9 +237,15 @@ export async function syncCoursesToCalendar(): Promise<{
     if (count === 0) {
       // 彻底失败时应删掉空日历
       await deleteCalendarSafe(calendar);
-      return { success: false, count: 0, error: t("calSync.errWriteFail") };
+      setStoredCalendarId(null);
+      return {
+        success: false,
+        count: 0,
+        failed,
+        error: t("calSync.errWriteFail"),
+      };
     }
-    return { success: true, count };
+    return { success: true, count, failed };
   } catch (e) {
     reportError(e, {
       module: "calendar-sync",
@@ -202,9 +254,10 @@ export async function syncCoursesToCalendar(): Promise<{
     });
     if (calendar) {
       await deleteCalendarSafe(calendar);
+      setStoredCalendarId(null);
     }
     const msg = e instanceof Error ? e.message : t("calSync.errUnknown");
-    return { success: false, count: 0, error: msg };
+    return { success: false, count: 0, failed: 0, error: msg };
   }
 }
 
@@ -213,27 +266,26 @@ type EventInput = Omit<Partial<ExpoCalendarEvent>, "id" | "organizer">;
 function createEventsForCourse(
   course: Course,
   termStart: string,
+  reminderOffset: number,
 ): EventInput[] {
   const events: EventInput[] = [];
 
   for (let week = course.weekStart; week <= course.weekEnd; week++) {
-    const monday = getTermWeekMonday(termStart, week);
-    if (!monday) continue;
-
     const startTime = SECTION_TIMES[course.sectionStart];
     const endTime = SECTION_TIMES[course.sectionEnd];
     if (!startTime || !endTime) continue;
 
-    const startDate = buildEventDate(monday, course.day, startTime[0]);
-    const endDate = buildEventDate(monday, course.day, endTime[1]);
+    const startMs = getTermClassTimeMs(
+      termStart,
+      week,
+      course.day,
+      startTime[0],
+    );
+    const endMs = getTermClassTimeMs(termStart, week, course.day, endTime[1]);
+    if (startMs == null || endMs == null || startMs >= endMs) continue;
 
-    if (
-      isNaN(startDate.getTime()) ||
-      isNaN(endDate.getTime()) ||
-      startDate >= endDate
-    ) {
-      continue;
-    }
+    const startDate = new Date(startMs);
+    const endDate = new Date(endMs);
 
     events.push({
       title: course.name,
@@ -241,7 +293,7 @@ function createEventsForCourse(
       // next API 会把 Date 转成 ISO 字符串；Android 原生 EventInputRecord 需要 string。
       startDate,
       endDate,
-      alarms: [{ relativeOffset: COURSE_REMINDER_OFFSET_MINUTES }],
+      alarms: [{ relativeOffset: reminderOffset }],
       notes: course.teacher
         ? t("calSync.teacherNotes", { teacher: course.teacher })
         : undefined,
@@ -252,12 +304,15 @@ function createEventsForCourse(
   return events;
 }
 
-export async function deleteAppCalendar(): Promise<void> {
-  const hasPermission = await requestCalendarPermission();
-  if (!hasPermission) return;
+export function deleteAppCalendar(): Promise<void> {
+  return calendarQueue(async () => {
+    const hasPermission = await requestCalendarPermission();
+    if (!hasPermission) return;
 
-  const calendars = await findAppCalendars();
-  for (const cal of calendars) {
-    await deleteCalendarSafe(cal);
-  }
+    const calendars = await findAppCalendars();
+    for (const cal of calendars) {
+      await deleteCalendarSafe(cal);
+    }
+    setStoredCalendarId(null);
+  });
 }

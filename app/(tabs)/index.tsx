@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  FlatList,
   LayoutChangeEvent,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -17,11 +18,13 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { getDayLabels } from "@/components/layout/schedule";
 import { AnnouncementBanner } from "@/components/ui/announcement-banner";
+import { getDayLabels } from "@/constants/weekdays";
+import { buildColorMap, getCourseColor } from "@/lib/course-colors";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
+import { useMinuteNow } from "@/hooks/use-minute-now";
 import {
   getCurrentDayOfWeek,
   getCurrentWeek,
@@ -97,14 +100,14 @@ const CARD_GAP = 10;
 
 type Countdown = { kind: "start" | "end"; mins: number };
 
-function isCourseFinished(course: Course): boolean {
-  const now = new Date();
+function isCourseFinished(course: Course, nowMs: number): boolean {
+  const now = new Date(nowMs);
   const nowMin = now.getHours() * 60 + now.getMinutes();
   return nowMin > (SECTION_TIMES[course.sectionEnd]?.[3] ?? 0);
 }
 
-function getCourseCountdown(course: Course): Countdown | null {
-  const now = new Date();
+function getCourseCountdown(course: Course, nowMs: number): Countdown | null {
+  const now = new Date(nowMs);
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const startMin = SECTION_TIMES[course.sectionStart]?.[2] ?? 0;
   const endMin = SECTION_TIMES[course.sectionEnd]?.[3] ?? 0;
@@ -117,8 +120,8 @@ function getCourseCountdown(course: Course): Countdown | null {
   return { kind: "end", mins: endMin - nowMin };
 }
 
-function getGreetingSlot(): GreetingSlot {
-  const hour = new Date().getHours();
+function getGreetingSlot(nowMs: number): GreetingSlot {
+  const hour = new Date(nowMs).getHours();
   const match = GREETING_SLOTS.find((g) =>
     g.start < g.end
       ? hour >= g.start && hour < g.end
@@ -148,14 +151,17 @@ export default function HomeScreen() {
     [announcements, dismissedIds],
   );
 
-  const greetingSlot = getGreetingSlot();
+  // 按分钟刷新，驱动倒计时 / 已结束状态 / 问候语随时间更新
+  const nowMs = useMinuteNow();
+
+  const greetingSlot = getGreetingSlot(nowMs);
   const greeting = {
     title: t(greetingSlot.titleKey),
     sub: t(greetingSlot.subKey),
   };
   const vacation = isVacation(termStart);
 
-  const now = new Date();
+  const now = new Date(nowMs);
   const dayIdx = getCurrentDayOfWeek();
   const dayLabels = getDayLabels();
   const month = now.getMonth() + 1;
@@ -202,22 +208,15 @@ export default function HomeScreen() {
   );
 
   const paletteColors = colorPalette.colors;
-  const colorMap = useMemo(() => {
-    const map = new Map<string, number>();
-    let idx = 0;
-    for (const c of courses) {
-      if (!map.has(c.name)) {
-        map.set(c.name, idx % paletteColors.length);
-        idx++;
-      }
-    }
-    return map;
-  }, [courses, paletteColors.length]);
+  const colorMap = useMemo(
+    () => buildColorMap(courses, paletteColors.length),
+    [courses, paletteColors.length],
+  );
   const hasCourses = courses.length > 0;
 
   const finishedCount = useMemo(
-    () => todayCourses.filter((c) => isCourseFinished(c)).length,
-    [todayCourses],
+    () => todayCourses.filter((c) => isCourseFinished(c, nowMs)).length,
+    [todayCourses, nowMs],
   );
 
   const allTodayFinished =
@@ -293,11 +292,11 @@ export default function HomeScreen() {
   });
 
   const firstUpcomingIdx = useMemo(
-    () => todayCourses.findIndex((c) => !isCourseFinished(c)),
-    [todayCourses],
+    () => todayCourses.findIndex((c) => !isCourseFinished(c, nowMs)),
+    [todayCourses, nowMs],
   );
 
-  const courseScrollRef = useRef<ScrollView>(null);
+  const courseScrollRef = useRef<FlatList<Course>>(null);
   const didAutoScroll = useRef(false);
   const cardHeights = useRef<number[]>([]);
 
@@ -315,17 +314,22 @@ export default function HomeScreen() {
         for (let i = 0; i < firstUpcomingIdx; i++) {
           scrollY += (cardHeights.current[i] ?? 0) + CARD_GAP;
         }
-        courseScrollRef.current?.scrollTo({ y: scrollY, animated: true });
+        courseScrollRef.current?.scrollToOffset({
+          offset: scrollY,
+          animated: true,
+        });
       }
     },
     [todayCourses.length, firstUpcomingIdx],
   );
 
-  function getCourseColor(name: string) {
-    return (
-      courseColorOverrides[name] ??
-      colorPalette.overrides?.[name] ??
-      paletteColors[(colorMap.get(name) ?? 0) % paletteColors.length]
+  function courseColorOf(name: string) {
+    return getCourseColor(
+      name,
+      colorMap,
+      paletteColors,
+      colorPalette.overrides,
+      courseColorOverrides,
     );
   }
 
@@ -336,11 +340,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ paddingBottom: 32, flexGrow: 1 }}
-        showsVerticalScrollIndicator={false}
-      >
+      <View className="flex-1">
         <View className="px-6 pb-2 pt-8">
           <View className="flex-row items-center justify-between">
             <Text
@@ -516,32 +516,32 @@ export default function HomeScreen() {
             >
               <View style={{ width: screenWidth, flex: 1 }}>
                 {hasCourses && todayCourses.length > 0 ? (
-                  <ScrollView
+                  <FlatList
                     ref={courseScrollRef}
+                    data={todayCourses}
+                    keyExtractor={(course, i) =>
+                      `today-${course.name}-${course.sectionStart}-${i}`
+                    }
                     contentContainerStyle={{
                       gap: CARD_GAP,
                       paddingHorizontal: 24,
+                      paddingBottom: 32,
                       flexGrow: 1,
                     }}
                     showsVerticalScrollIndicator={false}
-                    nestedScrollEnabled
-                  >
-                    {todayCourses.map((course, i) => {
-                      const past = isCourseFinished(course);
+                    renderItem={({ item: course, index: i }) => {
+                      const past = isCourseFinished(course, nowMs);
                       const countdown =
                         !past && i === firstUpcomingIdx
-                          ? getCourseCountdown(course)
+                          ? getCourseCountdown(course, nowMs)
                           : null;
                       return (
-                        <View
-                          key={`today-${course.name}-${course.sectionStart}-${i}`}
-                          onLayout={(e) => handleCardLayout(i, e)}
-                        >
+                        <View onLayout={(e) => handleCardLayout(i, e)}>
                           <CourseCard
                             course={course}
-                            color={getCourseColor(course.name)}
+                            color={courseColorOf(course.name)}
                             past={past}
-                            countdown={countdown}
+                            countdownKind={countdown?.kind ?? null}
                             countdownText={
                               countdown
                                 ? t(
@@ -556,8 +556,8 @@ export default function HomeScreen() {
                           />
                         </View>
                       );
-                    })}
-                  </ScrollView>
+                    }}
+                  />
                 ) : (
                   <EmptyState
                     hasCourses={hasCourses}
@@ -569,30 +569,29 @@ export default function HomeScreen() {
 
               <View style={{ width: screenWidth, flex: 1 }}>
                 {hasCourses && tomorrowCourses.length > 0 ? (
-                  <ScrollView
+                  <FlatList
+                    data={tomorrowCourses}
+                    keyExtractor={(course, i) =>
+                      `tmr-${course.name}-${course.sectionStart}-${i}`
+                    }
                     contentContainerStyle={{
                       gap: CARD_GAP,
                       paddingHorizontal: 24,
+                      paddingBottom: 32,
                       flexGrow: 1,
                     }}
                     showsVerticalScrollIndicator={false}
-                    nestedScrollEnabled
-                  >
-                    {tomorrowCourses.map((course, i) => (
-                      <View
-                        key={`tmr-${course.name}-${course.sectionStart}-${i}`}
-                      >
-                        <CourseCard
-                          course={course}
-                          color={getCourseColor(course.name)}
-                          past={false}
-                          countdown={null}
-                          countdownText={null}
-                          isDark={isDark}
-                        />
-                      </View>
-                    ))}
-                  </ScrollView>
+                    renderItem={({ item: course }) => (
+                      <CourseCard
+                        course={course}
+                        color={courseColorOf(course.name)}
+                        past={false}
+                        countdownKind={null}
+                        countdownText={null}
+                        isDark={isDark}
+                      />
+                    )}
+                  />
                 ) : (
                   <EmptyState
                     hasCourses={hasCourses}
@@ -604,23 +603,23 @@ export default function HomeScreen() {
             </ScrollView>
           </>
         )}
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
-function CourseCard({
+const CourseCard = memo(function CourseCard({
   course,
   color,
   past,
-  countdown,
+  countdownKind,
   countdownText,
   isDark,
 }: {
   course: Course;
   color: string;
   past: boolean;
-  countdown: Countdown | null;
+  countdownKind: Countdown["kind"] | null;
   countdownText: string | null;
   isDark: boolean;
 }) {
@@ -682,12 +681,12 @@ function CourseCard({
           >
             {course.name}
           </Text>
-          {countdown && countdownText && (
+          {countdownKind && countdownText && (
             <View
               style={{
                 marginLeft: 8,
                 backgroundColor:
-                  countdown.kind === "end"
+                  countdownKind === "end"
                     ? "rgba(234,179,8,0.12)"
                     : "rgba(59,130,246,0.12)",
                 borderRadius: 6,
@@ -699,7 +698,7 @@ function CourseCard({
                 style={{
                   fontSize: 11,
                   fontWeight: "600",
-                  color: countdown.kind === "end" ? "#ca8a04" : "#3b82f6",
+                  color: countdownKind === "end" ? "#ca8a04" : "#3b82f6",
                 }}
               >
                 {countdownText}
@@ -732,7 +731,7 @@ function CourseCard({
       </View>
     </View>
   );
-}
+});
 
 function ChipInfo({
   icon,
