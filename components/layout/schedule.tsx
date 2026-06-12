@@ -86,8 +86,8 @@ function getSidebarLabelsCompact(): SidebarLabel[] {
   ];
 }
 
-const HEADER_HEIGHT = 36;
-const HEADER_HEIGHT_WITH_DATES = 44;
+const HEADER_HEIGHT = 30;
+const HEADER_HEIGHT_WITH_DATES = 40;
 const SIDEBAR_WIDTH = 24;
 const PEEK_WIDTH = 20;
 
