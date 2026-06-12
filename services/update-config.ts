@@ -4,6 +4,7 @@ import { Platform } from "react-native";
 
 import { CONFIG_REPO_CDN } from "@/constants/api";
 import type { ResolvedLang } from "@/lib/i18n";
+import { compareVersions } from "@/lib/version";
 
 export type UpdateLevel = "silent" | "recommended" | "required";
 type UpdatePlatform = "ios" | "android" | "web";
@@ -70,17 +71,6 @@ const LEVEL_ORDER: Record<UpdateLevel, number> = {
 
 function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
-}
-
-function compareVersions(a: string, b: string): number {
-  const pa = a.split(".").map(Number);
-  const pb = b.split(".").map(Number);
-  const len = Math.max(pa.length, pb.length);
-  for (let i = 0; i < len; i++) {
-    const diff = (pa[i] ?? 0) - (pb[i] ?? 0);
-    if (diff !== 0) return diff;
-  }
-  return 0;
 }
 
 function parseLocalizedString(raw: unknown): LocalizedString | null {
@@ -249,23 +239,6 @@ export async function fetchUpdateManifest(): Promise<UpdateManifest | null> {
   } finally {
     clearTimeout(timer);
   }
-}
-
-export function isNetworkError(err: unknown): boolean {
-  // Hermes (the RN JS engine) does not expose DOMException globally, so a
-  // bare `instanceof DOMException` throws a ReferenceError before the caller
-  // ever sees the original network failure. Guard the lookup defensively.
-  if (typeof DOMException !== "undefined" && err instanceof DOMException) {
-    return err.name === "AbortError";
-  }
-  if (
-    err &&
-    typeof err === "object" &&
-    (err as { name?: string }).name === "AbortError"
-  ) {
-    return true;
-  }
-  return err instanceof TypeError;
 }
 
 function isReleaseApplicable(release: Release): boolean {

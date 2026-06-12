@@ -25,13 +25,12 @@ import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
+import { MAX_WEEK } from "@/lib/course-weeks";
 import { getCurrentDayOfWeek, getCurrentWeek } from "@/lib/date";
 import { useT } from "@/lib/i18n";
 import { type ImportType, useCourseStore } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 import { useUserBindStore } from "@/store/user-bind";
-
-const MAX_WEEK = 20;
 
 export default function CourseScreen() {
   useMarkRouteInteractive();

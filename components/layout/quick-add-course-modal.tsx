@@ -19,21 +19,12 @@ import {
   getAndroidBlurProps,
   useAndroidBlurTarget,
 } from "@/components/ui/app-blur-target";
+import { WEEKDAY_KEYS as DAY_KEYS } from "@/constants/weekdays";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { findConflictWeeks, MAX_WEEK, weeksToRanges } from "@/lib/course-weeks";
-import { type TKey, useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n";
 import { formatCourseSectionTimeRange } from "@/services/course-time";
 import { useCourseStore } from "@/store/course";
-
-const DAY_KEYS: TKey[] = [
-  "schedule.weekday.mon",
-  "schedule.weekday.tue",
-  "schedule.weekday.wed",
-  "schedule.weekday.thu",
-  "schedule.weekday.fri",
-  "schedule.weekday.sat",
-  "schedule.weekday.sun",
-];
 
 const ACCENT = "#3b82f6";
 

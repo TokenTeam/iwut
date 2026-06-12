@@ -20,10 +20,4 @@ export type {
   SpiderTaskInfo,
   SpiderValueType,
 } from "./types";
-export {
-  delay,
-  deserializeSpiderInfo,
-  fillVariables,
-  serializeSpiderInfo,
-} from "./utils";
-export { runSpiderForResult } from "./spider";
+export { delay, deserializeSpiderInfo, fillVariables } from "./utils";

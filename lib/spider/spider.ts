@@ -8,12 +8,7 @@ import type {
   SpiderPayloadType,
   SpiderTaskInfo,
 } from "./types";
-import {
-  delay,
-  deserializeSpiderInfo,
-  fillVariables,
-  serializeSpiderInfo,
-} from "./utils";
+import { delay, deserializeSpiderInfo, fillVariables } from "./utils";
 
 export class Spider {
   private defaultDelay = 0;
@@ -21,10 +16,6 @@ export class Spider {
   constructor(
     private readonly httpClientProvider: SpiderHttpClientProvider = DefaultSpiderHttpClientProvider,
   ) {}
-
-  serialize(info: SpiderInfo): string {
-    return serializeSpiderInfo(info);
-  }
 
   deserialize(info: string): SpiderInfo {
     return deserializeSpiderInfo(info);
@@ -160,13 +151,4 @@ function appendQuery(url: string, payload: string): string {
   }
 
   return `${url}${url.includes("?") ? "&" : "?"}${payload}`;
-}
-
-export async function runSpiderForResult(
-  spiderJson: string,
-  env: Record<string, string> = {},
-): Promise<Record<string, string>> {
-  const spider = new Spider();
-  const spiderInfo = spider.deserialize(spiderJson);
-  return spider.run(spiderInfo, env);
 }

@@ -17,17 +17,6 @@ export interface Course {
   source?: "imported" | "manual";
 }
 
-function coursesMatch(a: Course, b: Course): boolean {
-  return (
-    a.name === b.name &&
-    a.day === b.day &&
-    a.sectionStart === b.sectionStart &&
-    a.sectionEnd === b.sectionEnd &&
-    a.weekStart === b.weekStart &&
-    a.weekEnd === b.weekEnd
-  );
-}
-
 interface CourseStore {
   courses: Course[];
   termStart: string;
@@ -35,7 +24,6 @@ interface CourseStore {
   setCourses: (courses: Course[]) => void;
   setTermStart: (termStart: string) => void;
   addCourse: (course: Course) => void;
-  removeCourse: (course: Course) => void;
   removeCoursesByName: (name: string) => void;
 }
 
@@ -56,10 +44,6 @@ export const useCourseStore = create<CourseStore>()(
       setTermStart: (termStart: string) => set({ termStart }),
       addCourse: (course: Course) =>
         set({ courses: [...get().courses, course] }),
-      removeCourse: (target: Course) =>
-        set({
-          courses: get().courses.filter((c) => !coursesMatch(c, target)),
-        }),
       removeCoursesByName: (name: string) =>
         set({ courses: get().courses.filter((c) => c.name !== name) }),
     }),

@@ -51,50 +51,6 @@ export function deserializeSpiderInfo(input: string): SpiderInfo {
   };
 }
 
-export function serializeSpiderInfo(info: SpiderInfo): string {
-  return JSON.stringify(toSerializableSpiderInfo(info), null, 2);
-}
-
-function toSerializableSpiderInfo(info: SpiderInfo): Record<string, any> {
-  return compactObject({
-    name: info.name,
-    version: info.version,
-    environment: info.environment,
-    engine: compactObject({
-      cookie: info.engine.cookie,
-      force_ssl: info.engine.forceSSL,
-      delay: info.engine.delay,
-    }),
-    task: info.task?.map((task) =>
-      compactObject({
-        name: task.name,
-        url: task.url,
-        success: task.success,
-        method: task.method,
-        delay: task.delay,
-        payload: task.payload
-          ? compactObject({
-              type: task.payload.type,
-              pattern: task.payload.pattern,
-              value: task.payload.value,
-              header: task.payload.header,
-            })
-          : undefined,
-        content: task.content
-          ? compactObject({
-              type: task.content.type,
-              pattern: task.content.pattern,
-              value: task.content.value,
-            })
-          : undefined,
-        header: task.header,
-        redirect: task.redirect,
-      }),
-    ),
-    output: info.output,
-  });
-}
-
 function parseEngineOptions(raw: any): EngineOptions {
   if (raw == null) {
     return { ...DEFAULT_ENGINE_OPTIONS };
@@ -220,12 +176,6 @@ function parseValueType(raw: any): SpiderValueType {
   }
 
   throw new SpiderException(`Unsupported value type: ${value}`);
-}
-
-function compactObject(object: Record<string, any>): Record<string, any> {
-  return Object.fromEntries(
-    Object.entries(object).filter(([, value]) => value !== undefined),
-  );
 }
 
 function firstDefined<T>(...values: T[]): T | undefined {

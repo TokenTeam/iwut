@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import Toast from "react-native-toast-message";
 
-import { getDayLabels } from "@/components/layout/schedule";
+import { getDayLabels } from "@/constants/weekdays";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
