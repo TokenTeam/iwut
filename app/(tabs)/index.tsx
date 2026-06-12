@@ -24,14 +24,15 @@ import { CourseDetailModal } from "@/components/layout/course-detail-modal";
 import { TabBackground } from "@/components/layout/tab-background";
 import { AnnouncementBanner } from "@/components/ui/announcement-banner";
 import { getDayLabels } from "@/constants/weekdays";
-import { buildColorMap, getCourseColor } from "@/lib/course-colors";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useMinuteNow } from "@/hooks/use-minute-now";
+import { buildColorMap, getCourseColor } from "@/lib/course-colors";
 import {
   getCurrentDayOfWeek,
   getCurrentWeek,
+  getShanghaiMinutesOfDay,
   getTomorrowDayOfWeek,
   getTomorrowWeek,
   isVacation,
@@ -105,14 +106,12 @@ const CARD_GAP = 10;
 type Countdown = { kind: "start" | "end"; mins: number };
 
 function isCourseFinished(course: Course, nowMs: number): boolean {
-  const now = new Date(nowMs);
-  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const nowMin = getShanghaiMinutesOfDay(nowMs);
   return nowMin > (SECTION_TIMES[course.sectionEnd]?.[3] ?? 0);
 }
 
 function getCourseCountdown(course: Course, nowMs: number): Countdown | null {
-  const now = new Date(nowMs);
-  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const nowMin = getShanghaiMinutesOfDay(nowMs);
   const startMin = SECTION_TIMES[course.sectionStart]?.[2] ?? 0;
   const endMin = SECTION_TIMES[course.sectionEnd]?.[3] ?? 0;
 

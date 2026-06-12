@@ -67,7 +67,31 @@ export function getTermWeekMondayMs(
 
 /**
  * 第 week 周星期 dayOfWeek（1-7）的 "HH:mm" 对应的绝对时间戳，
+ * 按 UTC+8 解释 "HH:mm"。
  */
+export function getTermClassTimeMs(
+  termStart: string,
+  week: number,
+  dayOfWeek: number,
+  time: string,
+): number | null {
+  const mondayMs = getTermWeekMondayMs(termStart, week);
+  if (mondayMs == null) return null;
+  const m = /^(\d{1,2}):(\d{2})$/.exec(time);
+  if (!m) return null;
+  return (
+    mondayMs +
+    (dayOfWeek - 1) * DAY_MS +
+    (Number(m[1]) * 60 + Number(m[2])) * 60 * 1000
+  );
+}
+
+/** ms 时刻在 UTC+8 当日已经过的分钟数（0-1439） */
+export function getShanghaiMinutesOfDay(ms: number): number {
+  const view = shanghaiView(ms);
+  return view.getUTCHours() * 60 + view.getUTCMinutes();
+}
+
 export function getTermWeekMonthLabel(
   termStart: string,
   week: number,

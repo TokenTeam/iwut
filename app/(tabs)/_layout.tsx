@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs, router } from "expo-router";
-import React, { type ComponentProps, useEffect } from "react";
+import { type ComponentProps, useEffect } from "react";
 import { type ColorValue } from "react-native";
 
 import { Colors } from "@/constants/theme";
