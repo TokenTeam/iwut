@@ -1,3 +1,4 @@
+export { isTrustedRpcOrigin } from "./access-policy";
 export { NativeRPCBridge, NATIVE_RPC_SUCCESS_CODE } from "./bridge";
 export {
   NativeRPCError,

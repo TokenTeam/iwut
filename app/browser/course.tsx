@@ -52,6 +52,7 @@ export default function CourseImportScreen() {
   const webview = useRef<WebView>(null);
   const injected = useRef(false);
   const finished = useRef(false);
+  const injectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const finish = useCallback(
     (success: boolean, message?: string) => {
       if (finished.current) return;
@@ -117,6 +118,7 @@ export default function CourseImportScreen() {
   useEffect(() => {
     const currentWebView = webview.current;
     return () => {
+      if (injectTimer.current) clearTimeout(injectTimer.current);
       currentWebView?.clearCache(true);
       if (!finished.current) {
         finished.current = true;
@@ -168,8 +170,8 @@ export default function CourseImportScreen() {
           fetchUserFailed: t("course.fetchUserFailed"),
           noTermData: t("course.noTermData"),
         });
-        setTimeout(() => {
-          webview.current?.injectJavaScript(script);
+        injectTimer.current = setTimeout(() => {
+          if (!finished.current) webview.current?.injectJavaScript(script);
         }, 1500);
       }
 
@@ -178,8 +180,8 @@ export default function CourseImportScreen() {
         const script = buildMasterFetchScript({
           fetchUserFailed: t("course.fetchUserFailed"),
         });
-        setTimeout(() => {
-          webview.current?.injectJavaScript(script);
+        injectTimer.current = setTimeout(() => {
+          if (!finished.current) webview.current?.injectJavaScript(script);
         }, 1500);
       }
     },

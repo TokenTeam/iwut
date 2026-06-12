@@ -1,11 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import { isNetworkError } from "@/lib/network-error";
 import { reportError } from "@/lib/report";
 import { zustandStorage } from "@/lib/storage";
 import {
   fetchAnnouncements,
-  isNetworkError,
   type Announcement,
 } from "@/services/announcements";
 
@@ -65,7 +65,6 @@ export const useAnnouncementStore = create<AnnouncementStore>()(
       partialize: (s) => ({
         announcements: s.announcements,
         dismissedIds: s.dismissedIds,
-        fetchedAt: s.fetchedAt,
       }),
     },
   ),

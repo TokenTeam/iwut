@@ -19,8 +19,8 @@ interface UserBindStore {
     cardId: string,
     college: string,
     eduLevel: string,
-  ) => void;
-  unbind: () => void;
+  ) => Promise<void>;
+  unbind: () => Promise<void>;
   getCredentials: () => Promise<{
     username: string;
     password: string;
@@ -37,8 +37,16 @@ export const useUserBindStore = create<UserBindStore>()(
       college: "",
       eduLevel: "",
 
-      bind: (studentId, studentName, password, cardId, college, eduLevel) => {
-        SecureStore.setItemAsync("zhlgd_password", password);
+      bind: async (
+        studentId,
+        studentName,
+        password,
+        cardId,
+        college,
+        eduLevel,
+      ) => {
+        // 先确保密码写入成功，再更新绑定状态，避免读到 isBound 但无凭据
+        await SecureStore.setItemAsync("zhlgd_password", password);
         set({
           isBound: true,
           studentId,
@@ -49,9 +57,9 @@ export const useUserBindStore = create<UserBindStore>()(
         });
       },
 
-      unbind: () => {
-        SecureStore.deleteItemAsync("zhlgd_password");
-        CookieManager.clearAll(true);
+      unbind: async () => {
+        await SecureStore.deleteItemAsync("zhlgd_password");
+        await CookieManager.clearAll(true);
         set({
           isBound: false,
           studentId: "",

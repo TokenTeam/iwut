@@ -1,13 +1,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import { isNetworkError } from "@/lib/network-error";
 import { reportError } from "@/lib/report";
 import { zustandStorage } from "@/lib/storage";
 import {
   fetchUpdateManifest,
   getCurrentAppVersion,
   getCurrentChannel,
-  isNetworkError,
   summarizeUpdate,
   type LocalizedString,
   type Release,

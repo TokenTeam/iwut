@@ -5,7 +5,6 @@ import { Directory, File, Paths } from "expo-file-system";
 import { Image } from "expo-image";
 import { Stack } from "expo-router";
 import * as Sharing from "expo-sharing";
-import JSZip from "jszip";
 import { useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -205,6 +204,8 @@ export default function SettingsScreen() {
         `Time: ${new Date().toISOString()}`,
       ].join("\n");
 
+      // 动态加载 jszip，避免计入首屏 bundle
+      const { default: JSZip } = await import("jszip");
       const archive = new JSZip();
       archive.file("info.txt", info);
 

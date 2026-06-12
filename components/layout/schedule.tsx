@@ -12,36 +12,25 @@ import {
   View,
 } from "react-native";
 
+import { WEEKDAY_KEYS } from "@/constants/weekdays";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
+import { buildColorMap, getCourseColor } from "@/lib/course-colors";
 import { getTermWeekDayNumbers, getTermWeekMonthLabel } from "@/lib/date";
 import { t, useT } from "@/lib/i18n";
-import { formatCourseSectionTimeRange } from "@/services/course-time";
 import type { Course } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 
+import { CourseDetailModal } from "./course-detail-modal";
 import {
   QuickAddCourseModal,
   type QuickAddSlot,
 } from "./quick-add-course-modal";
+import { DayColumn, type ScheduleCellTheme } from "./schedule-day-column";
 import {
   getAndroidBlurProps,
   useAndroidBlurTarget,
 } from "@/components/ui/app-blur-target";
-
-const DAY_KEYS = [
-  "schedule.weekday.mon",
-  "schedule.weekday.tue",
-  "schedule.weekday.wed",
-  "schedule.weekday.thu",
-  "schedule.weekday.fri",
-  "schedule.weekday.sat",
-  "schedule.weekday.sun",
-] as const;
-
-export function getDayLabels(): string[] {
-  return DAY_KEYS.map((k) => t(k));
-}
 
 interface SidebarLabel {
   label: string;
@@ -97,8 +86,8 @@ function getSidebarLabelsCompact(): SidebarLabel[] {
   ];
 }
 
-const HEADER_HEIGHT = 36;
-const HEADER_HEIGHT_WITH_DATES = 44;
+const HEADER_HEIGHT = 30;
+const HEADER_HEIGHT_WITH_DATES = 40;
 const SIDEBAR_WIDTH = 24;
 const PEEK_WIDTH = 20;
 
@@ -111,33 +100,6 @@ interface RgbaColor {
 
 function pct(n: number): `${number}%` {
   return `${n}%` as `${number}%`;
-}
-
-function buildColorMap(
-  courses: Course[],
-  paletteSize: number,
-): Map<string, number> {
-  const map = new Map<string, number>();
-  let idx = 0;
-  for (const c of courses) {
-    if (!map.has(c.name)) {
-      map.set(c.name, idx % paletteSize);
-      idx++;
-    }
-  }
-  return map;
-}
-
-function getCourseColor(
-  courseName: string,
-  colorMap: Map<string, number>,
-  paletteColors: string[],
-  paletteOverrides: Record<string, string> | undefined,
-  courseColorOverrides: Record<string, string>,
-): string {
-  if (courseColorOverrides[courseName]) return courseColorOverrides[courseName];
-  if (paletteOverrides?.[courseName]) return paletteOverrides[courseName];
-  return paletteColors[(colorMap.get(courseName) ?? 0) % paletteColors.length];
 }
 
 // 把任意节次范围对齐到 section group 的边界，用于同时段加课预填。
@@ -316,7 +278,7 @@ export function Schedule({
   const otherWeekBg = withColorAlpha(otherWeekCardColor, otherWeekCellOpacity);
   const otherWeekBorderColor = withColorAlpha(otherWeekCardColor, 0.32);
 
-  const dayLabels = useMemo(() => DAY_KEYS.map((k) => localT(k)), [localT]);
+  const dayLabels = useMemo(() => WEEKDAY_KEYS.map((k) => localT(k)), [localT]);
   const monthLabelSuffix = localT("common.monthSuffix");
 
   const layout = useMemo(
@@ -415,14 +377,17 @@ export function Schedule({
   const nameFontSize = scrollWeekend ? 12 : 10;
   const roomFontSize = scrollWeekend ? 10 : 9;
 
-  const colorOf = (name: string) =>
-    getCourseColor(
-      name,
-      colorMap,
-      paletteColors,
-      colorPalette.overrides,
-      courseColorOverrides,
-    );
+  const colorOf = useCallback(
+    (name: string) =>
+      getCourseColor(
+        name,
+        colorMap,
+        paletteColors,
+        colorPalette.overrides,
+        courseColorOverrides,
+      ),
+    [colorMap, paletteColors, colorPalette.overrides, courseColorOverrides],
+  );
 
   const scrollRef = useCallback(
     (node: ScrollView | null) => {
@@ -433,15 +398,26 @@ export function Schedule({
     [today],
   );
 
-  const handleCoursePress = (course: Course) => {
-    haptic();
-    const list = conflictsByCourse.get(course) ?? [course];
-    if (list.length > 1) {
-      setSlotCourses(list);
-    } else {
-      setSelected(course);
-    }
-  };
+  const handleCoursePress = useCallback(
+    (course: Course) => {
+      haptic();
+      const list = conflictsByCourse.get(course) ?? [course];
+      if (list.length > 1) {
+        setSlotCourses(list);
+      } else {
+        setSelected(course);
+      }
+    },
+    [conflictsByCourse, haptic],
+  );
+
+  const handleAddSlot = useCallback(
+    (day: number, sectionStart: number, sectionEnd: number) => {
+      haptic();
+      setQuickAddSlot({ day, sectionStart, sectionEnd });
+    },
+    [haptic],
+  );
 
   const handleEditCourse = (course: Course) => {
     haptic();
@@ -471,216 +447,78 @@ export function Schedule({
     });
   };
 
-  const renderCourseCell = (course: Course, key: string, isOther: boolean) => {
-    if (
-      layout.sectionTop[course.sectionStart] === undefined ||
-      layout.sectionTop[course.sectionEnd] === undefined
-    ) {
-      return null;
-    }
-    const topVal = layout.sectionTop[course.sectionStart];
-    const heightVal =
-      layout.sectionTop[course.sectionEnd] + layout.sectionPct - topVal;
-    const courseColor = colorOf(course.name);
-    const stableCourseColor = hasBgImage
-      ? blendColorOver(courseColor, scheduleSurfaceColor)
-      : courseColor;
-    const bg = isOther
-      ? otherWeekBg
-      : withColorOpacity(stableCourseColor, courseCellOpacity);
-    const span = course.sectionEnd - course.sectionStart + 1;
-    const nameLines = 2 * span - 1;
-    const nameColor = isOther ? otherWeekTextColor : "#fff";
-    const roomColor = isOther ? otherWeekTextColor : "rgba(255,255,255,0.85)";
+  const cellTheme: ScheduleCellTheme = useMemo(
+    () => ({
+      nameFontSize,
+      roomFontSize,
+      otherWeekBorderColor,
+      otherWeekTextColor,
+      otherWeekTag: localT("schedule.otherWeekTag"),
+      locatorBg,
+      isDark,
+      mutedColor,
+    }),
+    [
+      nameFontSize,
+      roomFontSize,
+      otherWeekBorderColor,
+      otherWeekTextColor,
+      localT,
+      locatorBg,
+      isDark,
+      mutedColor,
+    ],
+  );
 
-    return (
-      <Pressable
-        key={key}
-        style={{
-          position: "absolute",
-          top: pct(topVal),
-          height: pct(heightVal),
-          left: 0,
-          right: 0,
-        }}
-        onPress={() => handleCoursePress(course)}
-      >
-        <View
-          style={{
-            flex: 1,
-            margin: 2,
-            backgroundColor: bg,
-            borderWidth: isOther ? 1 : 0,
-            borderColor: isOther ? otherWeekBorderColor : "transparent",
-            borderRadius: 6,
-            padding: 4,
-            overflow: "hidden",
-            flexDirection: "column",
-          }}
-        >
-          <View
-            style={{
-              flex: 1,
-              minHeight: 0,
-              overflow: "hidden",
-            }}
-          >
-            <Text
-              numberOfLines={nameLines}
-              style={{
-                fontSize: nameFontSize,
-                fontWeight: "bold",
-                color: nameColor,
-                lineHeight: nameFontSize + 4,
-              }}
-            >
-              {course.name}
-            </Text>
-            {isOther && (
-              <Text
-                style={{
-                  fontSize: roomFontSize,
-                  color: roomColor,
-                }}
-              >
-                {t("schedule.otherWeekTag")}
-              </Text>
-            )}
-          </View>
-          <Text
-            style={{
-              fontSize: roomFontSize,
-              color: roomColor,
-              flexShrink: 0,
-              marginTop: 2,
-            }}
-          >
-            {course.room}
-          </Text>
-        </View>
-      </Pressable>
-    );
-  };
+  const cellBgFor = useCallback(
+    (courseName: string, isOther: boolean) => {
+      if (isOther) return otherWeekBg;
+      const courseColor = colorOf(courseName);
+      const stableCourseColor = hasBgImage
+        ? blendColorOver(courseColor, scheduleSurfaceColor)
+        : courseColor;
+      return withColorOpacity(stableCourseColor, courseCellOpacity);
+    },
+    [otherWeekBg, colorOf, hasBgImage, scheduleSurfaceColor, courseCellOpacity],
+  );
 
-  const dayColumns = Array.from({ length: 7 }, (_, dayIdx) => {
-    const isToday = dayIdx + 1 === today;
-    const currentForDay = currentDayCourses[dayIdx];
-    const otherForDay = otherDayCoursesVisible[dayIdx];
-
-    return (
-      <View key={dayIdx} style={{ width: colWidth }}>
-        <View
-          style={{
-            height: headerHeight,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          {showDates && dayNumbers ? (
-            <View
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 18,
-                overflow: "hidden",
-                justifyContent: "center",
-                alignItems: "center",
-                backgroundColor: isToday ? "#3b82f6" : "transparent",
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 12,
-                  fontWeight: isToday ? "800" : "600",
-                  color: isToday ? "#fff" : isDark ? "#d4d4d4" : "#525252",
-                }}
-              >
-                {dayLabels[dayIdx]}
-              </Text>
-              <Text
-                style={{
-                  fontSize: 11,
-                  fontWeight: isToday ? "700" : "500",
-                  fontVariant: ["tabular-nums"],
-                  color: isToday ? "#fff" : mutedColor,
-                }}
-              >
-                {dayNumbers[dayIdx]}
-              </Text>
-            </View>
-          ) : (
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: isToday ? "800" : "600",
-                color: isToday ? "#3b82f6" : isDark ? "#d4d4d4" : "#525252",
-              }}
-            >
-              {dayLabels[dayIdx]}
-            </Text>
-          )}
-        </View>
-
-        <View style={{ flex: 1 }}>
-          {layout.groups.map((group) => {
-            const topVal = layout.sectionTop[group[0]];
-            const heightVal =
-              layout.sectionTop[group[group.length - 1]] +
-              layout.sectionPct -
-              topVal;
-            const sectionStart = group[0];
-            const sectionEnd = group[group.length - 1];
-            return (
-              <View
-                key={group[0]}
-                style={{
-                  position: "absolute",
-                  top: pct(topVal),
-                  height: pct(heightVal),
-                  left: 0,
-                  right: 0,
-                }}
-              >
-                <Pressable
-                  style={({ pressed }) => ({
-                    flex: 1,
-                    margin: 2,
-                    backgroundColor: locatorBg,
-                    borderRadius: 6,
-                    opacity: pressed ? 0.6 : 1,
-                  })}
-                  onPress={() => {
-                    haptic();
-                    setQuickAddSlot({
-                      day: dayIdx + 1,
-                      sectionStart,
-                      sectionEnd,
-                    });
-                  }}
-                />
-              </View>
-            );
-          })}
-
-          {otherForDay.map((course, ci) =>
-            renderCourseCell(
-              course,
-              `other-${course.name}-${course.sectionStart}-${course.weekStart}-${ci}`,
-              true,
-            ),
-          )}
-
-          {currentForDay.map((course, ci) =>
-            renderCourseCell(
-              course,
-              `cur-${course.name}-${course.sectionStart}-${ci}`,
-              false,
-            ),
-          )}
-        </View>
-      </View>
-    );
-  });
+  const dayColumns = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, dayIdx) => (
+        <DayColumn
+          key={dayIdx}
+          dayIdx={dayIdx}
+          width={colWidth}
+          headerHeight={headerHeight}
+          dayLabel={dayLabels[dayIdx]}
+          dayNumber={dayNumbers ? dayNumbers[dayIdx] : null}
+          isToday={dayIdx + 1 === today}
+          showDates={showDates}
+          layout={layout}
+          theme={cellTheme}
+          currentCourses={currentDayCourses[dayIdx]}
+          otherCourses={otherDayCoursesVisible[dayIdx]}
+          cellBgFor={cellBgFor}
+          onCoursePress={handleCoursePress}
+          onAddSlot={handleAddSlot}
+        />
+      )),
+    [
+      colWidth,
+      headerHeight,
+      dayLabels,
+      dayNumbers,
+      today,
+      showDates,
+      layout,
+      cellTheme,
+      currentDayCourses,
+      otherDayCoursesVisible,
+      cellBgFor,
+      handleCoursePress,
+      handleAddSlot,
+    ],
+  );
 
   const columnsContent = (
     <View style={{ flexDirection: "row" }}>{dayColumns}</View>
@@ -778,178 +616,20 @@ export function Schedule({
         onClose={() => setQuickAddSlot(null)}
       />
 
-      <Modal
-        visible={!!selected}
-        transparent
-        animationType="fade"
-        statusBarTranslucent
-        onRequestClose={() => setSelected(null)}
-      >
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <BlurView
-            {...getAndroidBlurProps(blurTarget)}
-            intensity={30}
-            tint="dark"
-            style={StyleSheet.absoluteFill}
-            pointerEvents="none"
-          />
-          <Pressable
-            style={StyleSheet.absoluteFill}
-            onPress={() => setSelected(null)}
-          />
-          {selected && (
-            <View
-              style={{
-                width: 300,
-                backgroundColor: isDark ? "#1c1c1e" : "#fff",
-                borderRadius: 20,
-                overflow: "hidden",
-              }}
-            >
-              <View
-                style={{
-                  backgroundColor: isInCurrentWeek(selected)
-                    ? colorOf(selected.name)
-                    : otherWeekAccentColor,
-                  paddingHorizontal: 22,
-                  paddingTop: 22,
-                  paddingBottom: 18,
-                }}
-              >
-                <Pressable
-                  onPress={() => setSelected(null)}
-                  style={{ position: "absolute", top: 12, right: 12 }}
-                  hitSlop={8}
-                >
-                  <Ionicons
-                    name="close-circle"
-                    size={26}
-                    color="rgba(255,255,255,0.7)"
-                  />
-                </Pressable>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    marginRight: 28,
-                  }}
-                >
-                  <Text
-                    numberOfLines={2}
-                    style={{
-                      flexShrink: 1,
-                      fontSize: 19,
-                      fontWeight: "700",
-                      color: "#fff",
-                      lineHeight: 26,
-                    }}
-                  >
-                    {selected.name}
-                  </Text>
-                  {!isInCurrentWeek(selected) && (
-                    <Text
-                      style={{
-                        marginLeft: 8,
-                        fontSize: 10,
-                        fontWeight: "600",
-                        paddingHorizontal: 6,
-                        paddingVertical: 1,
-                        borderRadius: 4,
-                        overflow: "hidden",
-                        color: "#fff",
-                        backgroundColor: "rgba(255,255,255,0.22)",
-                      }}
-                    >
-                      {localT("schedule.otherWeekTag")}
-                    </Text>
-                  )}
-                </View>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: "rgba(255,255,255,0.8)",
-                    marginTop: 6,
-                  }}
-                >
-                  {localT("schedule.weekdayWithSection", {
-                    weekday: dayLabels[selected.day - 1],
-                    start: selected.sectionStart,
-                    end: selected.sectionEnd,
-                  })}
-                </Text>
-              </View>
-
-              <View style={{ padding: 20, gap: 14 }}>
-                <DetailRow
-                  icon="location-outline"
-                  label={localT("schedule.room")}
-                  value={selected.room}
-                  isDark={isDark}
-                />
-                <DetailRow
-                  icon="person-outline"
-                  label={localT("schedule.teacher")}
-                  value={selected.teacher}
-                  isDark={isDark}
-                />
-                <DetailRow
-                  icon="calendar-outline"
-                  label={localT("schedule.weeks")}
-                  value={localT("schedule.weeksValue", {
-                    start: selected.weekStart,
-                    end: selected.weekEnd,
-                  })}
-                  isDark={isDark}
-                />
-                <DetailRow
-                  icon="time-outline"
-                  label={localT("schedule.time")}
-                  value={
-                    formatCourseSectionTimeRange(
-                      selected.sectionStart,
-                      selected.sectionEnd,
-                    ) ||
-                    localT("schedule.sectionRange", {
-                      start: selected.sectionStart,
-                      end: selected.sectionEnd,
-                    })
-                  }
-                  isDark={isDark}
-                />
-              </View>
-
-              <View
-                style={{
-                  flexDirection: "row",
-                  gap: 8,
-                  paddingHorizontal: 16,
-                  paddingBottom: 16,
-                  paddingTop: 4,
-                }}
-              >
-                <DetailActionButton
-                  icon="create-outline"
-                  label={localT("schedule.editCourse")}
-                  isDark={isDark}
-                  onPress={() => handleEditCourse(selected)}
-                />
-                <DetailActionButton
-                  icon="add-circle-outline"
-                  label={localT("schedule.addAtSameSlot")}
-                  isDark={isDark}
-                  onPress={() => openQuickAddForCourse(selected)}
-                />
-              </View>
-            </View>
-          )}
-        </View>
-      </Modal>
+      <CourseDetailModal
+        course={selected}
+        headerColor={
+          selected
+            ? isInCurrentWeek(selected)
+              ? colorOf(selected.name)
+              : otherWeekAccentColor
+            : "transparent"
+        }
+        showOtherWeekTag={!!selected && !isInCurrentWeek(selected)}
+        onClose={() => setSelected(null)}
+        onEdit={handleEditCourse}
+        onAddAtSameSlot={openQuickAddForCourse}
+      />
 
       <Modal
         visible={!!slotCourses}
@@ -1187,107 +867,6 @@ export function Schedule({
           )}
         </View>
       </Modal>
-    </View>
-  );
-}
-
-function DetailActionButton({
-  icon,
-  label,
-  isDark,
-  onPress,
-}: {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
-  label: string;
-  isDark: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flex: 1,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        paddingVertical: 11,
-        borderRadius: 12,
-        backgroundColor: pressed
-          ? isDark
-            ? "rgba(255,255,255,0.08)"
-            : "rgba(0,0,0,0.06)"
-          : isDark
-            ? "rgba(255,255,255,0.05)"
-            : "rgba(0,0,0,0.04)",
-      })}
-    >
-      <Ionicons name={icon} size={16} color={isDark ? "#d4d4d4" : "#525252"} />
-      <Text
-        style={{
-          marginLeft: 6,
-          fontSize: 13,
-          fontWeight: "600",
-          color: isDark ? "#d4d4d4" : "#525252",
-        }}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-function DetailRow({
-  icon,
-  label,
-  value,
-  isDark,
-}: {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
-  label: string;
-  value: string;
-  isDark: boolean;
-}) {
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center" }}>
-      <View
-        style={{
-          width: 34,
-          height: 34,
-          borderRadius: 10,
-          backgroundColor: isDark
-            ? "rgba(255,255,255,0.08)"
-            : "rgba(0,0,0,0.04)",
-          justifyContent: "center",
-          alignItems: "center",
-          marginRight: 12,
-        }}
-      >
-        <Ionicons
-          name={icon}
-          size={17}
-          color={isDark ? "#a3a3a3" : "#737373"}
-        />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text
-          style={{
-            fontSize: 11,
-            color: isDark ? "#737373" : "#a3a3a3",
-            marginBottom: 1,
-          }}
-        >
-          {label}
-        </Text>
-        <Text
-          style={{
-            fontSize: 15,
-            fontWeight: "500",
-            color: isDark ? "#e5e5e5" : "#1c1c1e",
-          }}
-        >
-          {value}
-        </Text>
-      </View>
     </View>
   );
 }

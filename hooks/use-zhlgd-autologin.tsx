@@ -77,9 +77,13 @@ function buildAgentScript(username: string, password: string) {
       smsReportedAt=Date.now();
       return true;
     },
-    kick:function(){ passwordFilled=false; smsReportedAt=0; }
+    kick:function(){
+      passwordFilled=false; smsReportedAt=0;
+      if(!timer){ timer=setInterval(tick,300); }
+    },
+    stop:function(){ if(timer){ clearInterval(timer); timer=null; } }
   };
-  setInterval(tick,300);
+  var timer=setInterval(tick,300);
   tick();
 })();true;`;
 }
@@ -123,6 +127,10 @@ export function useZhlgdAutoLogin(
         lastFilledUrl.current = "";
         setSms((s) => (s.visible ? INITIAL_SMS : s));
         setCode("");
+        // SPA 式跳转不会重建 JS 上下文，离开登录页后停掉轮询定时器
+        webviewRef.current?.injectJavaScript(
+          "window.__zhlgdAuto && window.__zhlgdAuto.stop && window.__zhlgdAuto.stop();true;",
+        );
         return;
       }
 

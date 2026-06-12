@@ -1,3 +1,4 @@
+import { isTrustedRpcOrigin } from "./access-policy";
 import {
   NativeRPCErrorType,
   nativeRPCError,
@@ -62,6 +63,13 @@ export class NativeRPCBridge {
     request: NativeRPCRequest,
     context: NativeRPCServiceContext,
   ): Promise<NativeRPCResponse> {
+    if (!isTrustedRpcOrigin(context.pageUrl)) {
+      throw nativeRPCError(
+        NativeRPCErrorType.AccessDenied,
+        "Page origin is not allowed to use Native RPC",
+      );
+    }
+
     if (
       request.method === "_addEventListener" ||
       request.method === "_removeEventListener"

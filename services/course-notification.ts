@@ -2,8 +2,9 @@ import * as BackgroundTask from "expo-background-task";
 import * as TaskManager from "expo-task-manager";
 import { PermissionsAndroid, Platform } from "react-native";
 
-import { getCurrentWeek, getTermWeekMonday } from "@/lib/date";
+import { getCurrentWeek, getTermClassTimeMs } from "@/lib/date";
 import { t } from "@/lib/i18n";
+import { createTaskQueue } from "@/lib/task-queue";
 import {
   cancelAll,
   createChannel,
@@ -163,16 +164,14 @@ export async function showUpcomingLiveActivity(): Promise<void> {
     if (!sectionTime) continue;
 
     const [startTimeStr] = sectionTime;
-    const [startH, startM] = startTimeStr.split(":").map(Number);
+    const classStartMs = getTermClassTimeMs(
+      termStart,
+      currentWeek,
+      course.day,
+      startTimeStr,
+    );
+    if (classStartMs == null) continue;
 
-    const monday = getTermWeekMonday(termStart, currentWeek);
-    if (!monday) continue;
-
-    const courseDate = new Date(monday);
-    courseDate.setDate(courseDate.getDate() + course.day - 1);
-    courseDate.setHours(startH, startM, 0, 0);
-
-    const classStartMs = courseDate.getTime();
     const triggerAtMs = classStartMs - windowMs;
 
     if (now >= triggerAtMs && now < classStartMs) {
@@ -199,7 +198,14 @@ export async function showUpcomingLiveActivity(): Promise<void> {
   }
 }
 
-export async function scheduleWeeklyReminders(): Promise<void> {
+// "先 cancelAll 再逐条调度"必须串行执行，并发调用会注册重复通知
+const reminderQueue = createTaskQueue();
+
+export function scheduleWeeklyReminders(): Promise<void> {
+  return reminderQueue(doScheduleWeeklyReminders);
+}
+
+async function doScheduleWeeklyReminders(): Promise<void> {
   const { courseReminder, reminderMinutes } = useSettingsStore.getState();
 
   await cancelAll();
@@ -215,8 +221,6 @@ export async function scheduleWeeklyReminders(): Promise<void> {
 
   for (let offset = 0; offset < SCHEDULE_WEEKS; offset++) {
     const week = currentWeek + offset;
-    const monday = getTermWeekMonday(termStart, week);
-    if (!monday) continue;
 
     for (const course of courses) {
       if (week < course.weekStart || week > course.weekEnd) continue;
@@ -225,13 +229,14 @@ export async function scheduleWeeklyReminders(): Promise<void> {
       if (!sectionTime) continue;
 
       const [startTimeStr] = sectionTime;
-      const [startH, startM] = startTimeStr.split(":").map(Number);
+      const classStartMs = getTermClassTimeMs(
+        termStart,
+        week,
+        course.day,
+        startTimeStr,
+      );
+      if (classStartMs == null) continue;
 
-      const courseDate = new Date(monday);
-      courseDate.setDate(courseDate.getDate() + course.day - 1);
-      courseDate.setHours(startH, startM, 0, 0);
-
-      const classStartMs = courseDate.getTime();
       const triggerAtMs = classStartMs - reminderMinutes * 60 * 1000;
 
       if (triggerAtMs <= now) continue;

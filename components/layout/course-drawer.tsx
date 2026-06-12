@@ -27,7 +27,9 @@ import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useT } from "@/lib/i18n";
 
-const HEADER_HEIGHT = 40;
+export const COURSE_HEADER_HEIGHT = 42;
+export const DRAWER_ENTER_MS = 240;
+export const DRAWER_EXIT_MS = 200;
 
 interface Props {
   visible: boolean;
@@ -37,9 +39,6 @@ interface Props {
   onReimport: () => void;
   onOpenSettings: () => void;
 }
-
-const ENTER_MS = 240;
-const EXIT_MS = 200;
 
 export function CourseDrawer({
   visible,
@@ -57,7 +56,7 @@ export function CourseDrawer({
   const blurTarget = useAndroidBlurTarget();
 
   const drawerWidth = Math.round(screenWidth * 0.66);
-  const topOffset = insets.top + HEADER_HEIGHT;
+  const topOffset = insets.top + COURSE_HEADER_HEIGHT;
 
   // 控制 Modal 卸载时机，让退出动画能完整播放。
   // - render 阶段：visible 变 true 时立刻 mount（避免 effect 同步 setState）
@@ -84,13 +83,13 @@ export function CourseDrawer({
     }
     if (visible) {
       progress.value = withTiming(1, {
-        duration: ENTER_MS,
+        duration: DRAWER_ENTER_MS,
         easing: Easing.out(Easing.cubic),
       });
     } else {
       progress.value = withTiming(
         0,
-        { duration: EXIT_MS, easing: Easing.in(Easing.cubic) },
+        { duration: DRAWER_EXIT_MS, easing: Easing.in(Easing.cubic) },
         (finished) => {
           if (finished) runOnJS(setMounted)(false);
         },
@@ -177,7 +176,7 @@ export function CourseDrawer({
           top: insets.top,
           left: 12,
           width: 48,
-          height: HEADER_HEIGHT,
+          height: COURSE_HEADER_HEIGHT,
         }}
         onPress={onClose}
       />

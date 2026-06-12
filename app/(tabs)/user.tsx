@@ -22,6 +22,7 @@ import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
+import { reportError } from "@/lib/report";
 import { useUserBindStore } from "@/store/user-bind";
 
 const HEADER_GRADIENT = {
@@ -301,7 +302,7 @@ function BoundHero() {
         confirmText={t("user.unbind")}
         destructive
         onConfirm={() => {
-          unbind();
+          unbind().catch((e) => reportError(e, { module: "user-bind" }));
           setUnbindVisible(false);
         }}
       />

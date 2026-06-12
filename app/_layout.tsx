@@ -160,19 +160,28 @@ function RootLayout() {
 
   useEffect(() => {
     syncWidgetData().catch(() => {});
+    // 课程批量变更会连续触发订阅，debounce 后只执行最后一次
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const unsub = useCourseStore.subscribe((state, prev) => {
       if (
         state.courses !== prev.courses ||
         state.termStart !== prev.termStart
       ) {
-        syncWidgetData().catch(() => {});
-        scheduleWeeklyReminders().catch(() => {});
-        if (useSettingsStore.getState().calendarSync) {
-          syncCoursesToCalendar().catch(() => {});
-        }
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          debounceTimer = null;
+          syncWidgetData().catch(() => {});
+          scheduleWeeklyReminders().catch(() => {});
+          if (useSettingsStore.getState().calendarSync) {
+            syncCoursesToCalendar().catch(() => {});
+          }
+        }, 400);
       }
     });
-    return unsub;
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      unsub();
+    };
   }, []);
 
   const onLayoutRootView = useCallback(() => {

@@ -1,70 +1,104 @@
-const MAX_WEEK = 20;
+import { MAX_WEEK } from "@/lib/course-weeks";
+
+// 学期相关时间一律按 UTC+8 计算，
+// 保证通知、日历与课表在任意设备时区下行为一致。
+const SHANGHAI_OFFSET_MS = 8 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const WEEK_MS = 7 * DAY_MS;
+
+/** 解析 "YYYY-MM-DD" 为 UTC+8 当日零点的绝对时间戳 */
+function parseTermStartMs(termStart: string): number | null {
+  const m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(termStart);
+  if (!m) return null;
+  return (
+    Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) - SHANGHAI_OFFSET_MS
+  );
+}
+
+/** 返回一个可用 getUTC* 读取 UTC+8 字段的 Date 视图 */
+function shanghaiView(ms: number): Date {
+  return new Date(ms + SHANGHAI_OFFSET_MS);
+}
+
+function weekOf(ms: number, termStartMs: number): number {
+  return Math.floor((ms - termStartMs) / WEEK_MS) + 1;
+}
 
 export function getCurrentWeek(termStart: string): number {
-  if (!termStart) return 1;
-  const start = new Date(termStart + "T00:00:00");
-  const today = new Date();
-  const week =
-    Math.floor(
-      (today.getTime() - start.getTime()) / (7 * 24 * 60 * 60 * 1000),
-    ) + 1;
+  const startMs = parseTermStartMs(termStart);
+  if (startMs == null) return 1;
+  const week = weekOf(Date.now(), startMs);
   return Math.max(1, Math.min(week, MAX_WEEK));
 }
 
 export function getCurrentDayOfWeek(): number {
-  const day = new Date().getDay();
+  const day = shanghaiView(Date.now()).getUTCDay();
   return day === 0 ? 7 : day;
 }
 
 export function getTomorrowDayOfWeek(): number {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  const day = d.getDay();
+  const day = shanghaiView(Date.now() + DAY_MS).getUTCDay();
   return day === 0 ? 7 : day;
 }
 
 export function getTomorrowWeek(termStart: string): number {
-  if (!termStart) return 1;
-  const start = new Date(termStart + "T00:00:00");
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const week =
-    Math.floor(
-      (tomorrow.getTime() - start.getTime()) / (7 * 24 * 60 * 60 * 1000),
-    ) + 1;
+  const startMs = parseTermStartMs(termStart);
+  if (startMs == null) return 1;
+  const week = weekOf(Date.now() + DAY_MS, startMs);
   return Math.max(1, Math.min(week, MAX_WEEK));
 }
 
 export function isVacation(termStart: string): boolean {
-  if (!termStart) return false;
-  const start = new Date(termStart + "T00:00:00");
-  const today = new Date();
-  const week =
-    Math.floor(
-      (today.getTime() - start.getTime()) / (7 * 24 * 60 * 60 * 1000),
-    ) + 1;
+  const startMs = parseTermStartMs(termStart);
+  if (startMs == null) return false;
+  const week = weekOf(Date.now(), startMs);
   return week > MAX_WEEK || week < 1;
 }
 
-export function getTermWeekMonday(
+/** 第 week 周周一的绝对时间戳 */
+export function getTermWeekMondayMs(
   termStart: string,
   week: number,
-): Date | null {
-  if (!termStart) return null;
-  const start = new Date(termStart + "T00:00:00");
-  if (Number.isNaN(start.getTime())) return null;
-  const monday = new Date(start);
-  monday.setDate(monday.getDate() + (week - 1) * 7);
-  return monday;
+): number | null {
+  const startMs = parseTermStartMs(termStart);
+  if (startMs == null) return null;
+  return startMs + (week - 1) * WEEK_MS;
+}
+
+/**
+ * 第 week 周星期 dayOfWeek（1-7）的 "HH:mm" 对应的绝对时间戳，
+ * 按 UTC+8 解释 "HH:mm"。
+ */
+export function getTermClassTimeMs(
+  termStart: string,
+  week: number,
+  dayOfWeek: number,
+  time: string,
+): number | null {
+  const mondayMs = getTermWeekMondayMs(termStart, week);
+  if (mondayMs == null) return null;
+  const m = /^(\d{1,2}):(\d{2})$/.exec(time);
+  if (!m) return null;
+  return (
+    mondayMs +
+    (dayOfWeek - 1) * DAY_MS +
+    (Number(m[1]) * 60 + Number(m[2])) * 60 * 1000
+  );
+}
+
+/** ms 时刻在 UTC+8 当日已经过的分钟数（0-1439） */
+export function getShanghaiMinutesOfDay(ms: number): number {
+  const view = shanghaiView(ms);
+  return view.getUTCHours() * 60 + view.getUTCMinutes();
 }
 
 export function getTermWeekMonthLabel(
   termStart: string,
   week: number,
 ): string | null {
-  const monday = getTermWeekMonday(termStart, week);
-  if (!monday) return null;
-  const m = monday.getMonth() + 1;
+  const mondayMs = getTermWeekMondayMs(termStart, week);
+  if (mondayMs == null) return null;
+  const m = shanghaiView(mondayMs).getUTCMonth() + 1;
   return `${m}\n月`;
 }
 
@@ -72,11 +106,9 @@ export function getTermWeekDayNumbers(
   termStart: string,
   week: number,
 ): number[] | null {
-  const monday = getTermWeekMonday(termStart, week);
-  if (!monday) return null;
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(d.getDate() + i);
-    return d.getDate();
-  });
+  const mondayMs = getTermWeekMondayMs(termStart, week);
+  if (mondayMs == null) return null;
+  return Array.from({ length: 7 }, (_, i) =>
+    shanghaiView(mondayMs + i * DAY_MS).getUTCDate(),
+  );
 }

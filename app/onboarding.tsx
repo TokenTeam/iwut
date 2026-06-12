@@ -128,9 +128,15 @@ export default function OnboardingScreen() {
     if (result.success) {
       setCalendarSync(true);
       Toast.show({
-        type: "success",
+        type: result.failed > 0 ? "info" : "success",
         text1: t("calendarSet.syncedToast"),
-        text2: t("calendarSet.syncedSub", { n: result.count }),
+        text2:
+          result.failed > 0
+            ? t("calendarSet.syncedPartialSub", {
+                n: result.count,
+                m: result.failed,
+              })
+            : t("calendarSet.syncedSub", { n: result.count }),
         position: "bottom",
       });
     } else {

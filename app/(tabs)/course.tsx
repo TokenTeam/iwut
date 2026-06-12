@@ -5,14 +5,23 @@ import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Modal, Pressable, Text, View } from "react-native";
 import Animated, {
+  Easing,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
-import { CourseDrawer } from "@/components/layout/course-drawer";
+import {
+  COURSE_HEADER_HEIGHT,
+  CourseDrawer,
+  DRAWER_ENTER_MS,
+  DRAWER_EXIT_MS,
+} from "@/components/layout/course-drawer";
 import {
   GetCourse,
   type GetCourseHandle,
@@ -25,13 +34,12 @@ import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
+import { MAX_WEEK } from "@/lib/course-weeks";
 import { getCurrentDayOfWeek, getCurrentWeek } from "@/lib/date";
 import { useT } from "@/lib/i18n";
 import { type ImportType, useCourseStore } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 import { useUserBindStore } from "@/store/user-bind";
-
-const MAX_WEEK = 20;
 
 export default function CourseScreen() {
   useMarkRouteInteractive();
@@ -56,6 +64,7 @@ export default function CourseScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
   const iconColor = Colors[isDark ? "dark" : "light"].icon;
+  const insets = useSafeAreaInsets();
 
   const importerRef = useRef<GetCourseHandle>(null);
 
@@ -71,6 +80,20 @@ export default function CourseScreen() {
   useEffect(() => {
     fabProgress.value = withTiming(fabOpen ? 1 : 0, { duration: 200 });
   }, [fabOpen, fabProgress]);
+
+  // 侧栏展开时顶栏垫上实色背景，避免背景图穿透；动画节奏与抽屉保持一致
+  const headerBackdropProgress = useSharedValue(0);
+
+  useEffect(() => {
+    headerBackdropProgress.value = withTiming(showDrawer ? 1 : 0, {
+      duration: showDrawer ? DRAWER_ENTER_MS : DRAWER_EXIT_MS,
+      easing: showDrawer ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
+    });
+  }, [showDrawer, headerBackdropProgress]);
+
+  const headerBackdropStyle = useAnimatedStyle(() => ({
+    opacity: headerBackdropProgress.value,
+  }));
 
   const bachelorFabStyle = useAnimatedStyle(() => ({
     transform: [
@@ -110,22 +133,41 @@ export default function CourseScreen() {
   return (
     <View style={{ flex: 1 }}>
       {!!backgroundImageUri && (
-        <Image
-          source={{ uri: backgroundImageUri }}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            opacity: backgroundImageOpacity,
-          }}
-          contentFit="cover"
-          blurRadius={backgroundImageBlurRadius}
-        />
+        <>
+          <Image
+            source={{ uri: backgroundImageUri }}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              opacity: backgroundImageOpacity,
+            }}
+            contentFit="cover"
+            blurRadius={backgroundImageBlurRadius}
+          />
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              {
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: insets.top + COURSE_HEADER_HEIGHT,
+                backgroundColor: Colors[isDark ? "dark" : "light"].background,
+              },
+              headerBackdropStyle,
+            ]}
+          />
+        </>
       )}
       <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
-        <View className="h-12 w-full flex-row items-center px-3">
+        <View
+          className="w-full flex-row items-center px-3"
+          style={{ height: COURSE_HEADER_HEIGHT }}
+        >
           <Pressable
             style={{ width: 48, alignItems: "center" }}
             onPress={() => {

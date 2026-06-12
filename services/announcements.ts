@@ -2,6 +2,7 @@ import Constants from "expo-constants";
 import { Platform } from "react-native";
 
 import { CONFIG_REPO_CDN } from "@/constants/api";
+import { compareVersions } from "@/lib/version";
 
 export type AnnouncementType = "info" | "warning" | "event" | "maintenance";
 export type AnnouncementPlatform = "ios" | "android" | "web";
@@ -41,17 +42,6 @@ const VALID_PLATFORMS: ReadonlySet<AnnouncementPlatform> = new Set([
 const ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 const VERSION_PATTERN = /^\d+(\.\d+){0,2}$/;
 const MAX_RENDERED = 5;
-
-function compareVersions(a: string, b: string): number {
-  const pa = a.split(".").map(Number);
-  const pb = b.split(".").map(Number);
-  const len = Math.max(pa.length, pb.length);
-  for (let i = 0; i < len; i++) {
-    const diff = (pa[i] ?? 0) - (pb[i] ?? 0);
-    if (diff !== 0) return diff;
-  }
-  return 0;
-}
 
 function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
@@ -144,9 +134,11 @@ export async function fetchAnnouncements(): Promise<Announcement[]> {
   const timer = setTimeout(() => controller.abort(), 5000);
 
   try {
-    const data = await fetch(`${CONFIG_REPO_CDN}/announcements.json`, {
+    const res = await fetch(`${CONFIG_REPO_CDN}/announcements.json`, {
       signal: controller.signal,
-    }).then((res) => res.json());
+    });
+    if (!res.ok) return [];
+    const data: unknown = await res.json();
 
     if (!isObject(data) || data.version !== SUPPORTED_VERSION) return [];
     if (!Array.isArray(data.announcements)) return [];
@@ -163,20 +155,6 @@ export async function fetchAnnouncements(): Promise<Announcement[]> {
   } finally {
     clearTimeout(timer);
   }
-}
-
-export function isNetworkError(err: unknown): boolean {
-  if (typeof DOMException !== "undefined" && err instanceof DOMException) {
-    return err.name === "AbortError";
-  }
-  if (
-    err &&
-    typeof err === "object" &&
-    (err as { name?: string }).name === "AbortError"
-  ) {
-    return true;
-  }
-  return err instanceof TypeError;
 }
 
 export function filterActiveAnnouncements(

@@ -17,21 +17,12 @@ import Toast from "react-native-toast-message";
 
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { ScrollLockProvider, useScrollLock } from "@/components/ui/scroll-lock";
+import { WEEKDAY_KEYS as DAY_KEYS } from "@/constants/weekdays";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { MAX_SECTION, MAX_WEEK, weeksToRanges } from "@/lib/course-weeks";
-import { type TKey, useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n";
 import { type Course, useCourseStore } from "@/store/course";
-
-const DAY_KEYS: TKey[] = [
-  "schedule.weekday.mon",
-  "schedule.weekday.tue",
-  "schedule.weekday.wed",
-  "schedule.weekday.thu",
-  "schedule.weekday.fri",
-  "schedule.weekday.sat",
-  "schedule.weekday.sun",
-];
 
 interface TimeSlot {
   day: number;

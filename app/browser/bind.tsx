@@ -62,10 +62,6 @@ const INJECTED_JS = `(function(){
         }));
       }
     }
-    u.addEventListener('input',send);
-    p.addEventListener('input',send);
-    u.addEventListener('change',send);
-    p.addEventListener('change',send);
     var btn=document.querySelector('#index_login_btn');
     if(btn)btn.addEventListener('click',send);
     document.addEventListener('submit',send,true);
@@ -216,7 +212,7 @@ export default function BindScreen() {
     }
   };
 
-  const onMessage = (event: { nativeEvent: { data: string } }) => {
+  const onMessage = async (event: { nativeEvent: { data: string } }) => {
     try {
       const msg = JSON.parse(event.nativeEvent.data);
       if (msg.type === "credentials") {
@@ -228,7 +224,7 @@ export default function BindScreen() {
         isBound.current = true;
         const { username, password } = pendingCredentials.current;
 
-        useUserBindStore
+        await useUserBindStore
           .getState()
           .bind(
             username,

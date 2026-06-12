@@ -90,7 +90,7 @@ export class NativeRPCSpiderService implements NativeRPCService {
   }
 
   private async getUlpl(
-    params: Record<string, any>,
+    _params: Record<string, any>,
   ): Promise<NativeRPCResponseData> {
     const credentials = await useUserBindStore.getState().getCredentials();
     if (!credentials) {
@@ -100,9 +100,10 @@ export class NativeRPCSpiderService implements NativeRPCService {
       );
     }
 
+    // 不接受调用方传入的 forceSSL，凭据相关请求始终校验 TLS 证书
     this.client = DefaultSpiderHttpClientProvider.create({
       cookie: true,
-      forceSSL: Boolean(params.forceSSL),
+      forceSSL: false,
       delay: 0,
     });
 
