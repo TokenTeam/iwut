@@ -27,7 +27,11 @@ export default function WlanScreen() {
   const t = useT();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
-  const { hasSaved, username, save, clear, syncCredentials } = useWlanStore();
+  const hasSaved = useWlanStore((s) => s.hasSaved);
+  const username = useWlanStore((s) => s.username);
+  const save = useWlanStore((s) => s.save);
+  const clear = useWlanStore((s) => s.clear);
+  const syncCredentials = useWlanStore((s) => s.syncCredentials);
 
   const [sheetVisible, setSheetVisible] = useState(false);
   const [clearVisible, setClearVisible] = useState(false);

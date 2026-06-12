@@ -12,8 +12,10 @@ import {
   View,
 } from "react-native";
 
+import { WEEKDAY_KEYS } from "@/constants/weekdays";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
+import { buildColorMap, getCourseColor } from "@/lib/course-colors";
 import { getTermWeekDayNumbers, getTermWeekMonthLabel } from "@/lib/date";
 import { t, useT } from "@/lib/i18n";
 import { formatCourseSectionTimeRange } from "@/services/course-time";
@@ -24,24 +26,11 @@ import {
   QuickAddCourseModal,
   type QuickAddSlot,
 } from "./quick-add-course-modal";
+import { DayColumn, type ScheduleCellTheme } from "./schedule-day-column";
 import {
   getAndroidBlurProps,
   useAndroidBlurTarget,
 } from "@/components/ui/app-blur-target";
-
-const DAY_KEYS = [
-  "schedule.weekday.mon",
-  "schedule.weekday.tue",
-  "schedule.weekday.wed",
-  "schedule.weekday.thu",
-  "schedule.weekday.fri",
-  "schedule.weekday.sat",
-  "schedule.weekday.sun",
-] as const;
-
-export function getDayLabels(): string[] {
-  return DAY_KEYS.map((k) => t(k));
-}
 
 interface SidebarLabel {
   label: string;
@@ -111,33 +100,6 @@ interface RgbaColor {
 
 function pct(n: number): `${number}%` {
   return `${n}%` as `${number}%`;
-}
-
-function buildColorMap(
-  courses: Course[],
-  paletteSize: number,
-): Map<string, number> {
-  const map = new Map<string, number>();
-  let idx = 0;
-  for (const c of courses) {
-    if (!map.has(c.name)) {
-      map.set(c.name, idx % paletteSize);
-      idx++;
-    }
-  }
-  return map;
-}
-
-function getCourseColor(
-  courseName: string,
-  colorMap: Map<string, number>,
-  paletteColors: string[],
-  paletteOverrides: Record<string, string> | undefined,
-  courseColorOverrides: Record<string, string>,
-): string {
-  if (courseColorOverrides[courseName]) return courseColorOverrides[courseName];
-  if (paletteOverrides?.[courseName]) return paletteOverrides[courseName];
-  return paletteColors[(colorMap.get(courseName) ?? 0) % paletteColors.length];
 }
 
 // 把任意节次范围对齐到 section group 的边界，用于同时段加课预填。
@@ -316,7 +278,7 @@ export function Schedule({
   const otherWeekBg = withColorAlpha(otherWeekCardColor, otherWeekCellOpacity);
   const otherWeekBorderColor = withColorAlpha(otherWeekCardColor, 0.32);
 
-  const dayLabels = useMemo(() => DAY_KEYS.map((k) => localT(k)), [localT]);
+  const dayLabels = useMemo(() => WEEKDAY_KEYS.map((k) => localT(k)), [localT]);
   const monthLabelSuffix = localT("common.monthSuffix");
 
   const layout = useMemo(
@@ -415,14 +377,17 @@ export function Schedule({
   const nameFontSize = scrollWeekend ? 12 : 10;
   const roomFontSize = scrollWeekend ? 10 : 9;
 
-  const colorOf = (name: string) =>
-    getCourseColor(
-      name,
-      colorMap,
-      paletteColors,
-      colorPalette.overrides,
-      courseColorOverrides,
-    );
+  const colorOf = useCallback(
+    (name: string) =>
+      getCourseColor(
+        name,
+        colorMap,
+        paletteColors,
+        colorPalette.overrides,
+        courseColorOverrides,
+      ),
+    [colorMap, paletteColors, colorPalette.overrides, courseColorOverrides],
+  );
 
   const scrollRef = useCallback(
     (node: ScrollView | null) => {
@@ -433,15 +398,26 @@ export function Schedule({
     [today],
   );
 
-  const handleCoursePress = (course: Course) => {
-    haptic();
-    const list = conflictsByCourse.get(course) ?? [course];
-    if (list.length > 1) {
-      setSlotCourses(list);
-    } else {
-      setSelected(course);
-    }
-  };
+  const handleCoursePress = useCallback(
+    (course: Course) => {
+      haptic();
+      const list = conflictsByCourse.get(course) ?? [course];
+      if (list.length > 1) {
+        setSlotCourses(list);
+      } else {
+        setSelected(course);
+      }
+    },
+    [conflictsByCourse, haptic],
+  );
+
+  const handleAddSlot = useCallback(
+    (day: number, sectionStart: number, sectionEnd: number) => {
+      haptic();
+      setQuickAddSlot({ day, sectionStart, sectionEnd });
+    },
+    [haptic],
+  );
 
   const handleEditCourse = (course: Course) => {
     haptic();
@@ -471,216 +447,78 @@ export function Schedule({
     });
   };
 
-  const renderCourseCell = (course: Course, key: string, isOther: boolean) => {
-    if (
-      layout.sectionTop[course.sectionStart] === undefined ||
-      layout.sectionTop[course.sectionEnd] === undefined
-    ) {
-      return null;
-    }
-    const topVal = layout.sectionTop[course.sectionStart];
-    const heightVal =
-      layout.sectionTop[course.sectionEnd] + layout.sectionPct - topVal;
-    const courseColor = colorOf(course.name);
-    const stableCourseColor = hasBgImage
-      ? blendColorOver(courseColor, scheduleSurfaceColor)
-      : courseColor;
-    const bg = isOther
-      ? otherWeekBg
-      : withColorOpacity(stableCourseColor, courseCellOpacity);
-    const span = course.sectionEnd - course.sectionStart + 1;
-    const nameLines = 2 * span - 1;
-    const nameColor = isOther ? otherWeekTextColor : "#fff";
-    const roomColor = isOther ? otherWeekTextColor : "rgba(255,255,255,0.85)";
+  const cellTheme: ScheduleCellTheme = useMemo(
+    () => ({
+      nameFontSize,
+      roomFontSize,
+      otherWeekBorderColor,
+      otherWeekTextColor,
+      otherWeekTag: localT("schedule.otherWeekTag"),
+      locatorBg,
+      isDark,
+      mutedColor,
+    }),
+    [
+      nameFontSize,
+      roomFontSize,
+      otherWeekBorderColor,
+      otherWeekTextColor,
+      localT,
+      locatorBg,
+      isDark,
+      mutedColor,
+    ],
+  );
 
-    return (
-      <Pressable
-        key={key}
-        style={{
-          position: "absolute",
-          top: pct(topVal),
-          height: pct(heightVal),
-          left: 0,
-          right: 0,
-        }}
-        onPress={() => handleCoursePress(course)}
-      >
-        <View
-          style={{
-            flex: 1,
-            margin: 2,
-            backgroundColor: bg,
-            borderWidth: isOther ? 1 : 0,
-            borderColor: isOther ? otherWeekBorderColor : "transparent",
-            borderRadius: 6,
-            padding: 4,
-            overflow: "hidden",
-            flexDirection: "column",
-          }}
-        >
-          <View
-            style={{
-              flex: 1,
-              minHeight: 0,
-              overflow: "hidden",
-            }}
-          >
-            <Text
-              numberOfLines={nameLines}
-              style={{
-                fontSize: nameFontSize,
-                fontWeight: "bold",
-                color: nameColor,
-                lineHeight: nameFontSize + 4,
-              }}
-            >
-              {course.name}
-            </Text>
-            {isOther && (
-              <Text
-                style={{
-                  fontSize: roomFontSize,
-                  color: roomColor,
-                }}
-              >
-                {t("schedule.otherWeekTag")}
-              </Text>
-            )}
-          </View>
-          <Text
-            style={{
-              fontSize: roomFontSize,
-              color: roomColor,
-              flexShrink: 0,
-              marginTop: 2,
-            }}
-          >
-            {course.room}
-          </Text>
-        </View>
-      </Pressable>
-    );
-  };
+  const cellBgFor = useCallback(
+    (courseName: string, isOther: boolean) => {
+      if (isOther) return otherWeekBg;
+      const courseColor = colorOf(courseName);
+      const stableCourseColor = hasBgImage
+        ? blendColorOver(courseColor, scheduleSurfaceColor)
+        : courseColor;
+      return withColorOpacity(stableCourseColor, courseCellOpacity);
+    },
+    [otherWeekBg, colorOf, hasBgImage, scheduleSurfaceColor, courseCellOpacity],
+  );
 
-  const dayColumns = Array.from({ length: 7 }, (_, dayIdx) => {
-    const isToday = dayIdx + 1 === today;
-    const currentForDay = currentDayCourses[dayIdx];
-    const otherForDay = otherDayCoursesVisible[dayIdx];
-
-    return (
-      <View key={dayIdx} style={{ width: colWidth }}>
-        <View
-          style={{
-            height: headerHeight,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          {showDates && dayNumbers ? (
-            <View
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 18,
-                overflow: "hidden",
-                justifyContent: "center",
-                alignItems: "center",
-                backgroundColor: isToday ? "#3b82f6" : "transparent",
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 12,
-                  fontWeight: isToday ? "800" : "600",
-                  color: isToday ? "#fff" : isDark ? "#d4d4d4" : "#525252",
-                }}
-              >
-                {dayLabels[dayIdx]}
-              </Text>
-              <Text
-                style={{
-                  fontSize: 11,
-                  fontWeight: isToday ? "700" : "500",
-                  fontVariant: ["tabular-nums"],
-                  color: isToday ? "#fff" : mutedColor,
-                }}
-              >
-                {dayNumbers[dayIdx]}
-              </Text>
-            </View>
-          ) : (
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: isToday ? "800" : "600",
-                color: isToday ? "#3b82f6" : isDark ? "#d4d4d4" : "#525252",
-              }}
-            >
-              {dayLabels[dayIdx]}
-            </Text>
-          )}
-        </View>
-
-        <View style={{ flex: 1 }}>
-          {layout.groups.map((group) => {
-            const topVal = layout.sectionTop[group[0]];
-            const heightVal =
-              layout.sectionTop[group[group.length - 1]] +
-              layout.sectionPct -
-              topVal;
-            const sectionStart = group[0];
-            const sectionEnd = group[group.length - 1];
-            return (
-              <View
-                key={group[0]}
-                style={{
-                  position: "absolute",
-                  top: pct(topVal),
-                  height: pct(heightVal),
-                  left: 0,
-                  right: 0,
-                }}
-              >
-                <Pressable
-                  style={({ pressed }) => ({
-                    flex: 1,
-                    margin: 2,
-                    backgroundColor: locatorBg,
-                    borderRadius: 6,
-                    opacity: pressed ? 0.6 : 1,
-                  })}
-                  onPress={() => {
-                    haptic();
-                    setQuickAddSlot({
-                      day: dayIdx + 1,
-                      sectionStart,
-                      sectionEnd,
-                    });
-                  }}
-                />
-              </View>
-            );
-          })}
-
-          {otherForDay.map((course, ci) =>
-            renderCourseCell(
-              course,
-              `other-${course.name}-${course.sectionStart}-${course.weekStart}-${ci}`,
-              true,
-            ),
-          )}
-
-          {currentForDay.map((course, ci) =>
-            renderCourseCell(
-              course,
-              `cur-${course.name}-${course.sectionStart}-${ci}`,
-              false,
-            ),
-          )}
-        </View>
-      </View>
-    );
-  });
+  const dayColumns = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, dayIdx) => (
+        <DayColumn
+          key={dayIdx}
+          dayIdx={dayIdx}
+          width={colWidth}
+          headerHeight={headerHeight}
+          dayLabel={dayLabels[dayIdx]}
+          dayNumber={dayNumbers ? dayNumbers[dayIdx] : null}
+          isToday={dayIdx + 1 === today}
+          showDates={showDates}
+          layout={layout}
+          theme={cellTheme}
+          currentCourses={currentDayCourses[dayIdx]}
+          otherCourses={otherDayCoursesVisible[dayIdx]}
+          cellBgFor={cellBgFor}
+          onCoursePress={handleCoursePress}
+          onAddSlot={handleAddSlot}
+        />
+      )),
+    [
+      colWidth,
+      headerHeight,
+      dayLabels,
+      dayNumbers,
+      today,
+      showDates,
+      layout,
+      cellTheme,
+      currentDayCourses,
+      otherDayCoursesVisible,
+      cellBgFor,
+      handleCoursePress,
+      handleAddSlot,
+    ],
+  );
 
   const columnsContent = (
     <View style={{ flexDirection: "row" }}>{dayColumns}</View>

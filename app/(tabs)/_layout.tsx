@@ -58,14 +58,12 @@ export default function TabLayout() {
   return (
     <Tabs
       backBehavior="none"
-      detachInactiveScreens={false}
       screenListeners={{
         tabPress: () => haptic(),
       }}
       screenOptions={{
         tabBarActiveTintColor: theme.tint,
         headerShown: false,
-        lazy: false,
       }}
     >
       <Tabs.Screen
