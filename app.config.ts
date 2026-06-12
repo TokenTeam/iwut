@@ -43,9 +43,13 @@ const config: ExpoConfig = {
       NSLocationWhenInUseUsageDescription:
         "用于在连接校园网时读取当前 Wi-Fi 相关信息并完成网络认证",
       NSAppTransportSecurity: {
-        NSAllowsArbitraryLoads: true,
         NSAllowsArbitraryLoadsInWebContent: true,
+        NSAllowsLocalNetworking: true,
         NSExceptionDomains: {
+          "whut.edu.cn": {
+            NSExceptionAllowsInsecureHTTPLoads: true,
+            NSIncludesSubdomains: true,
+          },
           "223.5.5.5": {
             NSExceptionAllowsInsecureHTTPLoads: true,
             NSIncludesSubdomains: false,
@@ -111,7 +115,7 @@ const config: ExpoConfig = {
           useLegacyPackaging: true,
           enableMinifyInReleaseBuilds: true,
           enableShrinkResourcesInReleaseBuilds: true,
-          usesCleartextTraffic: true,
+          usesCleartextTraffic: IS_DEV,
         },
       },
     ],
@@ -119,6 +123,7 @@ const config: ExpoConfig = {
     "@bacons/apple-targets",
     "./plugins/with-gradle-props.js",
     "./plugins/with-gradle-wrapper.js",
+    ...(IS_DEV ? [] : ["./plugins/with-network-security-config.js"]),
   ],
   experiments: {
     typedRoutes: true,

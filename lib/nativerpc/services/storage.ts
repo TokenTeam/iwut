@@ -19,9 +19,9 @@ export class NativeRPCStorageService implements NativeRPCService {
   async perform(
     method: string,
     params: Record<string, any> | null | undefined,
-    _context: NativeRPCServiceContext,
+    context: NativeRPCServiceContext,
   ): Promise<NativeRPCResponseData> {
-    const key = this.requireKey(params);
+    const key = this.buildScopedKey(context, this.requireKey(params));
     const storage = getServiceStorage();
 
     if (method === "set") {
@@ -44,6 +44,28 @@ export class NativeRPCStorageService implements NativeRPCService {
     }
 
     throw nativeRPCError(NativeRPCErrorType.MethodNotFound);
+  }
+
+  // 按页面域名隔离存储，避免不同 mini-app 之间互相读写数据
+  private buildScopedKey(
+    context: NativeRPCServiceContext,
+    key: string,
+  ): string {
+    let hostname: string;
+    try {
+      hostname = new URL(context.pageUrl ?? "").hostname.toLowerCase();
+    } catch {
+      hostname = "";
+    }
+
+    if (!hostname) {
+      throw nativeRPCError(
+        NativeRPCErrorType.AccessDenied,
+        "Storage requires a valid page origin",
+      );
+    }
+
+    return `${hostname}:${key}`;
   }
 
   private requireKey(params: Record<string, any> | null | undefined): string {

@@ -26,6 +26,7 @@ import { useWebViewProgressBar } from "@/hooks/use-webview-progress-bar";
 import { useZhlgdAutoLogin } from "@/hooks/use-zhlgd-autologin";
 import { useT } from "@/lib/i18n";
 import {
+  isTrustedRpcOrigin,
   NATIVE_RPC_INJECTED_JAVASCRIPT,
   NativeRPCBridge,
 } from "@/lib/nativerpc";
@@ -124,7 +125,10 @@ export default function BrowserScreen() {
         javaScriptEnabled
         originWhitelist={["*"]}
         webviewDebuggingEnabled={IS_DEV}
-        injectedJavaScriptBeforeContentLoaded={NATIVE_RPC_INJECTED_JAVASCRIPT}
+        // 仅受信域名注入 RPC 桥；桥接层另有按消息来源的二次校验
+        injectedJavaScriptBeforeContentLoaded={
+          isTrustedRpcOrigin(uri) ? NATIVE_RPC_INJECTED_JAVASCRIPT : undefined
+        }
         allowsBackForwardNavigationGestures={Platform.OS === "ios" && canGoBack}
         pullToRefreshEnabled
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
