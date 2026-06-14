@@ -1,9 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
-import React, { useCallback, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
+  FlatList,
   Modal,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,6 +22,7 @@ import {
 } from "react-native";
 
 import { WEEKDAY_KEYS } from "@/constants/weekdays";
+import { MAX_WEEK } from "@/lib/course-weeks";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { buildColorMap, getCourseColor } from "@/lib/course-colors";
@@ -229,16 +239,150 @@ function computeLayout(
   return { sectionTop, sectionPct, groups, sidebarLabels };
 }
 
+interface WeekPanelProps {
+  week: number;
+  courses: Course[];
+  termStart?: string;
+  today?: number;
+  showDates: boolean;
+  showOtherWeekCourses: boolean;
+  layout: LayoutInfo;
+  colWidth: number;
+  headerHeight: number;
+  dayLabels: string[];
+  cellTheme: ScheduleCellTheme;
+  cellBgFor: (courseName: string, isOther: boolean) => string;
+  onCoursePress: (course: Course, conflicts: Course[]) => void;
+  onAddSlot: (day: number, sectionStart: number, sectionEnd: number) => void;
+}
+
+// 单周课表面板：自行计算该周的课程分布与冲突，便于三联面板各自渲染相邻周
+const WeekPanel = React.memo(function WeekPanel({
+  week,
+  courses,
+  termStart,
+  today,
+  showDates,
+  showOtherWeekCourses,
+  layout,
+  colWidth,
+  headerHeight,
+  dayLabels,
+  cellTheme,
+  cellBgFor,
+  onCoursePress,
+  onAddSlot,
+}: WeekPanelProps) {
+  const isInWeek = useCallback(
+    (c: Course) => c.weekStart <= week && c.weekEnd >= week,
+    [week],
+  );
+
+  const currentDayCourses = useMemo(
+    () => buildDayCourses(courses.filter(isInWeek)),
+    [courses, isInWeek],
+  );
+
+  const otherDayCoursesAll = useMemo(() => {
+    if (!showOtherWeekCourses) return Array.from({ length: 7 }, () => []);
+    return buildDayCourses(courses.filter((c) => !isInWeek(c)));
+  }, [courses, isInWeek, showOtherWeekCourses]);
+
+  // 非本周课程与本周课冲突的全部隐藏；非本周课互相冲突时取
+  // 上课时间最早的一门，被隐藏的仍可在冲突列表中看到。
+  const otherDayCoursesVisible = useMemo(() => {
+    const result: Course[][] = Array.from({ length: 7 }, () => []);
+    for (let d = 0; d < 7; d++) {
+      const occupied: { start: number; end: number }[] = currentDayCourses[
+        d
+      ].map((c) => ({ start: c.sectionStart, end: c.sectionEnd }));
+      const sorted = [...otherDayCoursesAll[d]].sort(
+        (a, b) => a.sectionStart - b.sectionStart,
+      );
+      for (const c of sorted) {
+        const overlap = occupied.some(
+          (o) => o.start <= c.sectionEnd && c.sectionStart <= o.end,
+        );
+        if (overlap) continue;
+        occupied.push({ start: c.sectionStart, end: c.sectionEnd });
+        result[d].push(c);
+      }
+    }
+    return result;
+  }, [currentDayCourses, otherDayCoursesAll]);
+
+  // 每门课对应的同日节次重叠列表，包含自身；本周课在前，非本周课按 weekStart 升序。
+  const conflictsByCourse = useMemo(() => {
+    const map = new Map<Course, Course[]>();
+    for (let d = 0; d < 7; d++) {
+      const allForDay = [...currentDayCourses[d], ...otherDayCoursesAll[d]];
+      for (const c of allForDay) {
+        const list = allForDay.filter(
+          (o) =>
+            o.sectionStart <= c.sectionEnd && c.sectionStart <= o.sectionEnd,
+        );
+        list.sort((a, b) => {
+          const aCur = isInWeek(a) ? 0 : 1;
+          const bCur = isInWeek(b) ? 0 : 1;
+          if (aCur !== bCur) return aCur - bCur;
+          return a.weekStart - b.weekStart;
+        });
+        map.set(c, list);
+      }
+    }
+    return map;
+  }, [currentDayCourses, otherDayCoursesAll, isInWeek]);
+
+  const dayNumbers = useMemo(
+    () => (termStart ? getTermWeekDayNumbers(termStart, week) : null),
+    [termStart, week],
+  );
+
+  const handlePress = useCallback(
+    (course: Course) => {
+      const list = conflictsByCourse.get(course) ?? [course];
+      onCoursePress(course, list);
+    },
+    [conflictsByCourse, onCoursePress],
+  );
+
+  return (
+    <View style={{ height: "100%", flexDirection: "row" }}>
+      {Array.from({ length: 7 }, (_, dayIdx) => (
+        <DayColumn
+          key={dayIdx}
+          dayIdx={dayIdx}
+          width={colWidth}
+          headerHeight={headerHeight}
+          dayLabel={dayLabels[dayIdx]}
+          dayNumber={dayNumbers ? dayNumbers[dayIdx] : null}
+          isToday={dayIdx + 1 === today}
+          showDates={showDates}
+          layout={layout}
+          theme={cellTheme}
+          currentCourses={currentDayCourses[dayIdx]}
+          otherCourses={otherDayCoursesVisible[dayIdx]}
+          cellBgFor={cellBgFor}
+          onCoursePress={handlePress}
+          onAddSlot={onAddSlot}
+        />
+      ))}
+    </View>
+  );
+});
+
 export function Schedule({
   courses,
   week,
   today,
   termStart,
+  onWeekChange,
 }: Readonly<{
   courses: Course[];
   week: number;
   today?: number;
   termStart?: string;
+  onWeekChange?: (week: number) => void;
 }>) {
   const localT = useT();
   const router = useRouter();
@@ -249,6 +393,14 @@ export function Schedule({
   const [selected, setSelected] = useState<Course | null>(null);
   const [slotCourses, setSlotCourses] = useState<Course[] | null>(null);
   const [quickAddSlot, setQuickAddSlot] = useState<QuickAddSlot | null>(null);
+
+  // 周末模式下的横向滚动容器
+  const scrollViewRef = useRef<ScrollView>(null);
+  const didInitialScroll = useRef(false);
+  // 非周末模式：原生分页器，每页一周
+  const pagerRef = useRef<FlatList<number>>(null);
+  // 标记切周来源，用户滑动触发的切周不再回弹
+  const fromPagerRef = useRef(false);
 
   const haptic = useHaptics();
   const scrollWeekend = useScheduleStore((s) => s.scrollWeekend);
@@ -300,62 +452,6 @@ export function Schedule({
     [week],
   );
 
-  const currentDayCourses = useMemo(
-    () => buildDayCourses(courses.filter(isInCurrentWeek)),
-    [courses, isInCurrentWeek],
-  );
-
-  const otherDayCoursesAll = useMemo(() => {
-    if (!showOtherWeekCourses) return Array.from({ length: 7 }, () => []);
-    return buildDayCourses(courses.filter((c) => !isInCurrentWeek(c)));
-  }, [courses, isInCurrentWeek, showOtherWeekCourses]);
-
-  // 非本周课程与本周课冲突的全部隐藏；非本周课互相冲突时取
-  // 上课时间最早的一门，被隐藏的仍可在冲突列表中看到。
-  const otherDayCoursesVisible = useMemo(() => {
-    const result: Course[][] = Array.from({ length: 7 }, () => []);
-    for (let d = 0; d < 7; d++) {
-      const occupied: { start: number; end: number }[] = currentDayCourses[
-        d
-      ].map((c) => ({ start: c.sectionStart, end: c.sectionEnd }));
-      const sorted = [...otherDayCoursesAll[d]].sort(
-        (a, b) => a.sectionStart - b.sectionStart,
-      );
-      for (const c of sorted) {
-        const overlap = occupied.some(
-          (o) => o.start <= c.sectionEnd && c.sectionStart <= o.end,
-        );
-        if (overlap) continue;
-        occupied.push({ start: c.sectionStart, end: c.sectionEnd });
-        result[d].push(c);
-      }
-    }
-    return result;
-  }, [currentDayCourses, otherDayCoursesAll]);
-
-  // 每门课对应的同日节次重叠列表，包含自身；本周课在前，非本周课按 weekStart 升序。
-  // 使用 otherDayCoursesAll 保证被隐藏的冲突课程也能在列表中展示。
-  const conflictsByCourse = useMemo(() => {
-    const map = new Map<Course, Course[]>();
-    for (let d = 0; d < 7; d++) {
-      const allForDay = [...currentDayCourses[d], ...otherDayCoursesAll[d]];
-      for (const c of allForDay) {
-        const list = allForDay.filter(
-          (o) =>
-            o.sectionStart <= c.sectionEnd && c.sectionStart <= o.sectionEnd,
-        );
-        list.sort((a, b) => {
-          const aCur = isInCurrentWeek(a) ? 0 : 1;
-          const bCur = isInCurrentWeek(b) ? 0 : 1;
-          if (aCur !== bCur) return aCur - bCur;
-          return a.weekStart - b.weekStart;
-        });
-        map.set(c, list);
-      }
-    }
-    return map;
-  }, [currentDayCourses, otherDayCoursesAll, isInCurrentWeek]);
-
   const monthLabel = useMemo(
     () => (termStart ? getTermWeekMonthLabel(termStart, week) : null),
     [termStart, week],
@@ -389,26 +485,85 @@ export function Schedule({
     [colorMap, paletteColors, colorPalette.overrides, courseColorOverrides],
   );
 
-  const scrollRef = useCallback(
-    (node: ScrollView | null) => {
-      if (node && today && today > 5) {
-        node.scrollToEnd({ animated: false });
-      }
+  // 周末模式：首次进入若今天是周末则直接定位到末尾，方便查看周六、周日
+  const handleScrollContentSizeChange = useCallback(() => {
+    if (!didInitialScroll.current && today && today > 5) {
+      didInitialScroll.current = true;
+      requestAnimationFrame(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: false });
+      });
+    }
+  }, [today]);
+
+  // 周末模式下切周时把横向滚动重置回周一起点
+  const prevWeekRef = useRef(week);
+  useEffect(() => {
+    if (prevWeekRef.current === week) return;
+    prevWeekRef.current = week;
+    if (scrollWeekend) {
+      scrollViewRef.current?.scrollTo({ x: 0, animated: false });
+    }
+  }, [week, scrollWeekend]);
+
+  // 非周末模式：外部改变周数时同步分页器位置，用户滑动触发的切周不回弹
+  useEffect(() => {
+    if (scrollWeekend) {
+      fromPagerRef.current = false;
+      return;
+    }
+    if (fromPagerRef.current) {
+      fromPagerRef.current = false;
+      return;
+    }
+    pagerRef.current?.scrollToIndex({ index: week - 1, animated: false });
+  }, [week, scrollWeekend]);
+
+  const weekData = useMemo(
+    () => Array.from({ length: MAX_WEEK }, (_, i) => i + 1),
+    [],
+  );
+
+  const getPagerItemLayout = useCallback(
+    (_: ArrayLike<number> | null | undefined, index: number) => ({
+      length: availableWidth,
+      offset: availableWidth * index,
+      index,
+    }),
+    [availableWidth],
+  );
+
+  const onPagerMomentumEnd = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (availableWidth <= 0) return;
+      const idx = Math.round(e.nativeEvent.contentOffset.x / availableWidth);
+      const nextWeek = idx + 1;
+      if (nextWeek === week) return;
+      fromPagerRef.current = true;
+      onWeekChange?.(nextWeek);
     },
-    [today],
+    [availableWidth, week, onWeekChange],
+  );
+
+  const onPagerScrollToIndexFailed = useCallback(
+    (info: { index: number; averageItemLength: number }) => {
+      pagerRef.current?.scrollToOffset({
+        offset: info.averageItemLength * info.index,
+        animated: false,
+      });
+    },
+    [],
   );
 
   const handleCoursePress = useCallback(
-    (course: Course) => {
+    (course: Course, conflicts: Course[]) => {
       haptic();
-      const list = conflictsByCourse.get(course) ?? [course];
-      if (list.length > 1) {
-        setSlotCourses(list);
+      if (conflicts.length > 1) {
+        setSlotCourses(conflicts);
       } else {
         setSelected(course);
       }
     },
-    [conflictsByCourse, haptic],
+    [haptic],
   );
 
   const handleAddSlot = useCallback(
@@ -482,46 +637,49 @@ export function Schedule({
     [otherWeekBg, colorOf, hasBgImage, scheduleSurfaceColor, courseCellOpacity],
   );
 
-  const dayColumns = useMemo(
-    () =>
-      Array.from({ length: 7 }, (_, dayIdx) => (
-        <DayColumn
-          key={dayIdx}
-          dayIdx={dayIdx}
-          width={colWidth}
-          headerHeight={headerHeight}
-          dayLabel={dayLabels[dayIdx]}
-          dayNumber={dayNumbers ? dayNumbers[dayIdx] : null}
-          isToday={dayIdx + 1 === today}
-          showDates={showDates}
-          layout={layout}
-          theme={cellTheme}
-          currentCourses={currentDayCourses[dayIdx]}
-          otherCourses={otherDayCoursesVisible[dayIdx]}
-          cellBgFor={cellBgFor}
-          onCoursePress={handleCoursePress}
-          onAddSlot={handleAddSlot}
-        />
-      )),
+  const renderPanel = useCallback(
+    (panelWeek: number, isCenter: boolean) => (
+      <WeekPanel
+        week={panelWeek}
+        courses={courses}
+        termStart={termStart}
+        today={isCenter ? today : undefined}
+        showDates={showDates}
+        showOtherWeekCourses={showOtherWeekCourses}
+        layout={layout}
+        colWidth={colWidth}
+        headerHeight={headerHeight}
+        dayLabels={dayLabels}
+        cellTheme={cellTheme}
+        cellBgFor={cellBgFor}
+        onCoursePress={handleCoursePress}
+        onAddSlot={handleAddSlot}
+      />
+    ),
     [
+      courses,
+      termStart,
+      today,
+      showDates,
+      showOtherWeekCourses,
+      layout,
       colWidth,
       headerHeight,
       dayLabels,
-      dayNumbers,
-      today,
-      showDates,
-      layout,
       cellTheme,
-      currentDayCourses,
-      otherDayCoursesVisible,
       cellBgFor,
       handleCoursePress,
       handleAddSlot,
     ],
   );
 
-  const columnsContent = (
-    <View style={{ flexDirection: "row" }}>{dayColumns}</View>
+  const renderPagerItem = useCallback(
+    ({ item }: { item: number }) => (
+      <View style={{ width: availableWidth, height: "100%" }}>
+        {renderPanel(item, item === week)}
+      </View>
+    ),
+    [availableWidth, renderPanel, week],
   );
 
   return (
@@ -597,17 +755,46 @@ export function Schedule({
           </View>
         </View>
 
-        {scrollWeekend ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            ref={scrollRef}
-          >
-            {columnsContent}
-          </ScrollView>
-        ) : (
-          columnsContent
-        )}
+        <View style={{ flex: 1, overflow: "hidden" }}>
+          {scrollWeekend ? (
+            // 周末模式：仅横向滚动查看周末，不支持左右滑动切周
+            <ScrollView
+              horizontal
+              ref={scrollViewRef}
+              style={{ flex: 1 }}
+              contentContainerStyle={{ flexGrow: 1 }}
+              showsHorizontalScrollIndicator={false}
+              bounces={false}
+              overScrollMode="never"
+              onContentSizeChange={handleScrollContentSizeChange}
+            >
+              {renderPanel(week, true)}
+            </ScrollView>
+          ) : (
+            // 非周末模式：原生分页切周，每页一周
+            <FlatList
+              ref={pagerRef}
+              data={weekData}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item) => String(item)}
+              getItemLayout={getPagerItemLayout}
+              initialScrollIndex={week - 1}
+              renderItem={renderPagerItem}
+              extraData={week}
+              onMomentumScrollEnd={onPagerMomentumEnd}
+              onScrollToIndexFailed={onPagerScrollToIndexFailed}
+              windowSize={3}
+              initialNumToRender={1}
+              maxToRenderPerBatch={3}
+              removeClippedSubviews
+              bounces={false}
+              overScrollMode="never"
+              decelerationRate="fast"
+            />
+          )}
+        </View>
       </View>
 
       <QuickAddCourseModal

@@ -125,6 +125,20 @@ export default function CourseScreen() {
     importerRef.current?.startImport(type);
   };
 
+  const changeWeek = (delta: number) => {
+    const nextWeek = Math.max(1, Math.min(MAX_WEEK, week + delta));
+    if (nextWeek === week) return;
+    haptic();
+    setWeek(nextWeek);
+  };
+
+  const goToWeek = (nextWeek: number) => {
+    const clamped = Math.max(1, Math.min(MAX_WEEK, nextWeek));
+    if (clamped === week) return;
+    haptic();
+    setWeek(clamped);
+  };
+
   const handleReimport = () => {
     haptic();
     setShowTypePicker(true);
@@ -183,10 +197,7 @@ export default function CourseScreen() {
               className="w-10 items-center"
               style={{ opacity: week <= 1 ? 0 : 1 }}
               disabled={week <= 1}
-              onPress={() => {
-                haptic();
-                setWeek((w) => w - 1);
-              }}
+              onPress={() => changeWeek(-1)}
             >
               <Ionicons name="chevron-back" size={20} color="gray" />
             </Pressable>
@@ -204,10 +215,7 @@ export default function CourseScreen() {
               className="w-10 items-center"
               style={{ opacity: week >= MAX_WEEK ? 0 : 1 }}
               disabled={week >= MAX_WEEK}
-              onPress={() => {
-                haptic();
-                setWeek((w) => w + 1);
-              }}
+              onPress={() => changeWeek(1)}
             >
               <Ionicons name="chevron-forward" size={20} color="gray" />
             </Pressable>
@@ -247,6 +255,7 @@ export default function CourseScreen() {
           week={week}
           today={week === getCurrentWeek(termStart) ? today : undefined}
           termStart={termStart}
+          onWeekChange={goToWeek}
         />
 
         {!isBound && (
