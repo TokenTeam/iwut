@@ -55,7 +55,8 @@ export function CourseDrawer({
   const insets = useSafeAreaInsets();
   const blurTarget = useAndroidBlurTarget();
 
-  const drawerWidth = Math.round(screenWidth * 0.66);
+  // 按比例取宽并限制最大宽度，避免在平板等宽屏设备上过宽
+  const drawerWidth = Math.round(Math.min(screenWidth * 0.66, 320));
   const topOffset = insets.top + COURSE_HEADER_HEIGHT;
 
   // 控制 Modal 卸载时机，让退出动画能完整播放。

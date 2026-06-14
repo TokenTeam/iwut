@@ -83,7 +83,7 @@ interface ScheduleStore {
 export const useScheduleStore = create<ScheduleStore>()(
   persist(
     (set, get) => ({
-      scrollWeekend: true,
+      scrollWeekend: false,
       showMiddaySections: false,
       showOtherWeekCourses: true,
       colorPalette: BUILTIN_PALETTES[0],
