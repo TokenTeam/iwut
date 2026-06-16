@@ -43,9 +43,12 @@ import {
   formatCourseSectionTimeRange,
   SECTION_TIMES,
 } from "@/services/course-time";
+import { isExamInTerm, shouldClearExamDataForTerm } from "@/services/exam-term";
 import { useAnnouncementStore } from "@/store/announcements";
 import type { Course } from "@/store/course";
 import { useCourseStore } from "@/store/course";
+import type { Exam } from "@/store/exam";
+import { useExamStore } from "@/store/exam";
 import { useScheduleStore } from "@/store/schedule";
 import { useUpdateStore } from "@/store/update";
 
@@ -102,6 +105,8 @@ const GREETING_SLOTS: GreetingSlot[] = [
 ];
 
 const CARD_GAP = 10;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const HOME_EXAM_LOOKAHEAD_MS = 14 * DAY_MS;
 
 type Countdown = { kind: "start" | "end"; mins: number };
 
@@ -123,6 +128,23 @@ function getCourseCountdown(course: Course, nowMs: number): Countdown | null {
   return { kind: "end", mins: endMin - nowMin };
 }
 
+function getExamCountdownLabel(
+  exam: Exam,
+  nowMs: number,
+  t: ReturnType<typeof useT>,
+) {
+  const startMs = Date.parse(exam.startAt);
+  if (Number.isNaN(startMs)) return "";
+  const diff = startMs - nowMs;
+  if (diff < DAY_MS) return t("home.examToday");
+  if (diff < DAY_MS * 2) return t("home.examTomorrow");
+  return t("home.examCountDown", { n: Math.ceil(diff / DAY_MS) });
+}
+
+function compactTimeRange(value: string): string {
+  return value.replace(/\s*-\s*/g, "-");
+}
+
 function getGreetingSlot(nowMs: number): GreetingSlot {
   const hour = new Date(nowMs).getHours();
   const match = GREETING_SLOTS.find((g) =>
@@ -142,6 +164,9 @@ export default function HomeScreen() {
   const { width: screenWidth } = useWindowDimensions();
   const courses = useCourseStore((s) => s.courses);
   const termStart = useCourseStore((s) => s.termStart);
+  const exams = useExamStore((s) => s.exams);
+  const examTerm = useExamStore((s) => s.term);
+  const clearExamData = useExamStore((s) => s.clearExamData);
   const hasUpdate = useUpdateStore((s) => s.hasUpdate);
   const openUpdateModal = useUpdateStore((s) => s.openModal);
   const colorPalette = useScheduleStore((s) => s.colorPalette);
@@ -157,6 +182,33 @@ export default function HomeScreen() {
 
   // 按分钟刷新，驱动倒计时 / 已结束状态 / 问候语随时间更新
   const nowMs = useMinuteNow();
+  useEffect(() => {
+    if (
+      shouldClearExamDataForTerm({
+        term: examTerm,
+        exams,
+        termStart,
+      })
+    ) {
+      clearExamData();
+    }
+  }, [clearExamData, examTerm, exams, termStart]);
+
+  const nextExam = useMemo(
+    () =>
+      exams
+        .filter((exam) => {
+          if (!isExamInTerm(exam, termStart)) return false;
+          const startMs = Date.parse(exam.startAt);
+          const endMs = Date.parse(exam.endAt);
+          if (!Number.isNaN(endMs) && endMs < nowMs) return false;
+          if (Number.isNaN(startMs)) return true;
+          return startMs - nowMs <= HOME_EXAM_LOOKAHEAD_MS;
+        })
+        .sort((a, b) => Date.parse(a.startAt) - Date.parse(b.startAt))[0] ??
+      null,
+    [exams, nowMs, termStart],
+  );
 
   const greetingSlot = getGreetingSlot(nowMs);
   const greeting = {
@@ -414,6 +466,19 @@ export default function HomeScreen() {
             announcements={activeAnnouncements}
             isDark={isDark}
           />
+
+          {nextExam && (
+            <NextExamCard
+              exam={nextExam}
+              countdownText={getExamCountdownLabel(nextExam, nowMs, t)}
+              isDark={isDark}
+              hasBg={hasBgImage}
+              onPress={() => {
+                haptic();
+                router.push("/exam");
+              }}
+            />
+          )}
 
           <View
             className={`mx-6 my-5 h-px ${
@@ -795,48 +860,173 @@ const CourseCard = memo(function CourseCard({
             </View>
           )}
         </View>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            marginTop: 5,
-            gap: 12,
-          }}
-        >
-          <ChipInfo
-            icon="time-outline"
-            text={formatCourseSectionTimeRange(
+        <CardMetaRow
+          color={subColor}
+          timeText={compactTimeRange(
+            formatCourseSectionTimeRange(
               course.sectionStart,
               course.sectionEnd,
-            )}
-            color={subColor}
-          />
-          <ChipInfo
-            icon="location-outline"
-            text={course.room}
-            color={subColor}
-          />
-        </View>
+            ),
+          )}
+          placeText={course.room}
+          style={{ marginTop: 5 }}
+          timeWidth={80}
+        />
       </View>
     </Pressable>
   );
 });
 
-function ChipInfo({
-  icon,
-  text,
-  color,
+const NextExamCard = memo(function NextExamCard({
+  exam,
+  countdownText,
+  isDark,
+  hasBg,
+  onPress,
 }: {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
-  text: string;
+  exam: Exam;
+  countdownText: string;
+  isDark: boolean;
+  hasBg: boolean;
+  onPress: () => void;
+}) {
+  const cardBg = hasBg
+    ? isDark
+      ? "rgba(28,28,30,0.88)"
+      : "rgba(255,255,255,0.92)"
+    : isDark
+      ? "rgba(255,255,255,0.04)"
+      : "rgba(0,0,0,0.025)";
+  const primary = isDark ? "#f5f5f5" : "#1c1c1e";
+  const secondary = isDark ? "#a3a3a3" : "#737373";
+  const t = useT();
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        marginHorizontal: 24,
+        marginTop: activeSpacing(hasBg),
+        borderRadius: 12,
+        backgroundColor: cardBg,
+        borderWidth: hasBg ? StyleSheet.hairlineWidth : 0,
+        borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.08)",
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        opacity: pressed ? 0.65 : 1,
+        gap: 8,
+      })}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <Ionicons name="document-text-outline" size={16} color="#3b82f6" />
+        <Text
+          style={{ flex: 1, fontSize: 13, fontWeight: "700", color: "#3b82f6" }}
+        >
+          {t("home.nextExam")}
+        </Text>
+        {!!countdownText && (
+          <View
+            style={{
+              borderRadius: 999,
+              backgroundColor: isDark
+                ? "rgba(59,130,246,0.16)"
+                : "rgba(59,130,246,0.1)",
+              paddingHorizontal: 8,
+              paddingVertical: 2,
+            }}
+          >
+            <Text style={{ fontSize: 11, fontWeight: "700", color: "#3b82f6" }}>
+              {countdownText}
+            </Text>
+          </View>
+        )}
+      </View>
+      <Text
+        style={{ fontSize: 15, fontWeight: "700", color: primary }}
+        numberOfLines={1}
+      >
+        {exam.courseName}
+      </Text>
+      <CardMetaRow
+        color={secondary}
+        timeText={`${exam.date.slice(5).replace("-", "/")} ${exam.startTime}`}
+        placeText={exam.place}
+        timeWidth={80}
+      />
+    </Pressable>
+  );
+});
+
+function activeSpacing(hasBg: boolean): number {
+  return hasBg ? 8 : 2;
+}
+
+function CardMetaRow({
+  color,
+  timeText,
+  placeText,
+  style,
+  timeWidth,
+}: {
   color: string;
+  timeText: string;
+  placeText: string;
+  style?: { marginTop?: number };
+  timeWidth: number;
 }) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
-      <Ionicons name={icon} size={12} color={color} />
-      <Text style={{ fontSize: 12, color }} numberOfLines={1}>
-        {text}
-      </Text>
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        width: "100%",
+        minWidth: 0,
+        gap: 12,
+        ...style,
+      }}
+    >
+      <View
+        style={{
+          width: timeWidth,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 3,
+          flexShrink: 0,
+        }}
+      >
+        <Ionicons name="time-outline" size={12} color={color} />
+        <Text
+          style={{
+            flex: 1,
+            minWidth: 0,
+            fontSize: 12,
+            color,
+            fontVariant: ["tabular-nums"],
+          }}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.85}
+        >
+          {timeText}
+        </Text>
+      </View>
+      <View
+        style={{
+          flex: 1,
+          minWidth: 0,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 3,
+        }}
+      >
+        <Ionicons name="location-outline" size={12} color={color} />
+        <Text
+          style={{ flex: 1, minWidth: 0, fontSize: 12, color }}
+          numberOfLines={1}
+        >
+          {placeText}
+        </Text>
+      </View>
     </View>
   );
 }
