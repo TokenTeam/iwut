@@ -182,13 +182,27 @@ class ScheduleWidget : AppWidgetProvider() {
                 .filter { it.day == today && it.weekStart <= week && it.weekEnd >= week }
                 .map { ScheduleData.parseTimeToMinutes(it.endTime) }
                 .filter { it > nowMin }
-                .minOrNull() ?: return
+                .minOrNull()
 
-            val alarmTime = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, nextEndMin / 60)
-                set(Calendar.MINUTE, nextEndMin % 60)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
+            // Refresh exactly when today's next class ends; once today's classes
+            // are all over, fall back to the next local midnight so the date /
+            // weekday labels and the "tomorrow" courses roll over promptly
+            // instead of waiting for the ~30min periodic update.
+            val alarmTime = if (nextEndMin != null) {
+                Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, nextEndMin / 60)
+                    set(Calendar.MINUTE, nextEndMin % 60)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+            } else {
+                Calendar.getInstance().apply {
+                    add(Calendar.DAY_OF_YEAR, 1)
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 1)
+                    set(Calendar.MILLISECOND, 0)
+                }
             }
 
             val intent = Intent(context, ScheduleWidget::class.java).apply {

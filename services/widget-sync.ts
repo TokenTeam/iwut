@@ -53,14 +53,17 @@ export async function syncWidgetData(): Promise<void> {
   const { courses, termStart } = useCourseStore.getState();
   if (!termStart || courses.length === 0) return;
 
+  // Coerce every field to a non-null primitive. The native widget decodes
+  // into non-optional Swift types; a stray null/undefined here would otherwise
+  // fail decoding and blank the widget.
   const widgetCourses: WidgetCourse[] = courses.map((c) => ({
-    name: c.name,
-    room: c.room,
-    day: c.day,
-    weekStart: c.weekStart,
-    weekEnd: c.weekEnd,
-    sectionStart: c.sectionStart,
-    sectionEnd: c.sectionEnd,
+    name: c.name ?? "",
+    room: c.room ?? "",
+    day: c.day ?? 0,
+    weekStart: c.weekStart ?? 0,
+    weekEnd: c.weekEnd ?? 0,
+    sectionStart: c.sectionStart ?? 0,
+    sectionEnd: c.sectionEnd ?? 0,
     startTime: SECTION_TIMES[c.sectionStart]?.[0] ?? "",
     endTime: SECTION_TIMES[c.sectionEnd]?.[1] ?? "",
   }));
