@@ -119,6 +119,9 @@
     "statusOngoing": "Ongoing",
     "statusFinished": "Finished",
     "statusUnknown": "Unknown",
+    "countdownToday": "Today",
+    "countdownTomorrow": "Tomorrow",
+    "countdownDays": "In {n} days",
     "seatNo": "Seat",
     "seatPending": "Pending",
     "noPlace": "Place pending",
@@ -130,7 +133,8 @@
     "emptyCurrentSub": "No exams in this category for the current term",
     "emptyNotArranged": "No unscheduled exams",
     "emptyNotArrangedSub": "All courses are arranged or do not need exams",
-    "disclaimer": "For reference only. The academic system is authoritative."
+    "disclaimer": "For reference only. The academic system is authoritative.",
+    "reminderEntry": "Exam reminder settings"
   },
   "schedule": {
     "weekday": {

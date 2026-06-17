@@ -119,6 +119,9 @@
     "statusOngoing": "进行中",
     "statusFinished": "已完成",
     "statusUnknown": "未知",
+    "countdownToday": "今天",
+    "countdownTomorrow": "明天",
+    "countdownDays": "{n} 天后",
     "seatNo": "座位号",
     "seatPending": "暂未公布",
     "noPlace": "地点暂未公布",
@@ -130,7 +133,8 @@
     "emptyCurrentSub": "当前学期没有这一类考试",
     "emptyNotArranged": "暂无未安排考试",
     "emptyNotArrangedSub": "当前学期课程都已有安排或无需考试",
-    "disclaimer": "仅供参考，请以教务系统为准"
+    "disclaimer": "仅供参考，请以教务系统为准",
+    "reminderEntry": "考试提醒设置"
   },
   "schedule": {
     "weekday": {

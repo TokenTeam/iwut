@@ -17,19 +17,20 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { getDayLabels } from "@/constants/weekdays";
-import {
-  AnimatedPagerView,
-  usePagerPosition,
-} from "@/hooks/use-pager-position";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useMinuteNow } from "@/hooks/use-minute-now";
+import {
+  AnimatedPagerView,
+  usePagerPosition,
+} from "@/hooks/use-pager-position";
 import { type TKey, useT } from "@/lib/i18n";
 import { isExamInTerm, shouldClearExamDataForTerm } from "@/services/exam-term";
 import { useCourseStore } from "@/store/course";
 import type { Exam, ExamStatus, NotArrangedExamCourse } from "@/store/exam";
 import { useExamStore } from "@/store/exam";
+import { useSettingsStore } from "@/store/settings";
 
 type ExamTab = "upcoming" | "finished" | "notArranged";
 
@@ -83,6 +84,27 @@ function statusLabel(
   return t(key[status]);
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function countdownLabel(
+  startAt: string,
+  nowMs: number,
+  t: ReturnType<typeof useT>,
+): string | null {
+  const startMs = Date.parse(startAt);
+  if (Number.isNaN(startMs)) return null;
+
+  const startDay = new Date(startMs);
+  startDay.setHours(0, 0, 0, 0);
+  const today = new Date(nowMs);
+  today.setHours(0, 0, 0, 0);
+
+  const diffDays = Math.round((startDay.getTime() - today.getTime()) / DAY_MS);
+  if (diffDays <= 0) return t("exam.countdownToday");
+  if (diffDays === 1) return t("exam.countdownTomorrow");
+  return t("exam.countdownDays", { n: diffDays });
+}
+
 function MetaRow({
   icon,
   text,
@@ -110,11 +132,13 @@ function StatusPill({
   rawStatus,
   isDark,
   t,
+  label,
 }: {
   status: ExamStatus;
   rawStatus: string;
   isDark: boolean;
   t: ReturnType<typeof useT>;
+  label?: string;
 }) {
   const { accent, soft } = statusColor(status, isDark);
   return (
@@ -123,7 +147,7 @@ function StatusPill({
       style={{ backgroundColor: soft }}
     >
       <Text className="text-[11px] font-bold" style={{ color: accent }}>
-        {statusLabel(status, rawStatus, t)}
+        {label ?? statusLabel(status, rawStatus, t)}
       </Text>
     </View>
   );
@@ -168,16 +192,24 @@ function DateBadge({
 function ExamCard({
   exam,
   isDark,
+  nowMs,
   t,
 }: {
   exam: Exam;
   isDark: boolean;
+  nowMs: number;
   t: ReturnType<typeof useT>;
 }) {
   const { accent, soft } = statusColor(exam.status, isDark);
   const date = parseExamDate(exam.date);
   const timeRange = `${exam.startTime}-${exam.endTime}`;
   const timeText = date?.weekday ? `${date.weekday} ${timeRange}` : timeRange;
+  const showCountdown =
+    exam.status === "upcoming" &&
+    (!exam.rawStatus || /^[0-2]$/.test(exam.rawStatus));
+  const pillLabel = showCountdown
+    ? (countdownLabel(exam.startAt, nowMs, t) ?? undefined)
+    : undefined;
   return (
     <View className="flex-row gap-3 rounded-2xl bg-white p-4 dark:bg-neutral-800">
       <DateBadge parts={date} accent={accent} soft={soft} />
@@ -205,6 +237,7 @@ function ExamCard({
             rawStatus={exam.rawStatus}
             isDark={isDark}
             t={t}
+            label={pillLabel}
           />
         </View>
 
@@ -386,6 +419,7 @@ export default function ExamScreen() {
   const importedAt = useExamStore((s) => s.importedAt);
   const clearExamData = useExamStore((s) => s.clearExamData);
   const termStart = useCourseStore((s) => s.termStart);
+  const examReminder = useSettingsStore((s) => s.examReminder);
   const [tab, setTab] = useState<ExamTab>("upcoming");
 
   const nowMs = useMinuteNow();
@@ -437,16 +471,25 @@ export default function ExamScreen() {
 
   const goToPage = useCallback(
     (index: number) => {
+      const next = TAB_KEYS[index]?.key;
       haptic();
+      if (next) setTab(next);
       pagerRef.current?.setPage(index);
     },
     [haptic],
   );
 
-  const handlePageSelected = useCallback((e: PagerViewOnPageSelectedEvent) => {
-    const next = TAB_KEYS[e.nativeEvent.position]?.key;
-    if (next) setTab(next);
-  }, []);
+  const handlePageSelected = useCallback(
+    (e: PagerViewOnPageSelectedEvent) => {
+      const next = TAB_KEYS[e.nativeEvent.position]?.key;
+      if (!next) return;
+      setTab((prev) => {
+        if (prev !== next) haptic();
+        return next;
+      });
+    },
+    [haptic],
+  );
 
   const hasAnyData = currentTermExams.length > 0 || notArranged.length > 0;
 
@@ -477,6 +520,24 @@ export default function ExamScreen() {
                   : t("exam.notImported")}
               </Text>
             </View>
+            <Pressable
+              className="p-1 active:opacity-60"
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t("exam.reminderEntry")}
+              onPress={() => {
+                haptic();
+                router.push("/settings");
+              }}
+            >
+              <Ionicons
+                name={examReminder ? "notifications" : "notifications-outline"}
+                size={22}
+                color={
+                  examReminder ? "#3b82f6" : isDark ? "#525252" : "#a3a3a3"
+                }
+              />
+            </Pressable>
           </View>
 
           <Pressable
@@ -521,7 +582,13 @@ export default function ExamScreen() {
         <ExamListPage key="upcoming">
           {upcoming.length > 0 ? (
             upcoming.map((exam) => (
-              <ExamCard key={exam.id} exam={exam} isDark={isDark} t={t} />
+              <ExamCard
+                key={exam.id}
+                exam={exam}
+                isDark={isDark}
+                nowMs={nowMs}
+                t={t}
+              />
             ))
           ) : (
             <EmptyState
@@ -540,7 +607,13 @@ export default function ExamScreen() {
         <ExamListPage key="finished">
           {finished.length > 0 ? (
             finished.map((exam) => (
-              <ExamCard key={exam.id} exam={exam} isDark={isDark} t={t} />
+              <ExamCard
+                key={exam.id}
+                exam={exam}
+                isDark={isDark}
+                nowMs={nowMs}
+                t={t}
+              />
             ))
           ) : (
             <EmptyState
