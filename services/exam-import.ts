@@ -124,6 +124,10 @@ function normalizeStatus(value: unknown): ExamStatus {
   return "unknown";
 }
 
+function normalizeExamClock(value: string): string {
+  return value.replace(/^(\d):/, "0$1:");
+}
+
 function parseExamTime(
   value: unknown,
 ): Pick<Exam, "date" | "startTime" | "endTime" | "startAt" | "endAt"> {
@@ -140,8 +144,8 @@ function parseExamTime(
   const year = match[1];
   const month = match[2].padStart(2, "0");
   const day = match[3].padStart(2, "0");
-  const startTime = match[4];
-  const endTime = match[5];
+  const startTime = normalizeExamClock(match[4]);
+  const endTime = normalizeExamClock(match[5]);
   const date = `${year}-${month}-${day}`;
   return {
     date,

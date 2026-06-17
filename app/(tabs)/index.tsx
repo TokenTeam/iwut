@@ -30,6 +30,7 @@ import { buildColorMap, getCourseColor } from "@/lib/course-colors";
 import {
   getCurrentDayOfWeek,
   getCurrentWeek,
+  getShanghaiDateIndex,
   getShanghaiMinutesOfDay,
   getTomorrowDayOfWeek,
   getTomorrowWeek,
@@ -133,10 +134,10 @@ function getExamCountdownLabel(
 ) {
   const startMs = Date.parse(exam.startAt);
   if (Number.isNaN(startMs)) return "";
-  const diff = startMs - nowMs;
-  if (diff < DAY_MS) return t("home.examToday");
-  if (diff < DAY_MS * 2) return t("home.examTomorrow");
-  return t("home.examCountDown", { n: Math.ceil(diff / DAY_MS) });
+  const dayDiff = getShanghaiDateIndex(startMs) - getShanghaiDateIndex(nowMs);
+  if (dayDiff <= 0) return t("home.examToday");
+  if (dayDiff === 1) return t("home.examTomorrow");
+  return t("home.examCountDown", { n: dayDiff });
 }
 
 function compactTimeRange(value: string): string {
