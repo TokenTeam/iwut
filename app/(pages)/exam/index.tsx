@@ -527,7 +527,10 @@ export default function ExamScreen() {
               accessibilityLabel={t("exam.reminderEntry")}
               onPress={() => {
                 haptic();
-                router.push("/settings");
+                router.push({
+                  pathname: "/settings",
+                  params: { highlight: "examReminder" },
+                });
               }}
             >
               <Ionicons

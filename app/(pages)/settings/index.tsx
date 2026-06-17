@@ -3,7 +3,7 @@ import Constants from "expo-constants";
 import * as Device from "expo-device";
 import { Directory, File, Paths } from "expo-file-system";
 import { Image } from "expo-image";
-import { Stack } from "expo-router";
+import { Stack, useLocalSearchParams } from "expo-router";
 import * as Sharing from "expo-sharing";
 import { useRef, useState } from "react";
 import {
@@ -41,6 +41,7 @@ const EMPTY_WEBVIEW_HTML = "<!doctype html><html><body></body></html>";
 export default function SettingsScreen() {
   useMarkRouteInteractive();
   const t = useT();
+  const { highlight } = useLocalSearchParams<{ highlight?: string }>();
   const hapticFeedback = useSettingsStore((s) => s.hapticFeedback);
   const setHapticFeedback = useSettingsStore((s) => s.setHapticFeedback);
   const openCourseOnLaunch = useSettingsStore((s) => s.openCourseOnLaunch);
@@ -334,6 +335,7 @@ export default function SettingsScreen() {
             iconBg="#FF2D55"
             label={t("settings.examReminder")}
             showArrow={false}
+            highlight={highlight === "examReminder"}
             right={
               <Switch
                 value={examReminder}

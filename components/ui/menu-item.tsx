@@ -1,7 +1,15 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
-import { Children, ComponentProps, ReactNode } from "react";
+import { Children, ComponentProps, ReactNode, useEffect } from "react";
 import { Pressable, Text, View } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors } from "@/constants/theme";
@@ -18,6 +26,7 @@ export function MenuItem({
   right,
   showArrow,
   badge,
+  highlight,
 }: Readonly<{
   icon: ComponentProps<typeof MaterialIcons>["name"];
   iconBg?: string;
@@ -28,6 +37,7 @@ export function MenuItem({
   right?: ReactNode;
   showArrow?: boolean;
   badge?: boolean;
+  highlight?: boolean;
 }>) {
   const router = useRouter();
   const scheme = useColorScheme();
@@ -36,6 +46,26 @@ export function MenuItem({
 
   const hasCustomRight = right !== undefined;
   const shouldShowArrow = showArrow ?? !hasCustomRight;
+
+  // 从外部带参跳转时闪烁高亮，提示用户目标项位置
+  const flash = useSharedValue(0);
+  useEffect(() => {
+    if (!highlight) return;
+    flash.value = 0;
+    flash.value = withDelay(
+      400,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 340 }),
+          withTiming(0, { duration: 340 }),
+        ),
+        2,
+        false,
+      ),
+    );
+  }, [highlight, flash]);
+
+  const flashStyle = useAnimatedStyle(() => ({ opacity: flash.value }));
 
   const handlePress = () => {
     haptic();
@@ -50,6 +80,20 @@ export function MenuItem({
       className="flex-row items-center px-4 py-3 active:bg-neutral-100 dark:active:bg-neutral-700"
       onPress={handlePress}
     >
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          {
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            backgroundColor: "rgba(59,130,246,0.18)",
+          },
+          flashStyle,
+        ]}
+      />
       {iconBg ? (
         <View className="relative">
           <View
