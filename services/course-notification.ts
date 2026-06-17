@@ -10,13 +10,17 @@ import {
   createChannel,
   requestAuthorization,
   scheduleCountdown,
+  scheduleNotification,
   showCountdown,
 } from "@/modules/notification";
 import { SECTION_TIMES } from "@/services/course-time";
+import { buildExamReminders } from "@/services/exam-notification";
 import { useCourseStore } from "@/store/course";
+import { useExamStore } from "@/store/exam";
 import { useSettingsStore } from "@/store/settings";
 
 const CHANNEL_ID = "course_reminder";
+const EXAM_CHANNEL_ID = "exam_reminder";
 const BACKGROUND_TASK_NAME = "course-reminder-refresh";
 const SCHEDULE_WEEKS = 2;
 const LIVE_ACTIVITY_ID = 9999;
@@ -137,6 +141,11 @@ export async function initNotificationChannel(): Promise<void> {
       t("notif.channelName"),
       t("notif.channelDesc"),
     );
+    await createChannel(
+      EXAM_CHANNEL_ID,
+      t("notif.examChannelName"),
+      t("notif.examChannelDesc"),
+    );
   }
 }
 
@@ -206,18 +215,34 @@ export function scheduleWeeklyReminders(): Promise<void> {
 }
 
 async function doScheduleWeeklyReminders(): Promise<void> {
-  const { courseReminder, reminderMinutes } = useSettingsStore.getState();
+  const { courseReminder, examReminder, reminderMinutes } =
+    useSettingsStore.getState();
 
+  // 课程与考试提醒共用同一套通知 id 空间，先整体清空再统一重排，
+  // 避免两者各自 cancelAll 时互相误删。
   await cancelAll();
 
-  if (!courseReminder) return;
+  const scheduledIds = new Set<number>();
+  const now = Date.now();
 
+  if (courseReminder) {
+    await scheduleCourseReminders(scheduledIds, reminderMinutes, now);
+  }
+
+  if (examReminder) {
+    await scheduleExamReminders(scheduledIds, now);
+  }
+}
+
+async function scheduleCourseReminders(
+  scheduledIds: Set<number>,
+  reminderMinutes: number,
+  now: number,
+): Promise<void> {
   const { courses, termStart } = useCourseStore.getState();
   if (!termStart || courses.length === 0) return;
 
   const currentWeek = getCurrentWeek(termStart);
-  const now = Date.now();
-  const scheduledIds = new Set<number>();
 
   for (let offset = 0; offset < SCHEDULE_WEEKS; offset++) {
     const week = currentWeek + offset;
@@ -257,5 +282,27 @@ async function doScheduleWeeklyReminders(): Promise<void> {
         true,
       );
     }
+  }
+}
+
+async function scheduleExamReminders(
+  scheduledIds: Set<number>,
+  now: number,
+): Promise<void> {
+  const { exams } = useExamStore.getState();
+  if (exams.length === 0) return;
+
+  const items = buildExamReminders(exams, now);
+
+  for (const item of items) {
+    const id = reserveReminderId(hashReminderId(item.key), scheduledIds);
+
+    await scheduleNotification(
+      id,
+      EXAM_CHANNEL_ID,
+      item.title,
+      item.body,
+      item.triggerAtMs,
+    );
   }
 }

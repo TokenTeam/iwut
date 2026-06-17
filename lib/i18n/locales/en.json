@@ -232,6 +232,7 @@
     "openCourseOnLaunch": "Open Schedule on launch",
     "notification": "Notifications",
     "courseReminder": "Class reminder",
+    "examReminder": "Exam reminder",
     "reminderTime": "Reminder time",
     "reminderTimeMins": "{n} min before",
     "storage": "Storage",
@@ -459,6 +460,8 @@
   "notif": {
     "channelName": "Class reminders",
     "channelDesc": "Shows countdown notifications before class starts",
+    "examChannelName": "Exam reminders",
+    "examChannelDesc": "Reminds you the night before and one hour before each exam",
     "permissionDeniedTitle": "Can't enable class reminders",
     "permissionDeniedDesc": "Notifications are turned off. Allow notifications in system settings, then enable class reminders again.",
     "permissionDeniedCancel": "Not now",

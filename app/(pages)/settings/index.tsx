@@ -49,6 +49,8 @@ export default function SettingsScreen() {
   );
   const courseReminder = useSettingsStore((s) => s.courseReminder);
   const setCourseReminder = useSettingsStore((s) => s.setCourseReminder);
+  const examReminder = useSettingsStore((s) => s.examReminder);
+  const setExamReminder = useSettingsStore((s) => s.setExamReminder);
   const reminderMinutes = useSettingsStore((s) => s.reminderMinutes);
   const setReminderMinutes = useSettingsStore((s) => s.setReminderMinutes);
 
@@ -93,6 +95,17 @@ export default function SettingsScreen() {
     }, 50);
   };
 
+  // 课程或考试提醒任一开启就需要后台刷新，两者都关才注销。
+  const syncBackgroundRefresh = async () => {
+    const { courseReminder: cr, examReminder: er } =
+      useSettingsStore.getState();
+    if (cr || er) {
+      await registerBackgroundRefresh();
+    } else {
+      await unregisterBackgroundRefresh();
+    }
+  };
+
   const handleCourseReminderChange = async (value: boolean) => {
     if (value) {
       const granted = await ensureCourseNotificationPermission();
@@ -104,11 +117,21 @@ export default function SettingsScreen() {
 
     setCourseReminder(value);
     await scheduleWeeklyReminders();
+    await syncBackgroundRefresh();
+  };
+
+  const handleExamReminderChange = async (value: boolean) => {
     if (value) {
-      await registerBackgroundRefresh();
-    } else {
-      await unregisterBackgroundRefresh();
+      const granted = await ensureCourseNotificationPermission();
+      if (!granted) {
+        setPermissionSheetVisible(true);
+        return;
+      }
     }
+
+    setExamReminder(value);
+    await scheduleWeeklyReminders();
+    await syncBackgroundRefresh();
   };
 
   const handleReminderMinutesChange = async (value: number) => {
@@ -306,6 +329,18 @@ export default function SettingsScreen() {
               onPress={() => setReminderSheetVisible(true)}
             />
           )}
+          <MenuItem
+            icon="event-note"
+            iconBg="#FF2D55"
+            label={t("settings.examReminder")}
+            showArrow={false}
+            right={
+              <Switch
+                value={examReminder}
+                onValueChange={handleExamReminderChange}
+              />
+            }
+          />
         </MenuGroup>
 
         <MenuGroup title={t("settings.storage")}>

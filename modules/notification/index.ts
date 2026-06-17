@@ -26,6 +26,14 @@ interface NotificationNativeModule {
     autoDismiss: boolean,
   ): Promise<void>;
 
+  scheduleNotification?: (
+    id: number,
+    channelId: string,
+    title: string,
+    body: string,
+    triggerAtMs: number,
+  ) => Promise<void>;
+
   cancel(id: number): Promise<void>;
 
   cancelAll(): Promise<void>;
@@ -39,5 +47,7 @@ export const requestAuthorization =
   NativeModule.requestAuthorization ?? (async () => true);
 export const showCountdown = NativeModule.showCountdown;
 export const scheduleCountdown = NativeModule.scheduleCountdown;
+export const scheduleNotification =
+  NativeModule.scheduleNotification ?? (async () => {});
 export const cancel = NativeModule.cancel;
 export const cancelAll = NativeModule.cancelAll;

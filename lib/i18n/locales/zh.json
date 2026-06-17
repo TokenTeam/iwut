@@ -232,6 +232,7 @@
     "openCourseOnLaunch": "将课程页设为首页",
     "notification": "通知",
     "courseReminder": "课前提醒",
+    "examReminder": "考试提醒",
     "reminderTime": "提醒时间",
     "reminderTimeMins": "提前 {n} 分钟",
     "storage": "存储",
@@ -459,6 +460,8 @@
   "notif": {
     "channelName": "课程提醒",
     "channelDesc": "在课程开始前显示倒计时通知",
+    "examChannelName": "考试提醒",
+    "examChannelDesc": "在考试前一天晚上和考前一小时提醒",
     "permissionDeniedTitle": "无法开启课前提醒",
     "permissionDeniedDesc": "通知权限已关闭，请在系统设置中允许通知后再开启课前提醒。",
     "permissionDeniedCancel": "稍后再说",
