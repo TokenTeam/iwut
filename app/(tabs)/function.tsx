@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { type Href, router } from "expo-router";
 import { useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -27,8 +27,11 @@ type WebApp = {
   icon: React.ComponentProps<typeof Ionicons>["name"];
   labelKey: TKey;
   color: string;
-  uri: string;
-  lan: boolean;
+  // 应用内页面：走 expo-router 类型安全路由（即时跳转，也是 iwut:// 深链接的目标）
+  route?: Href;
+  // 外部网页：在内置浏览器打开
+  uri?: string;
+  lan?: boolean;
 };
 
 type Section = {
@@ -40,6 +43,12 @@ const SECTIONS: Section[] = [
   {
     titleKey: "fn.section.study",
     items: [
+      {
+        icon: "document-text-outline",
+        labelKey: "fn.app.exam",
+        color: "#3b82f6",
+        route: "/exam",
+      },
       {
         icon: "book-outline",
         labelKey: "fn.app.classroom",
@@ -103,7 +112,7 @@ const SECTIONS: Section[] = [
   },
 ];
 
-function openWebApp(uri: string) {
+function openWeb(uri: string) {
   router.push({ pathname: "/browser", params: { uri } });
 }
 
@@ -119,18 +128,22 @@ export default function FunctionScreen() {
   const [pendingLanApp, setPendingLanApp] = useState<WebApp | null>(null);
 
   const handleOpenApp = (app: WebApp) => {
+    if (app.route) {
+      router.push(app.route);
+      return;
+    }
+    if (!app.uri) return;
     if (app.lan) {
       setPendingLanApp(app);
       return;
     }
-    openWebApp(app.uri);
+    openWeb(app.uri);
   };
 
   const handleConfirmLan = () => {
-    if (!pendingLanApp) return;
-    const nextUri = pendingLanApp.uri;
+    const nextUri = pendingLanApp?.uri;
     setPendingLanApp(null);
-    openWebApp(nextUri);
+    if (nextUri) openWeb(nextUri);
   };
 
   return (

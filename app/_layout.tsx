@@ -56,6 +56,7 @@ import {
 import { syncWidgetData } from "@/services/widget-sync";
 import { useAnnouncementStore } from "@/store/announcements";
 import { useCourseStore } from "@/store/course";
+import { useExamStore } from "@/store/exam";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useSettingsStore } from "@/store/settings";
 import { useThemeStore } from "@/store/theme";
@@ -178,9 +179,16 @@ function RootLayout() {
         }, 400);
       }
     });
+    // 考试数据导入/清空后重排考试提醒（与课程提醒共用同一调度流程）
+    const unsubExam = useExamStore.subscribe((state, prev) => {
+      if (state.exams !== prev.exams) {
+        scheduleWeeklyReminders().catch(() => {});
+      }
+    });
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
       unsub();
+      unsubExam();
     };
   }, []);
 

@@ -21,13 +21,43 @@ class CountdownReceiver : BroadcastReceiver() {
         val channelId = intent.getStringExtra("channelId") ?: return
         val title = intent.getStringExtra("title") ?: return
         val body = intent.getStringExtra("body") ?: ""
-        val targetTimeMs = intent.getLongExtra("targetTimeMs", 0L)
-        val ongoing = intent.getBooleanExtra("ongoing", true)
-        val autoDismiss = intent.getBooleanExtra("autoDismiss", true)
+        val plain = intent.getBooleanExtra("plain", false)
 
-        showNotification(context, id, channelId, title, body, targetTimeMs, ongoing, autoDismiss)
+        if (plain) {
+            showPlainNotification(context, id, channelId, title, body)
+        } else {
+            val targetTimeMs = intent.getLongExtra("targetTimeMs", 0L)
+            val ongoing = intent.getBooleanExtra("ongoing", true)
+            val autoDismiss = intent.getBooleanExtra("autoDismiss", true)
+            showNotification(context, id, channelId, title, body, targetTimeMs, ongoing, autoDismiss)
+        }
 
         NotificationModule.removeTrackedId(context, id)
+    }
+
+    private fun showPlainNotification(
+        context: Context, id: Int, channelId: String,
+        title: String, body: String,
+    ) {
+        val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+        val contentIntent = PendingIntent.getActivity(
+            context, 0, launchIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(context, channelId)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setSmallIcon(R.drawable.ic_notification)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(contentIntent)
+            .setAutoCancel(true)
+            .build()
+
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.notify(id, notification)
     }
 
     private fun showNotification(

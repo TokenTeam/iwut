@@ -65,6 +65,11 @@ public class NotificationModule: Module {
             }
         }
 
+        AsyncFunction("scheduleNotification") { (id: Int, _: String, title: String, body: String, triggerAtMs: Double) in
+            let triggerDate = Date(timeIntervalSince1970: triggerAtMs / 1000.0)
+            self.showLocalNotification(id: id, title: title, body: body, triggerDate: triggerDate, autoDismiss: false)
+        }
+
         AsyncFunction("cancel") { (id: Int) in
             if #available(iOS 16.2, *) {
                 await self.endLiveActivity(id: id)
@@ -76,7 +81,7 @@ public class NotificationModule: Module {
             if #available(iOS 16.2, *) {
                 await self.endAllLiveActivities()
             }
-            self.cancelAllLocalNotifications()
+            await self.cancelAllLocalNotifications()
         }
     }
 
@@ -187,9 +192,24 @@ public class NotificationModule: Module {
         UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ["notification_\(id)"])
     }
 
-    private func cancelAllLocalNotifications() {
-        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
-        UNUserNotificationCenter.current().removeAllDeliveredNotifications()
+    private func cancelAllLocalNotifications() async {
+        let center = UNUserNotificationCenter.current()
+
+        let pending: [UNNotificationRequest] = await withCheckedContinuation { continuation in
+            center.getPendingNotificationRequests { continuation.resume(returning: $0) }
+        }
+        let pendingIds = pending.map { $0.identifier }.filter { $0.hasPrefix("notification_") }
+        if !pendingIds.isEmpty {
+            center.removePendingNotificationRequests(withIdentifiers: pendingIds)
+        }
+
+        let delivered: [UNNotification] = await withCheckedContinuation { continuation in
+            center.getDeliveredNotifications { continuation.resume(returning: $0) }
+        }
+        let deliveredIds = delivered.map { $0.request.identifier }.filter { $0.hasPrefix("notification_") }
+        if !deliveredIds.isEmpty {
+            center.removeDeliveredNotifications(withIdentifiers: deliveredIds)
+        }
     }
 
     private func getNotificationSettings() async -> UNNotificationSettings {

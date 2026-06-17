@@ -92,6 +92,10 @@ export function getShanghaiMinutesOfDay(ms: number): number {
   return view.getUTCHours() * 60 + view.getUTCMinutes();
 }
 
+export function getShanghaiDateIndex(ms: number): number {
+  return Math.floor((ms + SHANGHAI_OFFSET_MS) / DAY_MS);
+}
+
 export function getTermWeekMonthLabel(
   termStart: string,
   week: number,

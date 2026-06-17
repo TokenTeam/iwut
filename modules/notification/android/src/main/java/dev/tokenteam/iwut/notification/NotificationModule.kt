@@ -69,6 +69,32 @@ class NotificationModule : Module() {
             null
         }
 
+        AsyncFunction("scheduleNotification") { id: Int, channelId: String, title: String, body: String, triggerAtMs: Double ->
+            val context = appContext.reactContext ?: return@AsyncFunction null
+            val trigger = triggerAtMs.toLong()
+
+            val intent = Intent(context, CountdownReceiver::class.java).apply {
+                action = CountdownReceiver.ACTION_SHOW_COUNTDOWN
+                putExtra("id", id)
+                putExtra("channelId", channelId)
+                putExtra("title", title)
+                putExtra("body", body)
+                putExtra("plain", true)
+            }
+
+            val pendingIntent = PendingIntent.getBroadcast(
+                context, id, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            alarmManager?.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP, trigger, pendingIntent
+            )
+
+            trackScheduledId(context, id)
+            null
+        }
+
         AsyncFunction("cancel") { id: Int ->
             val context = appContext.reactContext ?: return@AsyncFunction null
             notificationManager?.cancel(id)
