@@ -9,7 +9,7 @@ const IS_DEV = !PROFILE || PROFILE === "development";
 const config: ExpoConfig = {
   name: IS_DEV ? "掌上吾理 Dev" : "掌上吾理 Pro",
   slug: "iwut",
-  version: "0.3.9",
+  version: "0.3.10",
   runtimeVersion: {
     policy: "appVersion",
   },

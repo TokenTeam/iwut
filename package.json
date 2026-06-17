@@ -1,7 +1,7 @@
 {
   "name": "iwut",
   "main": "expo-router/entry",
-  "version": "0.3.9",
+  "version": "0.3.10",
   "private": true,
   "license": "AGPL-3.0-or-later",
   "scripts": {
