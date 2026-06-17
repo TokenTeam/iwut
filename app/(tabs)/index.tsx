@@ -4,20 +4,14 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,
   LayoutChangeEvent,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
+import type PagerView from "react-native-pager-view";
+import { type PagerViewOnPageSelectedEvent } from "react-native-pager-view";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CourseDetailModal } from "@/components/layout/course-detail-modal";
@@ -28,6 +22,10 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useMinuteNow } from "@/hooks/use-minute-now";
+import {
+  AnimatedPagerView,
+  usePagerPosition,
+} from "@/hooks/use-pager-position";
 import { buildColorMap, getCourseColor } from "@/lib/course-colors";
 import {
   getCurrentDayOfWeek,
@@ -161,7 +159,6 @@ export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const haptic = useHaptics();
-  const { width: screenWidth } = useWindowDimensions();
   const courses = useCourseStore((s) => s.courses);
   const termStart = useCourseStore((s) => s.termStart);
   const exams = useExamStore((s) => s.exams);
@@ -297,48 +294,29 @@ export default function HomeScreen() {
     });
   }, []);
 
-  const pagerRef = useRef<ScrollView>(null);
-  const scrollProgress = useSharedValue(allTodayFinished ? 1 : 0);
-  const didInitialScroll = useRef(false);
+  const pagerRef = useRef<PagerView>(null);
+  const [initialPage] = useState(() => (allTodayFinished ? 1 : 0));
+  const { position, handler: pagerScrollHandler } =
+    usePagerPosition(initialPage);
 
-  useEffect(() => {
-    if (allTodayFinished && !didInitialScroll.current) {
-      didInitialScroll.current = true;
-      requestAnimationFrame(() => {
-        pagerRef.current?.scrollTo({ x: screenWidth, animated: false });
-      });
-    }
-  }, [allTodayFinished, screenWidth]);
-
-  const handlePagerScroll = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const progress = e.nativeEvent.contentOffset.x / screenWidth;
-      // eslint-disable-next-line react-hooks/immutability
-      scrollProgress.value = Math.max(0, Math.min(1, progress));
-    },
-    [screenWidth, scrollProgress],
-  );
-
-  const handlePagerMomentumEnd = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const page = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
+  const handlePageSelected = useCallback(
+    (e: PagerViewOnPageSelectedEvent) => {
+      const page = e.nativeEvent.position;
       setActiveTab((prev) => {
         if (prev !== page) haptic();
         return page;
       });
     },
-    [screenWidth, haptic],
+    [haptic],
   );
 
   const switchTab = useCallback(
     (tab: number) => {
       haptic();
       setActiveTab(tab);
-      // eslint-disable-next-line react-hooks/immutability
-      scrollProgress.value = withTiming(tab, { duration: 280 });
-      pagerRef.current?.scrollTo({ x: tab * screenWidth, animated: true });
+      pagerRef.current?.setPage(tab);
     },
-    [screenWidth, scrollProgress, haptic],
+    [haptic],
   );
 
   const [tabWidths, setTabWidths] = useState<[number, number]>([0, 0]);
@@ -353,7 +331,7 @@ export default function HomeScreen() {
 
   const TAB_GAP = 20;
   const underlineStyle = useAnimatedStyle(() => {
-    const p = scrollProgress.value;
+    const p = position.value;
     const w0 = tabWidths[0] || 60;
     const w1 = tabWidths[1] || 60;
     const width = w0 + (w1 - w0) * p;
@@ -625,18 +603,14 @@ export default function HomeScreen() {
                 </View>
               </View>
 
-              <ScrollView
+              <AnimatedPagerView
                 ref={pagerRef}
                 style={{ flex: 1 }}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onScroll={handlePagerScroll}
-                onMomentumScrollEnd={handlePagerMomentumEnd}
-                scrollEventThrottle={16}
-                contentContainerStyle={{ flexGrow: 1 }}
+                initialPage={initialPage}
+                onPageScroll={pagerScrollHandler as never}
+                onPageSelected={handlePageSelected}
               >
-                <View style={{ width: screenWidth, flex: 1 }}>
+                <View key="today" style={{ flex: 1 }}>
                   {hasCourses && todayCourses.length > 0 ? (
                     <FlatList
                       ref={courseScrollRef}
@@ -692,7 +666,7 @@ export default function HomeScreen() {
                   )}
                 </View>
 
-                <View style={{ width: screenWidth, flex: 1 }}>
+                <View key="tomorrow" style={{ flex: 1 }}>
                   {hasCourses && tomorrowCourses.length > 0 ? (
                     <FlatList
                       data={tomorrowCourses}
@@ -728,7 +702,7 @@ export default function HomeScreen() {
                     />
                   )}
                 </View>
-              </ScrollView>
+              </AnimatedPagerView>
             </>
           )}
         </View>

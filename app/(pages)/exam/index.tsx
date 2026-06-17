@@ -9,19 +9,18 @@ import {
   Text,
   View,
 } from "react-native";
-import PagerView, {
-  type PagerViewOnPageScrollEventData,
-  type PagerViewOnPageSelectedEvent,
-} from "react-native-pager-view";
+import type PagerView from "react-native-pager-view";
+import { type PagerViewOnPageSelectedEvent } from "react-native-pager-view";
 import Animated, {
   type SharedValue,
   useAnimatedStyle,
-  useEvent,
-  useHandler,
-  useSharedValue,
 } from "react-native-reanimated";
 
 import { getDayLabels } from "@/constants/weekdays";
+import {
+  AnimatedPagerView,
+  usePagerPosition,
+} from "@/hooks/use-pager-position";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
@@ -39,32 +38,6 @@ const TAB_KEYS: { key: ExamTab; label: TKey }[] = [
   { key: "finished", label: "exam.tabFinished" },
   { key: "notArranged", label: "exam.tabNotArranged" },
 ];
-
-const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
-
-// 在 UI 线程消费 PagerView 的 onPageScroll，用于驱动分段指示器跟手滑动
-function usePagerPosition() {
-  const position = useSharedValue(0);
-  const handlers = {
-    onPageScroll: (event: PagerViewOnPageScrollEventData) => {
-      "worklet";
-      position.value = event.position + event.offset;
-    },
-  };
-  const { doDependenciesDiffer } = useHandler(handlers, []);
-  const handler = useEvent<PagerViewOnPageScrollEventData>(
-    (event) => {
-      "worklet";
-      const { onPageScroll } = handlers;
-      if (onPageScroll && event.eventName.endsWith("onPageScroll")) {
-        onPageScroll(event);
-      }
-    },
-    ["onPageScroll"],
-    doDependenciesDiffer,
-  );
-  return { position, handler };
-}
 
 type ExamDateParts = { month: string; day: string; weekday: string };
 
