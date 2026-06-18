@@ -22,6 +22,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { MAX_SECTION, MAX_WEEK, weeksToRanges } from "@/lib/course-weeks";
 import { useT } from "@/lib/i18n";
+import { formatCourseSectionTimeRange } from "@/services/course-time";
 import { type Course, useCourseStore } from "@/store/course";
 
 interface TimeSlot {
@@ -621,6 +622,10 @@ function SlotCard({
   };
 
   const weeksLabel = formatWeeks(slot.weeks, notSelectedLabel, weeksSuffix);
+  const sectionTimeRange = formatCourseSectionTimeRange(
+    slot.sectionStart,
+    slot.sectionEnd,
+  );
   const summary = slot.room
     ? t("courseAdd.slotSummaryWithRoom", {
         weekday: dayOptions[slot.day - 1],
@@ -826,6 +831,7 @@ function SlotCard({
               start: slot.sectionStart,
               end: slot.sectionEnd,
             })}
+            {sectionTimeRange ? ` (${sectionTimeRange})` : ""}
           </Text>
           <View
             onStartShouldSetResponderCapture={() => {
