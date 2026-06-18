@@ -1,0 +1,36 @@
+name: Sync CNB
+
+on:
+  push:
+    branches:
+      - "**"
+    tags:
+      - "**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-cnb-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:${{ github.workspace }}" \
+            -w "${{ github.workspace }}" \
+            -e PLUGIN_TARGET_URL="https://cnb.cool/${{ github.repository }}" \
+            -e PLUGIN_AUTH_TYPE="https" \
+            -e PLUGIN_USERNAME="cnb" \
+            -e PLUGIN_PASSWORD="${{ secrets.CNB_SECRET }}" \
+            -e PLUGIN_FORCE="true" \
+            -e PLUGIN_PUSH_TAGS="false" \
+            tencentcom/git-sync

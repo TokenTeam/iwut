@@ -75,7 +75,8 @@ main:
             attachments:
               - "./iwut-*.apk"
             ttl: 7
-        - imports:
+        - if: '[ "$UPLOAD" = "true" ]'
+          imports:
             - https://cnb.cool/TokenTeam/secrets/-/blob/main/r2.yml
           script: |
             export BUN_INSTALL="$HOME/.bun"

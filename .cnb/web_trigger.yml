@@ -15,6 +15,15 @@ branch:
                 value: preview
               - name: Production
                 value: production
+          UPLOAD:
+            name: Upload to Cloudflare R2
+            type: switch
+            default: "false"
+            options:
+              - name: "Yes"
+                value: "true"
+              - name: "No"
+                value: "false"
   - reg: ^main$
     buttons:
       - name: OTA Update
