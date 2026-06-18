@@ -6,6 +6,7 @@ import { SvgXml } from "react-native-svg";
 import Toast from "react-native-toast-message";
 
 import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { useHaptics } from "@/hooks/use-haptics";
 import { useT } from "@/lib/i18n";
 import { QR_SAFE_BYTE_LIMIT, utf8ByteLength } from "@/lib/scan";
 
@@ -25,6 +26,7 @@ export function ScanCodeSheet({
   shareValue?: string;
 }>) {
   const t = useT();
+  const haptic = useHaptics();
   const link = shareValue ?? qrValue;
   const tooLarge = utf8ByteLength(qrValue) > QR_SAFE_BYTE_LIMIT;
 
@@ -63,6 +65,7 @@ export function ScanCodeSheet({
   }, [qrValue, tooLarge, visible]);
 
   const copy = async () => {
+    haptic();
     await Clipboard.setStringAsync(link);
     Toast.show({
       type: "success",
@@ -72,6 +75,7 @@ export function ScanCodeSheet({
   };
 
   const share = async () => {
+    haptic();
     await Share.share({ message: link });
   };
 

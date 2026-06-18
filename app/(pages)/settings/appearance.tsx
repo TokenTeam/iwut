@@ -8,6 +8,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { type Lang, useT } from "@/lib/i18n";
 import { useScheduleStore } from "@/store/schedule";
@@ -27,6 +28,7 @@ function isCropCancelled(error: unknown) {
 export default function AppearanceScreen() {
   useMarkRouteInteractive();
   const t = useT();
+  const haptic = useHaptics();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const scheme = useColorScheme();
   const iconColor = Colors[scheme === "dark" ? "dark" : "light"].icon;
@@ -54,6 +56,7 @@ export default function AppearanceScreen() {
   };
 
   const handlePickImage = async () => {
+    haptic();
     // 先关闭 BottomSheet，避免 expo-image-picker 在 RN Modal上下文
     // 调用 .launch() 触发 unregistered ActivityResultLauncher
     setShowBgPicker(false);
@@ -120,6 +123,7 @@ export default function AppearanceScreen() {
   };
 
   const handleRemoveBg = async () => {
+    haptic();
     await deleteBgFile(backgroundImageUri);
     setBackgroundImageUri(null);
     setShowBgPicker(false);
@@ -237,6 +241,7 @@ export default function AppearanceScreen() {
             key={opt.mode}
             className="flex-row items-center px-5 py-3.5 active:bg-neutral-100 dark:active:bg-neutral-700"
             onPress={() => {
+              haptic();
               setThemeMode(opt.mode);
               setShowThemePicker(false);
             }}
@@ -271,6 +276,7 @@ export default function AppearanceScreen() {
             key={opt.lang}
             className="flex-row items-center px-5 py-3.5 active:bg-neutral-100 dark:active:bg-neutral-700"
             onPress={() => {
+              haptic();
               setLanguage(opt.lang);
               setShowLangPicker(false);
             }}

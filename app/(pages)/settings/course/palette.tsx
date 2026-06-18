@@ -14,6 +14,7 @@ import {
   type ColorPalette,
   validateColorPalette,
 } from "@/constants/course-palettes";
+import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import {
@@ -91,6 +92,7 @@ function PaletteRow({
 export default function PaletteScreen() {
   useMarkRouteInteractive();
   const t = useT();
+  const haptic = useHaptics();
   const colorPalette = useScheduleStore((s) => s.colorPalette);
   const setColorPalette = useScheduleStore((s) => s.setColorPalette);
   const customPalettes = useScheduleStore((s) => s.customPalettes);
@@ -189,6 +191,7 @@ export default function PaletteScreen() {
   };
 
   const confirmDelete = () => {
+    haptic();
     if (!deleteTarget) return;
     if (colorPalette.name === deleteTarget) {
       setColorPalette(BUILTIN_PALETTES[0]);
@@ -283,7 +286,10 @@ export default function PaletteScreen() {
         <View className="mx-5 mb-2 flex-row gap-3">
           <Pressable
             className="flex-1 items-center rounded-xl bg-neutral-200 py-3 active:bg-neutral-300 dark:bg-neutral-700 dark:active:bg-neutral-600"
-            onPress={() => setDeleteTarget(null)}
+            onPress={() => {
+              haptic();
+              setDeleteTarget(null);
+            }}
           >
             <Text className="text-base font-medium text-neutral-600 dark:text-neutral-300">
               {t("common.cancel")}

@@ -120,6 +120,7 @@ export default function CourseScreen() {
   }));
 
   const doImport = (type: ImportType) => {
+    haptic();
     setShowTypePicker(false);
     setFabOpen(false);
     importerRef.current?.startImport(type);

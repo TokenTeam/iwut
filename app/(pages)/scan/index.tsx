@@ -233,6 +233,7 @@ function ScanResultSheet({
   onConfirm: () => void;
 }) {
   const t = useT();
+  const haptic = useHaptics();
   const invalid = result?.status === "invalid" ? result : null;
   const matched = result?.status === "matched" ? result : null;
   const title = matched?.preview.title ?? t("scan.invalidTitle");
@@ -270,7 +271,10 @@ function ScanResultSheet({
             <Pressable
               className="flex-1 items-center rounded-xl bg-neutral-200 py-3 active:bg-neutral-300 dark:bg-neutral-700 dark:active:bg-neutral-600"
               disabled={executing}
-              onPress={onClose}
+              onPress={() => {
+                haptic();
+                onClose();
+              }}
             >
               <Text className="text-base font-medium text-neutral-600 dark:text-neutral-300">
                 {t("scan.scanAgain")}
@@ -279,7 +283,10 @@ function ScanResultSheet({
             <Pressable
               className="flex-1 items-center rounded-xl bg-blue-500 py-3 active:bg-blue-600"
               disabled={executing}
-              onPress={onConfirm}
+              onPress={() => {
+                haptic();
+                onConfirm();
+              }}
             >
               <Text className="text-base font-medium text-white">
                 {executing ? t("common.loading") : matched.preview.confirmText}
@@ -304,7 +311,10 @@ function ScanResultSheet({
           <View className="mx-5 mb-2">
             <Pressable
               className="items-center rounded-xl bg-blue-500 py-3 active:bg-blue-600"
-              onPress={onClose}
+              onPress={() => {
+                haptic();
+                onClose();
+              }}
             >
               <Text className="text-base font-medium text-white">
                 {t("scan.scanAgain")}

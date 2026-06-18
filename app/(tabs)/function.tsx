@@ -19,6 +19,7 @@ import { TabBackground } from "@/components/layout/tab-background";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { IS_DEV } from "@/constants/is-dev";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { type TKey, useT } from "@/lib/i18n";
 import { useScheduleStore } from "@/store/schedule";
@@ -119,6 +120,7 @@ function openWeb(uri: string) {
 export default function FunctionScreen() {
   useMarkRouteInteractive();
   const t = useT();
+  const haptic = useHaptics();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const hasBgImage = useScheduleStore((s) => !!s.backgroundImageUri);
@@ -128,6 +130,7 @@ export default function FunctionScreen() {
   const [pendingLanApp, setPendingLanApp] = useState<WebApp | null>(null);
 
   const handleOpenApp = (app: WebApp) => {
+    haptic();
     if (app.route) {
       router.push(app.route);
       return;
@@ -171,7 +174,10 @@ export default function FunctionScreen() {
                       ? "rgba(255,255,255,0.06)"
                       : "rgba(0,0,0,0.04)",
                   }}
-                  onPress={() => setShowBrowser(true)}
+                  onPress={() => {
+                    haptic();
+                    setShowBrowser(true);
+                  }}
                 >
                   <Ionicons
                     name="globe-outline"

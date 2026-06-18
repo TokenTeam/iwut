@@ -23,6 +23,7 @@ import { WebView } from "react-native-webview";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
+import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
@@ -41,6 +42,7 @@ const EMPTY_WEBVIEW_HTML = "<!doctype html><html><body></body></html>";
 export default function SettingsScreen() {
   useMarkRouteInteractive();
   const t = useT();
+  const haptic = useHaptics();
   const { highlight } = useLocalSearchParams<{ highlight?: string }>();
   const hapticFeedback = useSettingsStore((s) => s.hapticFeedback);
   const setHapticFeedback = useSettingsStore((s) => s.setHapticFeedback);
@@ -146,6 +148,7 @@ export default function SettingsScreen() {
   };
 
   const handleCustomMinutesSubmit = () => {
+    haptic();
     const val = parseInt(customMinutes, 10);
     if (!val || val < 1 || val > 120) {
       Toast.show({

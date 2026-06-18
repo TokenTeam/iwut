@@ -364,7 +364,7 @@
     "scanImport": "Scan to import",
     "shareScanCode": "Create share code",
     "shareCodeTitle": "Palette share code",
-    "shareCodeDesc": "The other person can scan this with Scan to preview and import this schedule cell palette.",
+    "shareCodeDesc": "The other person can scan this with Scan to import the schedule palette.",
     "clipboardEmpty": "Clipboard is empty",
     "formatError": "Invalid palette format",
     "formatErrorSub": "Please verify the JSON format",

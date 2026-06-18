@@ -364,7 +364,7 @@
     "scanImport": "扫码导入",
     "shareScanCode": "生成分享码",
     "shareCodeTitle": "配色分享码",
-    "shareCodeDesc": "让对方用「扫一扫」扫描，即可预览并导入这套课表格子配色。",
+    "shareCodeDesc": "让对方用「扫一扫」扫描，即可导入课表配色。",
     "clipboardEmpty": "剪贴板为空",
     "formatError": "配色格式错误",
     "formatErrorSub": "请检查 JSON 格式是否正确",

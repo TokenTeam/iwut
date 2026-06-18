@@ -16,6 +16,7 @@ import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
@@ -25,6 +26,7 @@ import { useWlanStore } from "@/store/wlan";
 export default function WlanScreen() {
   useMarkRouteInteractive();
   const t = useT();
+  const haptic = useHaptics();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
   const hasSaved = useWlanStore((s) => s.hasSaved);
@@ -56,6 +58,7 @@ export default function WlanScreen() {
   }, [username]);
 
   const handleSave = async () => {
+    haptic();
     const trimmed = inputUser.trim();
     if (!trimmed || !inputPass) {
       Toast.show({
@@ -255,7 +258,7 @@ export default function WlanScreen() {
         </Text>
         <View
           className="mx-5 mb-3 h-11 flex-row items-center rounded-xl px-3"
-          style={{ backgroundColor: isDark ? "#262626" : "#f5f5f5" }}
+          style={{ backgroundColor: isDark ? "#333333" : "#f5f5f5" }}
         >
           <MaterialIcons
             name="person"
@@ -276,7 +279,7 @@ export default function WlanScreen() {
         </View>
         <View
           className="mx-5 mb-4 h-11 flex-row items-center rounded-xl px-3"
-          style={{ backgroundColor: isDark ? "#262626" : "#f5f5f5" }}
+          style={{ backgroundColor: isDark ? "#333333" : "#f5f5f5" }}
         >
           <MaterialIcons
             name="lock"
@@ -308,7 +311,10 @@ export default function WlanScreen() {
         <View className="mx-5 mb-2 flex-row gap-3">
           <Pressable
             className="flex-1 items-center rounded-xl bg-neutral-200 py-3 active:bg-neutral-300 dark:bg-neutral-700 dark:active:bg-neutral-600"
-            onPress={() => setSheetVisible(false)}
+            onPress={() => {
+              haptic();
+              setSheetVisible(false);
+            }}
           >
             <Text className="text-base font-medium text-neutral-600 dark:text-neutral-300">
               {t("wlan.cancel")}
