@@ -1,17 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
-  type BarcodeScanningResult,
-  CameraView,
-  useCameraPermissions,
+    type BarcodeScanningResult,
+    CameraView,
+    useCameraPermissions,
 } from "expo-camera";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Linking,
-  Pressable,
-  Text,
-  View,
+    ActivityIndicator,
+    Linking,
+    Pressable,
+    Text,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
@@ -127,21 +127,25 @@ export default function ScanScreen() {
           <View className="h-11 w-11" />
         </View>
 
-        <View className="items-center">
-          <View
-            style={{
-              width: 256,
-              height: 256,
-              borderWidth: 2,
-              borderColor: "rgba(255,255,255,0.88)",
-              borderRadius: 28,
-              backgroundColor: "rgba(0,0,0,0.08)",
-            }}
-          />
-          <Text className="mt-5 text-center text-sm text-white/85">
-            {t("scan.hint")}
-          </Text>
-        </View>
+        {permission?.granted ? (
+          <View className="items-center" pointerEvents="none">
+            <View
+              style={{
+                width: 256,
+                height: 256,
+                borderWidth: 2,
+                borderColor: "rgba(255,255,255,0.88)",
+                borderRadius: 28,
+                backgroundColor: "rgba(0,0,0,0.08)",
+              }}
+            />
+            <Text className="mt-5 text-center text-sm text-white/85">
+              {t("scan.hint")}
+            </Text>
+          </View>
+        ) : (
+          <View />
+        )}
 
         <View />
       </View>
