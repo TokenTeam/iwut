@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useHaptics } from "@/hooks/use-haptics";
 import { useT } from "@/lib/i18n";
@@ -32,6 +33,7 @@ export function HomeMenu({ isDark }: Readonly<{ isDark: boolean }>) {
   const openUpdateModal = useUpdateStore((s) => s.openModal);
 
   const { width: screenWidth } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const triggerRef = useRef<View>(null);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const pendingAction = useRef<(() => void) | null>(null);
@@ -39,7 +41,11 @@ export function HomeMenu({ isDark }: Readonly<{ isDark: boolean }>) {
   const open = () => {
     haptic();
     triggerRef.current?.measureInWindow((x, y, w, h) => {
-      setAnchor({ top: y + h + 8, right: Math.max(12, screenWidth - (x + w)) });
+      const topInset = Platform.OS === "android" ? insets.top : 0;
+      setAnchor({
+        top: y + h + 8 + topInset,
+        right: Math.max(12, screenWidth - (x + w)),
+      });
     });
   };
 
