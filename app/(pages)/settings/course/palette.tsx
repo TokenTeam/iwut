@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { Stack } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import Toast from "react-native-toast-message";
 
+import { ScanCodeSheet } from "@/components/scan/scan-code-sheet";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import {
@@ -15,6 +16,13 @@ import {
 } from "@/constants/course-palettes";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
+import {
+  buildSchedulePaletteScanEnvelope,
+  buildShareableSchedulePalette,
+  createScanUrl,
+  resolveScanAction,
+  SCHEDULE_PALETTE_SCAN_TYPE,
+} from "@/lib/scan";
 import { useScheduleStore } from "@/store/schedule";
 
 function PaletteRow({
@@ -91,11 +99,21 @@ export default function PaletteScreen() {
   const courseColorOverrides = useScheduleStore((s) => s.courseColorOverrides);
 
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [shareVisible, setShareVisible] = useState(false);
 
   const paletteName = (p: ColorPalette): string => {
     const key = BUILTIN_PALETTE_NAME_KEYS[p.name];
     return key ? t(key) : p.name;
   };
+
+  const shareablePalette = useMemo(
+    () => buildShareableSchedulePalette(colorPalette, courseColorOverrides),
+    [colorPalette, courseColorOverrides],
+  );
+  const shareEnvelope = useMemo(
+    () => buildSchedulePaletteScanEnvelope(shareablePalette),
+    [shareablePalette],
+  );
 
   const handleImport = async () => {
     try {
@@ -108,6 +126,32 @@ export default function PaletteScreen() {
         });
         return;
       }
+
+      const scanResult = resolveScanAction(text, { t });
+      if (
+        scanResult.status === "matched" &&
+        scanResult.envelope.type === SCHEDULE_PALETTE_SCAN_TYPE
+      ) {
+        try {
+          const next = await scanResult.handler.execute(scanResult.envelope, {
+            t,
+          });
+          Toast.show({
+            type: "success",
+            text1: next.title,
+            text2: next.description,
+            position: "bottom",
+          });
+        } catch {
+          Toast.show({
+            type: "error",
+            text1: t("scan.executeFailed"),
+            position: "bottom",
+          });
+        }
+        return;
+      }
+
       const data = JSON.parse(text);
       if (!validateColorPalette(data)) {
         Toast.show({
@@ -136,17 +180,7 @@ export default function PaletteScreen() {
   };
 
   const handleExport = async () => {
-    const exported: ColorPalette = {
-      ...colorPalette,
-      overrides: {
-        ...(colorPalette.overrides ?? {}),
-        ...courseColorOverrides,
-      },
-    };
-    if (Object.keys(exported.overrides!).length === 0) {
-      delete exported.overrides;
-    }
-    await Clipboard.setStringAsync(JSON.stringify(exported, null, 2));
+    await Clipboard.setStringAsync(JSON.stringify(shareablePalette, null, 2));
     Toast.show({
       type: "success",
       text1: t("palette.exported"),
@@ -218,6 +252,18 @@ export default function PaletteScreen() {
             onPress={handleImport}
           />
           <MenuItem
+            icon="qr-code-scanner"
+            iconBg="#5856D6"
+            label={t("palette.scanImport")}
+            href="/scan"
+          />
+          <MenuItem
+            icon="qr-code-2"
+            iconBg="#FF9500"
+            label={t("palette.shareScanCode")}
+            onPress={() => setShareVisible(true)}
+          />
+          <MenuItem
             icon="ios-share"
             iconBg="#34C759"
             label={t("palette.exportToClipboard")}
@@ -253,6 +299,15 @@ export default function PaletteScreen() {
           </Pressable>
         </View>
       </BottomSheet>
+
+      <ScanCodeSheet
+        visible={shareVisible}
+        onClose={() => setShareVisible(false)}
+        title={t("palette.shareCodeTitle")}
+        description={t("palette.shareCodeDesc")}
+        qrValue={JSON.stringify(shareEnvelope)}
+        shareValue={createScanUrl(shareEnvelope)}
+      />
     </>
   );
 }

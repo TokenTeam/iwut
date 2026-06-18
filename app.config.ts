@@ -87,6 +87,12 @@ const config: ExpoConfig = {
     "expo-web-browser",
     "expo-asset",
     "expo-image",
+    [
+      "expo-camera",
+      {
+        cameraPermission: "允许 $(PRODUCT_NAME) 访问你的相机",
+      },
+    ],
     "expo-secure-store",
     "expo-sharing",
     "expo-background-task",

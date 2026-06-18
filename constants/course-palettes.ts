@@ -175,7 +175,9 @@ export function validateColorPalette(data: unknown): data is ColorPalette {
   if (!obj.colors.every((c: unknown) => typeof c === "string")) return false;
   if (
     obj.overrides !== undefined &&
-    (typeof obj.overrides !== "object" || obj.overrides === null)
+    (typeof obj.overrides !== "object" ||
+      obj.overrides === null ||
+      !Object.values(obj.overrides).every((c) => typeof c === "string"))
   )
     return false;
   return true;

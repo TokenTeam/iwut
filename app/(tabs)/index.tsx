@@ -15,6 +15,7 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CourseDetailModal } from "@/components/layout/course-detail-modal";
+import { HomeMenu } from "@/components/layout/home-menu";
 import { TabBackground } from "@/components/layout/tab-background";
 import { AnnouncementBanner } from "@/components/ui/announcement-banner";
 import { getDayLabels } from "@/constants/weekdays";
@@ -49,7 +50,6 @@ import { useCourseStore } from "@/store/course";
 import type { Exam } from "@/store/exam";
 import { useExamStore } from "@/store/exam";
 import { useScheduleStore } from "@/store/schedule";
-import { useUpdateStore } from "@/store/update";
 
 type GreetingSlot = {
   start: number;
@@ -165,8 +165,6 @@ export default function HomeScreen() {
   const exams = useExamStore((s) => s.exams);
   const examTerm = useExamStore((s) => s.term);
   const clearExamData = useExamStore((s) => s.clearExamData);
-  const hasUpdate = useUpdateStore((s) => s.hasUpdate);
-  const openUpdateModal = useUpdateStore((s) => s.openModal);
   const colorPalette = useScheduleStore((s) => s.colorPalette);
   const courseColorOverrides = useScheduleStore((s) => s.courseColorOverrides);
   const hasBgImage = useScheduleStore((s) => !!s.backgroundImageUri);
@@ -398,27 +396,13 @@ export default function HomeScreen() {
           <View className="px-6 pb-2 pt-8">
             <View className="flex-row items-center justify-between">
               <Text
+                style={{ flexShrink: 1 }}
                 className="text-[32px] font-bold tracking-tight text-neutral-900 dark:text-neutral-50"
                 numberOfLines={1}
               >
                 {greeting.title}
               </Text>
-              {hasUpdate && (
-                <Pressable
-                  className="relative p-1 active:opacity-60"
-                  onPress={() => {
-                    haptic();
-                    openUpdateModal();
-                  }}
-                >
-                  <Ionicons
-                    name="arrow-up-circle-outline"
-                    size={24}
-                    color={isDark ? "#a3a3a3" : "#737373"}
-                  />
-                  <View className="absolute right-0.5 top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-red-500 dark:border-neutral-900" />
-                </Pressable>
-              )}
+              <HomeMenu isDark={isDark} />
             </View>
             <Text
               className={`mt-1.5 text-base ${
