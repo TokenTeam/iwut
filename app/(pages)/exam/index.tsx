@@ -582,79 +582,99 @@ export default function ExamScreen() {
         onPageScroll={pagerScrollHandler as never}
         onPageSelected={handlePageSelected}
       >
-        <ExamListPage key="upcoming">
-          {upcoming.length > 0 ? (
-            upcoming.map((exam) => (
-              <ExamCard
-                key={exam.id}
-                exam={exam}
+        <View
+          key="upcoming"
+          collapsable={false}
+          style={{ width: "100%", height: "100%" }}
+        >
+          <ExamListPage>
+            {upcoming.length > 0 ? (
+              upcoming.map((exam) => (
+                <ExamCard
+                  key={exam.id}
+                  exam={exam}
+                  isDark={isDark}
+                  nowMs={nowMs}
+                  t={t}
+                />
+              ))
+            ) : (
+              <EmptyState
+                icon="calendar-clear-outline"
+                title={
+                  hasAnyData ? t("exam.emptyUpcoming") : t("exam.emptyTitle")
+                }
+                subtitle={
+                  hasAnyData ? t("exam.emptyCurrentSub") : t("exam.emptySub")
+                }
                 isDark={isDark}
-                nowMs={nowMs}
-                t={t}
               />
-            ))
-          ) : (
-            <EmptyState
-              icon="calendar-clear-outline"
-              title={
-                hasAnyData ? t("exam.emptyUpcoming") : t("exam.emptyTitle")
-              }
-              subtitle={
-                hasAnyData ? t("exam.emptyCurrentSub") : t("exam.emptySub")
-              }
-              isDark={isDark}
-            />
-          )}
-        </ExamListPage>
+            )}
+          </ExamListPage>
+        </View>
 
-        <ExamListPage key="finished">
-          {finished.length > 0 ? (
-            finished.map((exam) => (
-              <ExamCard
-                key={exam.id}
-                exam={exam}
+        <View
+          key="finished"
+          collapsable={false}
+          style={{ width: "100%", height: "100%" }}
+        >
+          <ExamListPage>
+            {finished.length > 0 ? (
+              finished.map((exam) => (
+                <ExamCard
+                  key={exam.id}
+                  exam={exam}
+                  isDark={isDark}
+                  nowMs={nowMs}
+                  t={t}
+                />
+              ))
+            ) : (
+              <EmptyState
+                icon="checkmark-done-outline"
+                title={
+                  hasAnyData ? t("exam.emptyFinished") : t("exam.emptyTitle")
+                }
+                subtitle={
+                  hasAnyData ? t("exam.emptyCurrentSub") : t("exam.emptySub")
+                }
                 isDark={isDark}
-                nowMs={nowMs}
-                t={t}
               />
-            ))
-          ) : (
-            <EmptyState
-              icon="checkmark-done-outline"
-              title={
-                hasAnyData ? t("exam.emptyFinished") : t("exam.emptyTitle")
-              }
-              subtitle={
-                hasAnyData ? t("exam.emptyCurrentSub") : t("exam.emptySub")
-              }
-              isDark={isDark}
-            />
-          )}
-        </ExamListPage>
+            )}
+          </ExamListPage>
+        </View>
 
-        <ExamListPage key="notArranged">
-          {notArranged.length > 0 ? (
-            notArranged.map((item) => (
-              <NotArrangedCard
-                key={item.id}
-                item={item}
+        <View
+          key="notArranged"
+          collapsable={false}
+          style={{ width: "100%", height: "100%" }}
+        >
+          <ExamListPage>
+            {notArranged.length > 0 ? (
+              notArranged.map((item) => (
+                <NotArrangedCard
+                  key={item.id}
+                  item={item}
+                  isDark={isDark}
+                  t={t}
+                />
+              ))
+            ) : (
+              <EmptyState
+                icon="checkmark-done-outline"
+                title={
+                  hasAnyData ? t("exam.emptyNotArranged") : t("exam.emptyTitle")
+                }
+                subtitle={
+                  hasAnyData
+                    ? t("exam.emptyNotArrangedSub")
+                    : t("exam.emptySub")
+                }
                 isDark={isDark}
-                t={t}
               />
-            ))
-          ) : (
-            <EmptyState
-              icon="checkmark-done-outline"
-              title={
-                hasAnyData ? t("exam.emptyNotArranged") : t("exam.emptyTitle")
-              }
-              subtitle={
-                hasAnyData ? t("exam.emptyNotArrangedSub") : t("exam.emptySub")
-              }
-              isDark={isDark}
-            />
-          )}
-        </ExamListPage>
+            )}
+          </ExamListPage>
+        </View>
       </AnimatedPagerView>
     </View>
   );
@@ -668,6 +688,7 @@ function ExamListPage({ children }: { children: ReactNode }) {
         contentContainerStyle={{
           paddingHorizontal: 16,
           paddingBottom: 32,
+          flexGrow: 1,
           gap: 12,
         }}
         showsVerticalScrollIndicator={false}

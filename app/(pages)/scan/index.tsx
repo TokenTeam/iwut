@@ -1,17 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
-    type BarcodeScanningResult,
-    CameraView,
-    useCameraPermissions,
+  type BarcodeScanningResult,
+  CameraView,
+  useCameraPermissions,
 } from "expo-camera";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Linking,
-    Pressable,
-    Text,
-    View,
+  ActivityIndicator,
+  Linking,
+  Pressable,
+  Text,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
