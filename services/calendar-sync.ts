@@ -3,7 +3,8 @@ import {
   createCalendar,
   EntityTypes,
   type ExpoCalendar,
-  type ExpoCalendarEvent,
+  ExpoCalendarEvent,
+  Frequency,
   getCalendars,
   getDefaultCalendarSync,
   requestCalendarPermissions,
@@ -22,7 +23,7 @@ import { SECTION_TIMES } from "@/services/course-time";
 import { type Course, useCourseStore } from "@/store/course";
 import { useSettingsStore } from "@/store/settings";
 
-// Calendar entries are re-created on every sync, so we use the current locale
+// Calendar entries are re-created on every sync, so we read the current locale
 // at sync time rather than caching a value at module load.
 function getCalendarTitle(): string {
   return t("calSync.title");
@@ -47,6 +48,34 @@ function setStoredCalendarId(id: string | null): void {
     getMMKV().set(CALENDAR_ID_STORAGE_KEY, id);
   }
 }
+
+// Event ids we created in *external* (user-chosen) calendars. The app-owned
+// calendar is removed wholesale, but events written into a user's own calendar
+// must be deleted by their exact ids — never by title, which could wipe the
+// user's unrelated events that happen to share a course name.
+const SYNCED_EVENT_IDS_KEY = "calendar-sync.eventIds";
+
+function getStoredEventIds(): string[] {
+  const raw = getMMKV().getString(SYNCED_EVENT_IDS_KEY);
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter((x): x is string => typeof x === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function setStoredEventIds(ids: string[]): void {
+  if (ids.length === 0) {
+    getMMKV().remove(SYNCED_EVENT_IDS_KEY);
+  } else {
+    getMMKV().set(SYNCED_EVENT_IDS_KEY, JSON.stringify(ids));
+  }
+}
+
 const CALENDAR_COLOR = "#007AFF";
 // Android 上用作 ACCOUNT_NAME / OWNER_ACCOUNT 的固定标识，使用 ASCII 字符以
 // 避开部分 OEM Calendar Provider 对非 ASCII 账户名的隐式拒绝。
@@ -141,25 +170,88 @@ function formatEventDateForReport(value: unknown): string {
   return String(value);
 }
 
-// 同步与删除都是"先清理再重建/移除"的多步流程，必须串行执行，
+// ─── Writable calendar discovery ───────────────────────────────────
+
+export interface CalendarInfo {
+  id: string;
+  title: string;
+  color: string | undefined;
+  accountName: string;
+  accountType: string;
+  isLocal: boolean;
+  isPrimary: boolean;
+}
+
+export interface WritableCalendars {
+  /**
+   * Writable calendars to offer as sync targets. On Android only calendars
+   * flagged as the account's primary calendar are included (one per account),
+   * to avoid listing sub-calendars like holidays / birthdays. On iOS, where
+   * `isPrimary` is unavailable, all writable calendars are returned.
+   */
+  others: CalendarInfo[];
+}
+
+function toCalendarInfo(c: ExpoCalendar): CalendarInfo {
+  return {
+    id: c.id,
+    title: c.title || "—",
+    color: c.color ?? undefined,
+    accountName: c.source?.name ?? "",
+    accountType: String(c.source?.type ?? ""),
+    isLocal: !!c.source?.isLocalAccount,
+    isPrimary: !!c.isPrimary,
+  };
+}
+
+/**
+ * Special calendar ID used when the user chooses the app-created local calendar
+ * rather than an existing system calendar.
+ */
+export const APP_LOCAL_CALENDAR_ID = "__iwut_local__";
+
+export async function getWritableCalendars(): Promise<WritableCalendars> {
+  const all = await getCalendars(EntityTypes.EVENT);
+  const others = all
+    .filter((c) => {
+      if (!c.allowsModifications) return false;
+      // Android exposes `isPrimary`; keep only primary calendars so the list
+      // shows one entry per account instead of every sub-calendar.
+      if (Platform.OS === "android") return !!c.isPrimary;
+      // iOS has no `isPrimary`; offer all writable calendars.
+      return true;
+    })
+    .map(toCalendarInfo);
+  return { others };
+}
+
+// ─── Sync queue ────────────────────────────────────────────────────
+
+// 同步与删除都是“先清理再重建/移除”的多步流程，必须串行执行，
 // 否则课程变更连续触发时可能产生重复日历或残留事件。
 const calendarQueue = createTaskQueue();
 
-export function syncCoursesToCalendar(): Promise<{
+export interface SyncResult {
   success: boolean;
   count: number;
   failed: number;
   error?: string;
-}> {
-  return calendarQueue(doSyncCoursesToCalendar);
 }
 
-async function doSyncCoursesToCalendar(): Promise<{
-  success: boolean;
-  count: number;
-  failed: number;
-  error?: string;
-}> {
+/**
+ * Sync courses to specified calendars (by their IDs).
+ * When `targetCalendarIds` is empty / undefined the legacy behavior is used:
+ * create a dedicated app calendar and write there.
+ */
+export function syncCoursesToCalendar(
+  targetCalendarIds?: string[],
+): Promise<SyncResult> {
+  return calendarQueue(() => doSyncCoursesToCalendar(targetCalendarIds));
+}
+
+async function doSyncCoursesToCalendar(
+  targetCalendarIds?: string[],
+): Promise<SyncResult> {
   const hasPermission = await requestCalendarPermission();
   if (!hasPermission) {
     return {
@@ -186,32 +278,80 @@ async function doSyncCoursesToCalendar(): Promise<{
   const reminderOffset =
     Platform.OS === "android" ? reminderMinutes : -reminderMinutes;
 
-  // 每次同步先彻底清理旧日历再重建
+  // Normalize: replace the sentinel with null to trigger legacy path
+  const hasLocalSentinel = targetCalendarIds?.includes(APP_LOCAL_CALENDAR_ID);
+  const externalIds =
+    targetCalendarIds?.filter((id) => id !== APP_LOCAL_CALENDAR_ID) ?? [];
+  const useTargets = targetCalendarIds && targetCalendarIds.length > 0;
+
+  // ── Clean up old events ──────────────────────────────────────────
+  // Always clean up the legacy app-owned calendar (deleting the whole calendar
+  // removes its events with it).
   const stale = await findAppCalendars();
   for (const cal of stale) {
     await deleteCalendarSafe(cal);
   }
   setStoredCalendarId(null);
 
-  let calendar: ExpoCalendar | null = null;
+  // Remove events we previously wrote into the user's own (external) calendars,
+  // matched by their exact ids so unrelated user events are never touched.
+  await deleteStoredEvents();
 
-  try {
-    calendar = await createAppCalendar();
-    setStoredCalendarId(calendar.id);
+  // ── Resolve target calendars ─────────────────────────────────────
+  // `external` distinguishes the user's own calendars (whose events we must
+  // track + delete by id) from the disposable app-owned calendar.
+  const targets: { cal: ExpoCalendar; external: boolean }[] = [];
 
-    if (Platform.OS === "android") {
-      await new Promise((r) => setTimeout(r, 200));
+  // If user chose the app-local calendar (or legacy mode with no args)
+  if (hasLocalSentinel || !useTargets) {
+    try {
+      const calendar = await createAppCalendar();
+      setStoredCalendarId(calendar.id);
+      targets.push({ cal: calendar, external: false });
+      if (Platform.OS === "android") {
+        await new Promise((r) => setTimeout(r, 200));
+      }
+    } catch (e) {
+      reportError(e, { module: "calendar-sync", platform: Platform.OS });
+      const msg = e instanceof Error ? e.message : t("calSync.errUnknown");
+      return { success: false, count: 0, failed: 0, error: msg };
     }
+  }
 
-    let count = 0;
-    let failed = 0;
-    let reported = false;
+  // Resolve external calendar targets
+  if (externalIds.length > 0) {
+    const all = await getCalendars(EntityTypes.EVENT);
+    for (const c of all) {
+      if (externalIds.includes(c.id) && c.allowsModifications) {
+        targets.push({ cal: c, external: true });
+      }
+    }
+  }
+
+  if (targets.length === 0) {
+    return {
+      success: false,
+      count: 0,
+      failed: 0,
+      error: t("calSync.errWriteFail"),
+    };
+  }
+
+  // ── Write events ─────────────────────────────────────────────────
+  let count = 0;
+  let failed = 0;
+  let reported = false;
+  // Ids of events created in external calendars, persisted for precise cleanup.
+  const createdExternalIds: string[] = [];
+
+  for (const { cal, external } of targets) {
     for (const course of courses) {
       const events = createEventsForCourse(course, termStart, reminderOffset);
       for (const eventData of events) {
         try {
-          await calendar.createEvent(eventData);
+          const created = await cal.createEvent(eventData);
           count++;
+          if (external && created?.id) createdExternalIds.push(created.id);
         } catch (e) {
           failed++;
           if (!reported) {
@@ -222,7 +362,7 @@ async function doSyncCoursesToCalendar(): Promise<{
               course: course.name,
               day: course.day,
               section: `${course.sectionStart}-${course.sectionEnd}`,
-              calendarId: calendar.id,
+              calendarId: cal.id,
               startDate: formatEventDateForReport(eventData.startDate),
               endDate: formatEventDateForReport(eventData.endDate),
               timeZone: eventData.timeZone,
@@ -233,32 +373,30 @@ async function doSyncCoursesToCalendar(): Promise<{
         }
       }
     }
-
-    if (count === 0) {
-      // 彻底失败时应删掉空日历
-      await deleteCalendarSafe(calendar);
-      setStoredCalendarId(null);
-      return {
-        success: false,
-        count: 0,
-        failed,
-        error: t("calSync.errWriteFail"),
-      };
-    }
-    return { success: true, count, failed };
-  } catch (e) {
-    reportError(e, {
-      module: "calendar-sync",
-      platform: Platform.OS,
-      platformVersion: String(Platform.Version),
-    });
-    if (calendar) {
-      await deleteCalendarSafe(calendar);
-      setStoredCalendarId(null);
-    }
-    const msg = e instanceof Error ? e.message : t("calSync.errUnknown");
-    return { success: false, count: 0, failed: 0, error: msg };
   }
+
+  if (count === 0) {
+    // 彻底失败时应删掉空的应用日历
+    if (!useTargets && targets.length === 1 && !targets[0].external) {
+      await deleteCalendarSafe(targets[0].cal);
+      setStoredCalendarId(null);
+    }
+    return {
+      success: false,
+      count: 0,
+      failed,
+      error: t("calSync.errWriteFail"),
+    };
+  }
+
+  // Persist created external event ids + which calendars we wrote to, so the
+  // next sync / removal knows exactly what to clean up.
+  setStoredEventIds(createdExternalIds);
+  useSettingsStore
+    .getState()
+    .setSyncedCalendarIds(targetCalendarIds ?? [APP_LOCAL_CALENDAR_ID]);
+
+  return { success: true, count, failed };
 }
 
 type EventInput = Omit<Partial<ExpoCalendarEvent>, "id" | "organizer">;
@@ -268,51 +406,96 @@ function createEventsForCourse(
   termStart: string,
   reminderOffset: number,
 ): EventInput[] {
-  const events: EventInput[] = [];
+  const startTime = SECTION_TIMES[course.sectionStart];
+  const endTime = SECTION_TIMES[course.sectionEnd];
+  if (!startTime || !endTime) return [];
 
-  for (let week = course.weekStart; week <= course.weekEnd; week++) {
-    const startTime = SECTION_TIMES[course.sectionStart];
-    const endTime = SECTION_TIMES[course.sectionEnd];
-    if (!startTime || !endTime) continue;
+  // Anchor the recurring event at the first week the course occurs, then let
+  // a WEEKLY recurrence rule generate the remaining weeks. This writes one
+  // event row per course slot instead of one per week — drastically fewer
+  // rows for cloud-synced calendars (e.g. Google) to upload, so they appear
+  // faster and in full.
+  const startMs = getTermClassTimeMs(
+    termStart,
+    course.weekStart,
+    course.day,
+    startTime[0],
+  );
+  const endMs = getTermClassTimeMs(
+    termStart,
+    course.weekStart,
+    course.day,
+    endTime[1],
+  );
+  if (startMs == null || endMs == null || startMs >= endMs) return [];
 
-    const startMs = getTermClassTimeMs(
-      termStart,
-      week,
-      course.day,
-      startTime[0],
-    );
-    const endMs = getTermClassTimeMs(termStart, week, course.day, endTime[1]);
-    if (startMs == null || endMs == null || startMs >= endMs) continue;
+  const occurrence = course.weekEnd - course.weekStart + 1;
+  if (occurrence < 1) return [];
 
-    const startDate = new Date(startMs);
-    const endDate = new Date(endMs);
+  const event: EventInput = {
+    title: course.name,
+    location: formatLocation(course.room),
+    startDate: new Date(startMs),
+    endDate: new Date(endMs),
+    alarms: [{ relativeOffset: reminderOffset }],
+    notes: course.teacher
+      ? t("calSync.teacherNotes", { teacher: course.teacher })
+      : undefined,
+    timeZone: "Asia/Shanghai",
+  };
 
-    events.push({
-      title: course.name,
-      location: formatLocation(course.room),
-      // next API 会把 Date 转成 ISO 字符串；Android 原生 EventInputRecord 需要 string。
-      startDate,
-      endDate,
-      alarms: [{ relativeOffset: reminderOffset }],
-      notes: course.teacher
-        ? t("calSync.teacherNotes", { teacher: course.teacher })
-        : undefined,
-      timeZone: "Asia/Shanghai",
-    });
+  // A single-week course needs no recurrence rule.
+  if (occurrence > 1) {
+    event.recurrenceRule = {
+      frequency: Frequency.WEEKLY,
+      interval: 1,
+      occurrence,
+    };
   }
 
-  return events;
+  return [event];
 }
 
+// ─── Delete ────────────────────────────────────────────────────────
+
+/**
+ * Delete the events we created in the user's own (external) calendars, using
+ * the exact ids captured at write time. A recurring event's base id deletes the
+ * whole series, so each stored id removes one course slot entirely. Matching by
+ * id (never by title) guarantees we never touch the user's unrelated events.
+ */
+async function deleteStoredEvents(): Promise<void> {
+  const ids = getStoredEventIds();
+  if (ids.length === 0) return;
+  for (const id of ids) {
+    try {
+      const event = await ExpoCalendarEvent.get(id);
+      await event.delete();
+    } catch {
+      // 事件可能已被用户手动删除，忽略即可
+    }
+  }
+  setStoredEventIds([]);
+}
+
+/**
+ * Remove all app-synced events. Called when the user toggles sync off.
+ * Handles both legacy (app-owned calendar) and new (user-chosen calendars).
+ */
 export function deleteAppCalendar(): Promise<void> {
   return calendarQueue(async () => {
     const hasPermission = await requestCalendarPermission();
     if (!hasPermission) return;
 
-    const calendars = await findAppCalendars();
-    for (const cal of calendars) {
+    // Legacy / local cleanup: delete the app-owned calendar wholesale.
+    const appCals = await findAppCalendars();
+    for (const cal of appCals) {
       await deleteCalendarSafe(cal);
     }
     setStoredCalendarId(null);
+
+    // New: delete the events we wrote into the user's own calendars by id.
+    await deleteStoredEvents();
+    useSettingsStore.getState().setSyncedCalendarIds([]);
   });
 }

@@ -14,6 +14,8 @@ interface SettingsStore {
   examReminder: boolean;
   reminderMinutes: number;
   calendarSync: boolean;
+  /** Calendar IDs the user chose to sync courses into. */
+  syncedCalendarIds: string[];
   language: Lang;
   setHapticFeedback: (value: boolean) => void;
   setOpenCourseOnLaunch: (value: boolean) => void;
@@ -21,6 +23,7 @@ interface SettingsStore {
   setExamReminder: (value: boolean) => void;
   setReminderMinutes: (value: number) => void;
   setCalendarSync: (value: boolean) => void;
+  setSyncedCalendarIds: (ids: string[]) => void;
   setLanguage: (value: Lang) => void;
 }
 
@@ -33,6 +36,7 @@ export const useSettingsStore = create<SettingsStore>()(
       examReminder: false,
       reminderMinutes: 30,
       calendarSync: false,
+      syncedCalendarIds: [],
       language: "system",
       setHapticFeedback: (value: boolean) => set({ hapticFeedback: value }),
       setOpenCourseOnLaunch: (value: boolean) =>
@@ -41,6 +45,7 @@ export const useSettingsStore = create<SettingsStore>()(
       setExamReminder: (value: boolean) => set({ examReminder: value }),
       setReminderMinutes: (value: number) => set({ reminderMinutes: value }),
       setCalendarSync: (value: boolean) => set({ calendarSync: value }),
+      setSyncedCalendarIds: (ids: string[]) => set({ syncedCalendarIds: ids }),
       setLanguage: (value: Lang) => {
         set({ language: value });
         // Sync OS-level locale first so the App display name (launcher icon

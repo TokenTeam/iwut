@@ -174,7 +174,10 @@ function RootLayout() {
           syncWidgetData().catch(() => {});
           scheduleWeeklyReminders().catch(() => {});
           if (useSettingsStore.getState().calendarSync) {
-            syncCoursesToCalendar().catch(() => {});
+            const ids = useSettingsStore.getState().syncedCalendarIds;
+            syncCoursesToCalendar(ids.length > 0 ? ids : undefined).catch(
+              () => {},
+            );
           }
         }, 400);
       }
