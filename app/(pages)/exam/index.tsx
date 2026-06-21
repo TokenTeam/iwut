@@ -26,6 +26,7 @@ import {
   usePagerPosition,
 } from "@/hooks/use-pager-position";
 import { type TKey, useT } from "@/lib/i18n";
+import { getExamStatus } from "@/services/exam-status";
 import { isExamInTerm, shouldClearExamDataForTerm } from "@/services/exam-term";
 import { useCourseStore } from "@/store/course";
 import type { Exam, ExamStatus, NotArrangedExamCourse } from "@/store/exam";
@@ -74,7 +75,9 @@ function statusLabel(
   rawStatus: string,
   t: ReturnType<typeof useT>,
 ) {
-  if (rawStatus && !/^[0-2]$/.test(rawStatus)) return rawStatus;
+  if (status === "unknown" && rawStatus && !/^[0-2]$/.test(rawStatus)) {
+    return rawStatus;
+  }
   const key: Record<ExamStatus, TKey> = {
     upcoming: "exam.statusUpcoming",
     ongoing: "exam.statusOngoing",
@@ -200,12 +203,13 @@ function ExamCard({
   nowMs: number;
   t: ReturnType<typeof useT>;
 }) {
-  const { accent, soft } = statusColor(exam.status, isDark);
+  const status = getExamStatus(exam, nowMs);
+  const { accent, soft } = statusColor(status, isDark);
   const date = parseExamDate(exam.date);
   const timeRange = `${exam.startTime}-${exam.endTime}`;
   const timeText = date?.weekday ? `${date.weekday} ${timeRange}` : timeRange;
   const showCountdown =
-    exam.status === "upcoming" &&
+    status === "upcoming" &&
     (!exam.rawStatus || /^[0-2]$/.test(exam.rawStatus));
   const pillLabel = showCountdown
     ? (countdownLabel(exam.startAt, nowMs, t) ?? undefined)
@@ -233,7 +237,7 @@ function ExamCard({
             )}
           </View>
           <StatusPill
-            status={exam.status}
+            status={status}
             rawStatus={exam.rawStatus}
             isDark={isDark}
             t={t}
@@ -436,20 +440,14 @@ export default function ExamScreen() {
   const upcoming = useMemo(
     () =>
       currentTermExams
-        .filter((exam) => {
-          const endMs = Date.parse(exam.endAt);
-          return Number.isNaN(endMs) || endMs >= nowMs;
-        })
+        .filter((exam) => getExamStatus(exam, nowMs) !== "finished")
         .sort((a, b) => Date.parse(a.startAt) - Date.parse(b.startAt)),
     [currentTermExams, nowMs],
   );
   const finished = useMemo(
     () =>
       currentTermExams
-        .filter((exam) => {
-          const endMs = Date.parse(exam.endAt);
-          return !Number.isNaN(endMs) && endMs < nowMs;
-        })
+        .filter((exam) => getExamStatus(exam, nowMs) === "finished")
         .sort((a, b) => Date.parse(b.startAt) - Date.parse(a.startAt)),
     [currentTermExams, nowMs],
   );

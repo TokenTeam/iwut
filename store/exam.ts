@@ -10,7 +10,6 @@ export interface Exam {
   courseName: string;
   courseCode: string;
   sequence: string;
-  status: ExamStatus;
   rawStatus: string;
   date: string;
   startTime: string;
