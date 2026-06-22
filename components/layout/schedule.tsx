@@ -21,6 +21,7 @@ import {
   View,
 } from "react-native";
 
+import { CourseShareSheet } from "@/components/share/course-share-sheet";
 import { WEEKDAY_KEYS } from "@/constants/weekdays";
 import { MAX_WEEK } from "@/lib/course-weeks";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -392,6 +393,7 @@ export function Schedule({
   const blurTarget = useAndroidBlurTarget();
   const [selected, setSelected] = useState<Course | null>(null);
   const [slotCourses, setSlotCourses] = useState<Course[] | null>(null);
+  const [shareName, setShareName] = useState<string | null>(null);
   const [quickAddSlot, setQuickAddSlot] = useState<QuickAddSlot | null>(null);
 
   // 周末模式下的横向滚动容器
@@ -582,6 +584,13 @@ export function Schedule({
       pathname: "/(pages)/settings/course/add",
       params: { name: course.name },
     });
+  };
+
+  const handleShareCourse = (course: Course) => {
+    haptic();
+    setSelected(null);
+    setSlotCourses(null);
+    setShareName(course.name);
   };
 
   const openQuickAddForCourse = (course: Course) => {
@@ -815,7 +824,13 @@ export function Schedule({
         showOtherWeekTag={!!selected && !isInCurrentWeek(selected)}
         onClose={() => setSelected(null)}
         onEdit={handleEditCourse}
+        onShare={handleShareCourse}
         onAddAtSameSlot={openQuickAddForCourse}
+      />
+
+      <CourseShareSheet
+        courseName={shareName}
+        onClose={() => setShareName(null)}
       />
 
       <Modal

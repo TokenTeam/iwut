@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import Toast from "react-native-toast-message";
 
-import { ScanCodeSheet } from "@/components/scan/scan-code-sheet";
+import { ShareSheet } from "@/components/share/share-sheet";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import {
@@ -20,7 +20,6 @@ import { useT } from "@/lib/i18n";
 import {
   buildSchedulePaletteScanEnvelope,
   buildShareableSchedulePalette,
-  createScanUrl,
   resolveScanAction,
   SCHEDULE_PALETTE_SCAN_TYPE,
 } from "@/lib/scan";
@@ -306,13 +305,12 @@ export default function PaletteScreen() {
         </View>
       </BottomSheet>
 
-      <ScanCodeSheet
+      <ShareSheet
         visible={shareVisible}
         onClose={() => setShareVisible(false)}
         title={t("palette.shareCodeTitle")}
         description={t("palette.shareCodeDesc")}
-        qrValue={JSON.stringify(shareEnvelope)}
-        shareValue={createScanUrl(shareEnvelope)}
+        envelope={shareEnvelope}
       />
     </>
   );

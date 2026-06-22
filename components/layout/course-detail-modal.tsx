@@ -14,7 +14,7 @@ import type { Course } from "@/store/course";
 
 /**
  * 课程详情弹窗，课表页与首页共用。
- * 操作按钮按需显示：传入 onEdit / onAddAtSameSlot 才渲染对应按钮。
+ * 操作按钮按需显示：传入 onEdit / onShare / onAddAtSameSlot 才渲染对应按钮。
  */
 export function CourseDetailModal({
   course,
@@ -22,6 +22,7 @@ export function CourseDetailModal({
   showOtherWeekTag = false,
   onClose,
   onEdit,
+  onShare,
   onAddAtSameSlot,
 }: {
   course: Course | null;
@@ -29,6 +30,7 @@ export function CourseDetailModal({
   showOtherWeekTag?: boolean;
   onClose: () => void;
   onEdit?: (course: Course) => void;
+  onShare?: (course: Course) => void;
   onAddAtSameSlot?: (course: Course) => void;
 }) {
   const t = useT();
@@ -178,7 +180,7 @@ export function CourseDetailModal({
               />
             </View>
 
-            {(onEdit || onAddAtSameSlot) && (
+            {(onEdit || onShare || onAddAtSameSlot) && (
               <View
                 style={{
                   flexDirection: "row",
@@ -191,15 +193,23 @@ export function CourseDetailModal({
                 {onEdit && (
                   <DetailActionButton
                     icon="create-outline"
-                    label={t("schedule.editCourse")}
+                    label={t("common.edit")}
                     isDark={isDark}
                     onPress={() => onEdit(course)}
+                  />
+                )}
+                {onShare && (
+                  <DetailActionButton
+                    icon="qr-code-outline"
+                    label={t("common.share")}
+                    isDark={isDark}
+                    onPress={() => onShare(course)}
                   />
                 )}
                 {onAddAtSameSlot && (
                   <DetailActionButton
                     icon="add-circle-outline"
-                    label={t("schedule.addAtSameSlot")}
+                    label={t("common.add")}
                     isDark={isDark}
                     onPress={() => onAddAtSameSlot(course)}
                   />

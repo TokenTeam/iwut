@@ -15,6 +15,7 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CourseDetailModal } from "@/components/layout/course-detail-modal";
+import { CourseShareSheet } from "@/components/share/course-share-sheet";
 import { HomeMenu } from "@/components/layout/home-menu";
 import { TabBackground } from "@/components/layout/tab-background";
 import { AnnouncementBanner } from "@/components/ui/announcement-banner";
@@ -276,6 +277,7 @@ export default function HomeScreen() {
 
   const [activeTab, setActiveTab] = useState(() => (allTodayFinished ? 1 : 0));
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [shareName, setShareName] = useState<string | null>(null);
 
   const openCourseDetail = useCallback(
     (course: Course) => {
@@ -292,6 +294,15 @@ export default function HomeScreen() {
       params: { name: course.name },
     });
   }, []);
+
+  const handleShareCourse = useCallback(
+    (course: Course) => {
+      haptic();
+      setSelectedCourse(null);
+      setShareName(course.name);
+    },
+    [haptic],
+  );
 
   const pagerRef = useRef<PagerView>(null);
   const [initialPage] = useState(() => (allTodayFinished ? 1 : 0));
@@ -700,6 +711,12 @@ export default function HomeScreen() {
         }
         onClose={() => setSelectedCourse(null)}
         onEdit={handleEditCourse}
+        onShare={handleShareCourse}
+      />
+
+      <CourseShareSheet
+        courseName={shareName}
+        onClose={() => setShareName(null)}
       />
     </View>
   );

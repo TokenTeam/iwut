@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import Toast from "react-native-toast-message";
 
+import { CourseShareSheet } from "@/components/share/course-share-sheet";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { ScrollLockProvider, useScrollLock } from "@/components/ui/scroll-lock";
 import { WEEKDAY_KEYS as DAY_KEYS } from "@/constants/weekdays";
@@ -144,6 +145,7 @@ export default function AddEditCourseScreen() {
     isEdit && existingRecords.length > 0 ? null : 0,
   );
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [shareVisible, setShareVisible] = useState(false);
   // 拖动周次网格或节次滑块时临时禁用页面滚动，避免手势冲突
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const scrollLockCount = useRef(0);
@@ -399,6 +401,18 @@ export default function AddEditCourseScreen() {
 
             {isEdit && (
               <Pressable
+                onPress={() => setShareVisible(true)}
+                className="mt-3 flex-row items-center justify-center rounded-xl bg-white py-3.5 active:bg-neutral-50 dark:bg-neutral-800 dark:active:bg-neutral-700"
+              >
+                <Ionicons name="qr-code-outline" size={18} color="#3b82f6" />
+                <Text className="ml-1.5 text-base font-medium text-blue-500">
+                  {t("schedule.shareCourse")}
+                </Text>
+              </Pressable>
+            )}
+
+            {isEdit && (
+              <Pressable
                 onPress={() => setShowDeleteConfirm(true)}
                 className="mt-3 items-center rounded-xl py-3 active:bg-red-50 dark:active:bg-red-950"
               >
@@ -421,6 +435,11 @@ export default function AddEditCourseScreen() {
         confirmText={t("common.delete")}
         destructive
         onConfirm={handleDelete}
+      />
+
+      <CourseShareSheet
+        courseName={shareVisible ? (editName ?? null) : null}
+        onClose={() => setShareVisible(false)}
       />
     </>
   );
