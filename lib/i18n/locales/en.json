@@ -205,6 +205,7 @@
       "library": "Library",
       "card": "Campus Card",
       "elec": "Electricity",
+      "netPay": "Network Payment",
       "campusNews": "Campus News"
     },
     "openUrl": "Open URL",

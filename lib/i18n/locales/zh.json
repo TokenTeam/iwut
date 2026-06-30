@@ -205,6 +205,7 @@
       "library": "图书馆管家",
       "card": "智寻卡片",
       "elec": "电费查询",
+      "netPay": "网络缴费",
       "campusNews": "校园公告"
     },
     "openUrl": "打开网页",
