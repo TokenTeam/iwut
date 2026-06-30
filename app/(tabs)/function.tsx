@@ -97,6 +97,13 @@ const SECTIONS: Section[] = [
         uri: "https://zhlgd.whut.edu.cn/tpass/login?service=http://nyyzf.whut.edu.cn/MobileWebOnlineHall/#/",
         lan: false,
       },
+      {
+        icon: "wifi-outline",
+        labelKey: "fn.app.netPay",
+        color: "#2563eb",
+        uri: "https://zhlgd.whut.edu.cn/tpass/login?service=http://cwsf.whut.edu.cn/netdetails515N023",
+        lan: false,
+      },
     ],
   },
   {
