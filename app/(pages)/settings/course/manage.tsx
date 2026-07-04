@@ -39,7 +39,11 @@ export default function ManageCourseScreen() {
     >();
     for (const c of courses) {
       if (map.has(c.name)) {
-        map.get(c.name)!.count++;
+        const item = map.get(c.name)!;
+        item.count++;
+        item.imported = item.imported || c.source === "imported";
+        item.lab = item.lab || c.source === "lab";
+        if (!item.teacher && c.teacher) item.teacher = c.teacher;
         continue;
       }
       map.set(c.name, {

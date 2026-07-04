@@ -253,8 +253,12 @@ function LabImportBody({
         onChangeText={setCode}
         placeholder={t("course.labCaptchaPlaceholder")}
         placeholderTextColor={placeholderColor}
-        autoCapitalize="characters"
+        secureTextEntry
+        autoCapitalize="none"
         autoCorrect={false}
+        spellCheck={false}
+        textContentType="none"
+        importantForAutofill="no"
         editable={!submitting}
         onSubmitEditing={() => void handleSubmit()}
         style={{
