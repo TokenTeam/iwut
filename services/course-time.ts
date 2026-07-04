@@ -30,3 +30,40 @@ export function formatCourseSectionTimeRange(
   const end = SECTION_TIMES[sectionEnd]?.[1] ?? "";
   return start && end ? `${start} - ${end}` : "";
 }
+
+interface CourseTimeFields {
+  sectionStart: number;
+  sectionEnd: number;
+  startTime?: string;
+  endTime?: string;
+}
+
+function timeToMinutes(time?: string): number | null {
+  if (!time) return null;
+  const m = /^(\d{1,2}):(\d{2})$/.exec(time);
+  if (!m) return null;
+  return Number(m[1]) * 60 + Number(m[2]);
+}
+
+// 以下取值均优先课程携带的真实时间，节次时间作兜底
+
+export function getCourseStartMin(course: CourseTimeFields): number {
+  return (
+    timeToMinutes(course.startTime) ??
+    SECTION_TIMES[course.sectionStart]?.[2] ??
+    0
+  );
+}
+
+export function getCourseEndMin(course: CourseTimeFields): number {
+  return (
+    timeToMinutes(course.endTime) ?? SECTION_TIMES[course.sectionEnd]?.[3] ?? 0
+  );
+}
+
+export function formatCourseTimeRange(course: CourseTimeFields): string {
+  if (course.startTime && course.endTime) {
+    return `${course.startTime} - ${course.endTime}`;
+  }
+  return formatCourseSectionTimeRange(course.sectionStart, course.sectionEnd);
+}

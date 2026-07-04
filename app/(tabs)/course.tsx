@@ -15,6 +15,7 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 import {
   COURSE_HEADER_HEIGHT,
@@ -26,6 +27,7 @@ import {
   GetCourse,
   type GetCourseHandle,
 } from "@/components/layout/course-importer";
+import { LabImportSheet } from "@/components/layout/lab-import-sheet";
 import { Schedule } from "@/components/layout/schedule";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -59,6 +61,7 @@ export default function CourseScreen() {
   const haptic = useHaptics();
   const [showWeekPicker, setShowWeekPicker] = useState(false);
   const [showTypePicker, setShowTypePicker] = useState(false);
+  const [showLabImport, setShowLabImport] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
 
   const scheme = useColorScheme();
@@ -123,6 +126,19 @@ export default function CourseScreen() {
     haptic();
     setShowTypePicker(false);
     setFabOpen(false);
+    if (type === "lab") {
+      // 实验系统只返回绝对日期，需要学期起始日才能换算周次
+      if (!termStart) {
+        Toast.show({
+          type: "error",
+          text1: t("course.labNeedBaseTimetable"),
+          position: "bottom",
+        });
+        return;
+      }
+      setShowLabImport(true);
+      return;
+    }
     importerRef.current?.startImport(type);
   };
 
@@ -453,7 +469,21 @@ export default function CourseScreen() {
             {t("course.master")}
           </Text>
         </Pressable>
+        <Pressable
+          className="flex-row items-center px-5 py-3.5 active:bg-neutral-100 dark:active:bg-neutral-700"
+          onPress={() => doImport("lab")}
+        >
+          <IconSymbol name="science" size={22} color={iconColor} />
+          <Text className="ml-3 flex-1 text-base text-neutral-800 dark:text-neutral-200">
+            {t("course.lab")}
+          </Text>
+        </Pressable>
       </BottomSheet>
+
+      <LabImportSheet
+        visible={showLabImport}
+        onClose={() => setShowLabImport(false)}
+      />
 
       <CourseDrawer
         visible={showDrawer}

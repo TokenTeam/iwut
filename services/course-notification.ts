@@ -169,10 +169,10 @@ export async function showUpcomingLiveActivity(): Promise<void> {
     if (currentWeek < course.weekStart || currentWeek > course.weekEnd)
       continue;
 
-    const sectionTime = SECTION_TIMES[course.sectionStart];
-    if (!sectionTime) continue;
+    const startTimeStr =
+      course.startTime || SECTION_TIMES[course.sectionStart]?.[0];
+    if (!startTimeStr) continue;
 
-    const [startTimeStr] = sectionTime;
     const classStartMs = getTermClassTimeMs(
       termStart,
       currentWeek,
@@ -250,10 +250,10 @@ async function scheduleCourseReminders(
     for (const course of courses) {
       if (week < course.weekStart || week > course.weekEnd) continue;
 
-      const sectionTime = SECTION_TIMES[course.sectionStart];
-      if (!sectionTime) continue;
+      const startTimeStr =
+        course.startTime || SECTION_TIMES[course.sectionStart]?.[0];
+      if (!startTimeStr) continue;
 
-      const [startTimeStr] = sectionTime;
       const classStartMs = getTermClassTimeMs(
         termStart,
         week,

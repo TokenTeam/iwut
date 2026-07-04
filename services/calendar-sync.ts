@@ -271,17 +271,13 @@ function createEventsForCourse(
   const events: EventInput[] = [];
 
   for (let week = course.weekStart; week <= course.weekEnd; week++) {
-    const startTime = SECTION_TIMES[course.sectionStart];
-    const endTime = SECTION_TIMES[course.sectionEnd];
+    const startTime =
+      course.startTime || SECTION_TIMES[course.sectionStart]?.[0];
+    const endTime = course.endTime || SECTION_TIMES[course.sectionEnd]?.[1];
     if (!startTime || !endTime) continue;
 
-    const startMs = getTermClassTimeMs(
-      termStart,
-      week,
-      course.day,
-      startTime[0],
-    );
-    const endMs = getTermClassTimeMs(termStart, week, course.day, endTime[1]);
+    const startMs = getTermClassTimeMs(termStart, week, course.day, startTime);
+    const endMs = getTermClassTimeMs(termStart, week, course.day, endTime);
     if (startMs == null || endMs == null || startMs >= endMs) continue;
 
     const startDate = new Date(startMs);

@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import React, { memo, useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import type { Course } from "@/store/course";
@@ -32,6 +32,7 @@ const CourseCell = memo(function CourseCell({
   heightVal,
   bg,
   theme,
+  stackCount = 1,
   onPress,
 }: {
   course: Course;
@@ -40,6 +41,7 @@ const CourseCell = memo(function CourseCell({
   heightVal: number;
   bg: string;
   theme: ScheduleCellTheme;
+  stackCount?: number;
   onPress: (course: Course) => void;
 }) {
   const span = course.sectionEnd - course.sectionStart + 1;
@@ -112,6 +114,26 @@ const CourseCell = memo(function CourseCell({
         >
           {course.room}
         </Text>
+        {stackCount > 1 && (
+          <View
+            style={{
+              position: "absolute",
+              top: 3,
+              right: 3,
+              minWidth: 15,
+              height: 15,
+              borderRadius: 8,
+              paddingHorizontal: 3,
+              backgroundColor: "rgba(0,0,0,0.35)",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ fontSize: 9, fontWeight: "700", color: "#fff" }}>
+              {stackCount}
+            </Text>
+          </View>
+        )}
       </View>
     </Pressable>
   );
@@ -150,16 +172,34 @@ export const DayColumn = memo(function DayColumn({
 }) {
   const { isDark, mutedColor } = theme;
 
-  const renderCell = (course: Course, key: string, isOther: boolean) => {
-    if (
-      layout.sectionTop[course.sectionStart] === undefined ||
-      layout.sectionTop[course.sectionEnd] === undefined
-    ) {
-      return null;
+  // 完全同时段的本周课程只渲染一个格子，角标提示数量，点击可在时段列表中查看全部
+  const currentGroups = useMemo(() => {
+    const map = new Map<string, { course: Course; count: number }>();
+    for (const c of currentCourses) {
+      const key = `${c.sectionStart}-${c.sectionEnd}`;
+      const group = map.get(key);
+      if (group) group.count++;
+      else map.set(key, { course: c, count: 1 });
     }
-    const topVal = layout.sectionTop[course.sectionStart];
-    const heightVal =
-      layout.sectionTop[course.sectionEnd] + layout.sectionPct - topVal;
+    return [...map.values()];
+  }, [currentCourses]);
+
+  const renderCell = (
+    course: Course,
+    key: string,
+    isOther: boolean,
+    stackCount = 1,
+  ) => {
+    // 起止节可能落在当前布局隐藏的节次上（如隐藏中课时的第 6 节），
+    // 向内收敛到可见节次；整段都不可见才不渲染
+    let start = course.sectionStart;
+    let end = course.sectionEnd;
+    while (start <= end && layout.sectionTop[start] === undefined) start++;
+    while (end >= start && layout.sectionTop[end] === undefined) end--;
+    if (start > end) return null;
+
+    const topVal = layout.sectionTop[start];
+    const heightVal = layout.sectionTop[end] + layout.sectionPct - topVal;
 
     return (
       <CourseCell
@@ -170,6 +210,7 @@ export const DayColumn = memo(function DayColumn({
         heightVal={heightVal}
         bg={cellBgFor(course.name, isOther)}
         theme={theme}
+        stackCount={stackCount}
         onPress={onCoursePress}
       />
     );
@@ -271,11 +312,12 @@ export const DayColumn = memo(function DayColumn({
           ),
         )}
 
-        {currentCourses.map((course, ci) =>
+        {currentGroups.map(({ course, count }, ci) =>
           renderCell(
             course,
             `cur-${course.name}-${course.sectionStart}-${ci}`,
             false,
+            count,
           ),
         )}
       </View>

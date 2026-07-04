@@ -41,8 +41,9 @@ import {
 import { type TKey, useT } from "@/lib/i18n";
 import { filterActiveAnnouncements } from "@/services/announcements";
 import {
-  formatCourseSectionTimeRange,
-  SECTION_TIMES,
+  formatCourseTimeRange,
+  getCourseEndMin,
+  getCourseStartMin,
 } from "@/services/course-time";
 import { isExamInTerm, shouldClearExamDataForTerm } from "@/services/exam-term";
 import { useAnnouncementStore } from "@/store/announcements";
@@ -112,13 +113,13 @@ type Countdown = { kind: "start" | "end"; mins: number };
 
 function isCourseFinished(course: Course, nowMs: number): boolean {
   const nowMin = getShanghaiMinutesOfDay(nowMs);
-  return nowMin > (SECTION_TIMES[course.sectionEnd]?.[3] ?? 0);
+  return nowMin > getCourseEndMin(course);
 }
 
 function getCourseCountdown(course: Course, nowMs: number): Countdown | null {
   const nowMin = getShanghaiMinutesOfDay(nowMs);
-  const startMin = SECTION_TIMES[course.sectionStart]?.[2] ?? 0;
-  const endMin = SECTION_TIMES[course.sectionEnd]?.[3] ?? 0;
+  const startMin = getCourseStartMin(course);
+  const endMin = getCourseEndMin(course);
 
   if (nowMin > endMin) return null;
   if (nowMin < startMin) {
@@ -838,12 +839,7 @@ const CourseCard = memo(function CourseCard({
         </View>
         <CardMetaRow
           color={subColor}
-          timeText={compactTimeRange(
-            formatCourseSectionTimeRange(
-              course.sectionStart,
-              course.sectionEnd,
-            ),
-          )}
+          timeText={compactTimeRange(formatCourseTimeRange(course))}
           placeText={course.room}
           style={{ marginTop: 5 }}
           timeWidth={80}
