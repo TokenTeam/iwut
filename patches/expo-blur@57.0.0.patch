@@ -1,0 +1,24 @@
+diff --git a/android/build.gradle b/android/build.gradle
+index d6ccc18aab7927e69794f69af38844cfe04371e4..3c98754037203ea991286bf363adcfb9bcb42541 100644
+--- a/android/build.gradle
++++ b/android/build.gradle
+@@ -6,6 +6,12 @@ plugins {
+ group = 'host.exp.exponent'
+ version = '57.0.0'
+ 
++def cnb = repositories.maven {
++  url 'https://maven.cnb.cool/TokenTeam/android-deps/-/packages/'
++}
++repositories.remove(cnb)
++repositories.add(0, cnb)
++
+ android {
+   namespace "expo.modules.blur"
+   defaultConfig {
+@@ -15,5 +21,5 @@ android {
+ }
+ 
+ dependencies {
+-  implementation 'com.github.Dimezis:BlurView:version-3.1.0'
++  implementation 'com.github.Dimezis:BlurView:3.2.0'
+ }
