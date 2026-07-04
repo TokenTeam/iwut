@@ -23,25 +23,25 @@ import {
 
 import { CourseShareSheet } from "@/components/share/course-share-sheet";
 import { WEEKDAY_KEYS } from "@/constants/weekdays";
-import { MAX_WEEK } from "@/lib/course-weeks";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { buildColorMap, getCourseColor } from "@/lib/course-colors";
+import { MAX_WEEK } from "@/lib/course-weeks";
 import { getTermWeekDayNumbers, getTermWeekMonthLabel } from "@/lib/date";
 import { t, useT } from "@/lib/i18n";
 import type { Course } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 
+import {
+  getAndroidBlurProps,
+  useAndroidBlurTarget,
+} from "@/components/ui/app-blur-target";
 import { CourseDetailModal } from "./course-detail-modal";
 import {
   QuickAddCourseModal,
   type QuickAddSlot,
 } from "./quick-add-course-modal";
 import { DayColumn, type ScheduleCellTheme } from "./schedule-day-column";
-import {
-  getAndroidBlurProps,
-  useAndroidBlurTarget,
-} from "@/components/ui/app-blur-target";
 
 interface SidebarLabel {
   label: string;
@@ -101,6 +101,15 @@ const HEADER_HEIGHT = 30;
 const HEADER_HEIGHT_WITH_DATES = 40;
 const SIDEBAR_WIDTH = 24;
 const PEEK_WIDTH = 20;
+
+// 超出上限时露出下一行的一部分提示可滚动
+const SLOT_ROW_HEIGHT = 56;
+const SLOT_LIST_PADDING = 8;
+const MAX_VISIBLE_SLOT_ROWS = 5;
+const SLOT_LIST_VISIBLE_HEIGHT =
+  SLOT_LIST_PADDING +
+  SLOT_ROW_HEIGHT * MAX_VISIBLE_SLOT_ROWS +
+  Math.round(SLOT_ROW_HEIGHT * 0.45);
 
 interface RgbaColor {
   r: number;
@@ -946,7 +955,14 @@ export function Schedule({
                 </Text>
               </View>
 
-              <ScrollView contentContainerStyle={{ padding: 8 }}>
+              <ScrollView
+                style={
+                  slotCourses.length > MAX_VISIBLE_SLOT_ROWS
+                    ? { height: SLOT_LIST_VISIBLE_HEIGHT }
+                    : undefined
+                }
+                contentContainerStyle={{ padding: SLOT_LIST_PADDING }}
+              >
                 {slotCourses.map((c, i) => {
                   const other = !isInCurrentWeek(c);
                   const tileColor = other
@@ -958,8 +974,8 @@ export function Schedule({
                       style={({ pressed }) => ({
                         flexDirection: "row",
                         alignItems: "center",
+                        height: SLOT_ROW_HEIGHT,
                         paddingHorizontal: 12,
-                        paddingVertical: 10,
                         borderRadius: 12,
                         backgroundColor: pressed
                           ? isDark
@@ -1061,8 +1077,8 @@ export function Schedule({
                     style={({ pressed }) => ({
                       flexDirection: "row",
                       alignItems: "center",
+                      height: SLOT_ROW_HEIGHT,
                       paddingHorizontal: 12,
-                      paddingVertical: 10,
                       borderRadius: 12,
                       backgroundColor: pressed
                         ? isDark
