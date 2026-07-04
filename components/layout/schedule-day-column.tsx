@@ -34,6 +34,7 @@ const CourseCell = memo(function CourseCell({
   theme,
   stackCount = 1,
   onPress,
+  onLongPress,
 }: {
   course: Course;
   isOther: boolean;
@@ -42,7 +43,8 @@ const CourseCell = memo(function CourseCell({
   bg: string;
   theme: ScheduleCellTheme;
   stackCount?: number;
-  onPress: (course: Course) => void;
+  onPress: (course: Course, isOther: boolean) => void;
+  onLongPress: (course: Course, isOther: boolean) => void;
 }) {
   const span = course.sectionEnd - course.sectionStart + 1;
   const nameLines = 2 * span - 1;
@@ -60,7 +62,8 @@ const CourseCell = memo(function CourseCell({
         left: 0,
         right: 0,
       }}
-      onPress={() => onPress(course)}
+      onPress={() => onPress(course, isOther)}
+      onLongPress={() => onLongPress(course, isOther)}
     >
       <View
         style={{
@@ -153,6 +156,7 @@ export const DayColumn = memo(function DayColumn({
   otherCourses,
   cellBgFor,
   onCoursePress,
+  onCourseLongPress,
   onAddSlot,
 }: {
   dayIdx: number;
@@ -167,7 +171,8 @@ export const DayColumn = memo(function DayColumn({
   currentCourses: Course[];
   otherCourses: Course[];
   cellBgFor: (courseName: string, isOther: boolean) => string;
-  onCoursePress: (course: Course) => void;
+  onCoursePress: (course: Course, isOther: boolean) => void;
+  onCourseLongPress: (course: Course, isOther: boolean) => void;
   onAddSlot: (day: number, sectionStart: number, sectionEnd: number) => void;
 }) {
   const { isDark, mutedColor } = theme;
@@ -212,6 +217,7 @@ export const DayColumn = memo(function DayColumn({
         theme={theme}
         stackCount={stackCount}
         onPress={onCoursePress}
+        onLongPress={onCourseLongPress}
       />
     );
   };

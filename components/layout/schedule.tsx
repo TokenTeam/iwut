@@ -253,7 +253,16 @@ interface WeekPanelProps {
   dayLabels: string[];
   cellTheme: ScheduleCellTheme;
   cellBgFor: (courseName: string, isOther: boolean) => string;
-  onCoursePress: (course: Course, conflicts: Course[]) => void;
+  onCoursePress: (
+    course: Course,
+    conflicts: Course[],
+    isOther: boolean,
+  ) => void;
+  onCourseLongPress: (
+    course: Course,
+    conflicts: Course[],
+    isOther: boolean,
+  ) => void;
   onAddSlot: (day: number, sectionStart: number, sectionEnd: number) => void;
 }
 
@@ -272,6 +281,7 @@ const WeekPanel = React.memo(function WeekPanel({
   cellTheme,
   cellBgFor,
   onCoursePress,
+  onCourseLongPress,
   onAddSlot,
 }: WeekPanelProps) {
   const isInWeek = useCallback(
@@ -340,11 +350,19 @@ const WeekPanel = React.memo(function WeekPanel({
   );
 
   const handlePress = useCallback(
-    (course: Course) => {
+    (course: Course, isOther: boolean) => {
       const list = conflictsByCourse.get(course) ?? [course];
-      onCoursePress(course, list);
+      onCoursePress(course, list, isOther);
     },
     [conflictsByCourse, onCoursePress],
+  );
+
+  const handleLongPress = useCallback(
+    (course: Course, isOther: boolean) => {
+      const list = conflictsByCourse.get(course) ?? [course];
+      onCourseLongPress(course, list, isOther);
+    },
+    [conflictsByCourse, onCourseLongPress],
   );
 
   return (
@@ -365,6 +383,7 @@ const WeekPanel = React.memo(function WeekPanel({
           otherCourses={otherDayCoursesVisible[dayIdx]}
           cellBgFor={cellBgFor}
           onCoursePress={handlePress}
+          onCourseLongPress={handleLongPress}
           onAddSlot={onAddSlot}
         />
       ))}
@@ -556,16 +575,30 @@ export function Schedule({
     [],
   );
 
+  const showSlotCourses = useCallback((conflicts: Course[]) => {
+    setSelected(null);
+    setSlotCourses(conflicts);
+  }, []);
+
   const handleCoursePress = useCallback(
-    (course: Course, conflicts: Course[]) => {
+    (course: Course, conflicts: Course[], isOther: boolean) => {
       haptic();
-      if (conflicts.length > 1) {
-        setSlotCourses(conflicts);
-      } else {
-        setSelected(course);
+      if (isOther) {
+        showSlotCourses(conflicts);
+        return;
       }
+      setSlotCourses(null);
+      setSelected(course);
     },
-    [haptic],
+    [haptic, showSlotCourses],
+  );
+
+  const handleCourseLongPress = useCallback(
+    (_course: Course, conflicts: Course[]) => {
+      haptic();
+      showSlotCourses(conflicts);
+    },
+    [haptic, showSlotCourses],
   );
 
   const handleAddSlot = useCallback(
@@ -662,6 +695,7 @@ export function Schedule({
         cellTheme={cellTheme}
         cellBgFor={cellBgFor}
         onCoursePress={handleCoursePress}
+        onCourseLongPress={handleCourseLongPress}
         onAddSlot={handleAddSlot}
       />
     ),
@@ -678,6 +712,7 @@ export function Schedule({
       cellTheme,
       cellBgFor,
       handleCoursePress,
+      handleCourseLongPress,
       handleAddSlot,
     ],
   );
