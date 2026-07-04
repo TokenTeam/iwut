@@ -9,7 +9,7 @@ import {
 import { getDayLabels } from "@/constants/weekdays";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useT } from "@/lib/i18n";
-import { formatCourseSectionTimeRange } from "@/services/course-time";
+import { formatCourseTimeRange } from "@/services/course-time";
 import type { Course } from "@/store/course";
 
 /**
@@ -154,6 +154,18 @@ export function CourseDetailModal({
                 value={course.teacher}
                 isDark={isDark}
               />
+              {!!course.note && (
+                <DetailRow
+                  icon="flask-outline"
+                  label={t("schedule.labProject")}
+                  value={
+                    course.seat != null
+                      ? `${course.note} · ${t("schedule.seatValue", { n: course.seat })}`
+                      : course.note
+                  }
+                  isDark={isDark}
+                />
+              )}
               <DetailRow
                 icon="calendar-outline"
                 label={t("schedule.weeks")}
@@ -167,10 +179,7 @@ export function CourseDetailModal({
                 icon="time-outline"
                 label={t("schedule.time")}
                 value={
-                  formatCourseSectionTimeRange(
-                    course.sectionStart,
-                    course.sectionEnd,
-                  ) ||
+                  formatCourseTimeRange(course) ||
                   t("schedule.sectionRange", {
                     start: course.sectionStart,
                     end: course.sectionEnd,

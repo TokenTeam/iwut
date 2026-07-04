@@ -34,11 +34,16 @@ export default function ManageCourseScreen() {
         summary: string;
         count: number;
         imported: boolean;
+        lab: boolean;
       }
     >();
     for (const c of courses) {
       if (map.has(c.name)) {
-        map.get(c.name)!.count++;
+        const item = map.get(c.name)!;
+        item.count++;
+        item.imported = item.imported || c.source === "imported";
+        item.lab = item.lab || c.source === "lab";
+        if (!item.teacher && c.teacher) item.teacher = c.teacher;
         continue;
       }
       map.set(c.name, {
@@ -51,6 +56,7 @@ export default function ManageCourseScreen() {
         }),
         count: 1,
         imported: c.source === "imported",
+        lab: c.source === "lab",
       });
     }
     return [...map.values()];
@@ -110,6 +116,13 @@ export default function ManageCourseScreen() {
                         <View className="ml-1.5 rounded bg-blue-100 px-1.5 py-0.5 dark:bg-blue-900/40">
                           <Text className="text-[10px] font-medium text-blue-500 dark:text-blue-400">
                             {t("courseManage.importedTag")}
+                          </Text>
+                        </View>
+                      )}
+                      {item.lab && (
+                        <View className="ml-1.5 rounded bg-purple-100 px-1.5 py-0.5 dark:bg-purple-900/40">
+                          <Text className="text-[10px] font-medium text-purple-500 dark:text-purple-400">
+                            {t("courseManage.labTag")}
                           </Text>
                         </View>
                       )}
