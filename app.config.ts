@@ -84,6 +84,7 @@ const config: ExpoConfig = {
     ...(IS_DEV ? ["expo-dev-client"] : []),
     "expo-router",
     "expo-font",
+    "expo-status-bar",
     "expo-web-browser",
     "expo-asset",
     "expo-image",
@@ -128,7 +129,6 @@ const config: ExpoConfig = {
     "@sentry/react-native",
     "@bacons/apple-targets",
     "./plugins/with-gradle-props.js",
-    "./plugins/with-gradle-wrapper.js",
     ...(IS_DEV ? [] : ["./plugins/with-network-security-config.js"]),
   ],
   experiments: {

@@ -1,13 +1,10 @@
-diff --git a/node_modules/expo-blur/.bun-tag-5cfc0d287e2fe288 b/.bun-tag-5cfc0d287e2fe288
-new file mode 100644
-index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/android/build.gradle b/android/build.gradle
-index b32916324ddbb4b6d7fb729f5268292f3e6a701f..f50aa992016aca2c77087fc69e3a8ab1200abbd7 100644
+index d6ccc18aab7927e69794f69af38844cfe04371e4..3c98754037203ea991286bf363adcfb9bcb42541 100644
 --- a/android/build.gradle
 +++ b/android/build.gradle
 @@ -6,6 +6,12 @@ plugins {
  group = 'host.exp.exponent'
- version = '56.0.3'
+ version = '57.0.0'
  
 +def cnb = repositories.maven {
 +  url 'https://maven.cnb.cool/TokenTeam/android-deps/-/packages/'
