@@ -1,27 +1,42 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
+import { useSegments } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { DEFAULT_SCHEDULE_VISUAL, useScheduleStore } from "@/store/schedule";
 
 /**
- * 首页/功能页的全屏背景图。
- * 固定使用默认透明度与模糊值，不受“课表外观”里的滑杆设置影响；
- * 顶部叠一层向下消隐的底色渐变，保证状态栏与页面标题区域清晰。
+ * Tabs shared background. Mounted above the tab navigator so switching tabs
+ * does not remount/reload the image layer.
  */
 export function TabBackground() {
+  const segments = useSegments();
   const backgroundImageUri = useScheduleStore((s) => s.backgroundImageUri);
+  const backgroundImageOpacity = useScheduleStore(
+    (s) => s.backgroundImageOpacity,
+  );
+  const backgroundImageBlurRadius = useScheduleStore(
+    (s) => s.backgroundImageBlurRadius,
+  );
   const isDark = useColorScheme() === "dark";
   const insets = useSafeAreaInsets();
+  const isCourseTab = segments[0] === "(tabs)" && segments[1] === "course";
 
   if (!backgroundImageUri) return null;
 
   const scrimColor = isDark ? "21,23,24" : "255,255,255";
+  const opacity = isCourseTab
+    ? backgroundImageOpacity
+    : DEFAULT_SCHEDULE_VISUAL.backgroundImageOpacity;
+  const blurRadius = isCourseTab
+    ? backgroundImageBlurRadius
+    : DEFAULT_SCHEDULE_VISUAL.backgroundImageBlurRadius;
 
   return (
     <>
       <Image
+        pointerEvents="none"
         source={{ uri: backgroundImageUri }}
         style={{
           position: "absolute",
@@ -29,10 +44,10 @@ export function TabBackground() {
           left: 0,
           right: 0,
           bottom: 0,
-          opacity: DEFAULT_SCHEDULE_VISUAL.backgroundImageOpacity,
+          opacity,
         }}
         contentFit="cover"
-        blurRadius={DEFAULT_SCHEDULE_VISUAL.backgroundImageBlurRadius}
+        blurRadius={blurRadius}
       />
       <LinearGradient
         colors={[

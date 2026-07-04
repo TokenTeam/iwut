@@ -64,6 +64,7 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: theme.tint,
         headerShown: false,
+        sceneStyle: { backgroundColor: "transparent" },
       }}
     >
       <Tabs.Screen

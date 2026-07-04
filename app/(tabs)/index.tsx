@@ -12,12 +12,11 @@ import {
 import type PagerView from "react-native-pager-view";
 import { type PagerViewOnPageSelectedEvent } from "react-native-pager-view";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CourseDetailModal } from "@/components/layout/course-detail-modal";
 import { CourseShareSheet } from "@/components/share/course-share-sheet";
 import { HomeMenu } from "@/components/layout/home-menu";
-import { TabBackground } from "@/components/layout/tab-background";
 import { AnnouncementBanner } from "@/components/ui/announcement-banner";
 import { getDayLabels } from "@/constants/weekdays";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -161,6 +160,7 @@ export default function HomeScreen() {
   const t = useT();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const insets = useSafeAreaInsets();
   const haptic = useHaptics();
   const courses = useCourseStore((s) => s.courses);
   const termStart = useCourseStore((s) => s.termStart);
@@ -402,8 +402,7 @@ export default function HomeScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <TabBackground />
-      <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
+      <View style={{ flex: 1, paddingTop: insets.top }}>
         <View className="flex-1">
           <View className="px-6 pb-2 pt-8">
             <View className="flex-row items-center justify-between">
@@ -703,7 +702,7 @@ export default function HomeScreen() {
             </>
           )}
         </View>
-      </SafeAreaView>
+      </View>
 
       <CourseDetailModal
         course={selectedCourse}
