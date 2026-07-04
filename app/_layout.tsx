@@ -42,8 +42,9 @@ import {
 import Toast from "react-native-toast-message";
 
 import { AppBlurTargetProvider } from "@/components/ui/app-blur-target";
+import { TabBackground } from "@/components/layout/tab-background";
 import { UpdateModal } from "@/components/ui/update-modal";
-import { Themes } from "@/constants/theme";
+import { Colors, Themes } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { refreshSystemLocale } from "@/lib/i18n";
 import { syncCoursesToCalendar } from "@/services/calendar-sync";
@@ -204,11 +205,19 @@ function RootLayout() {
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-      <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor:
+            Colors[colorScheme === "dark" ? "dark" : "light"].background,
+        }}
+        onLayout={onLayoutRootView}
+      >
         <ThemeProvider
           value={Themes[colorScheme === "dark" ? "dark" : "default"]}
         >
           <AppBlurTargetProvider>
+            <TabBackground />
             <Stack
               screenOptions={{
                 headerBackButtonDisplayMode: "minimal",
@@ -218,7 +227,13 @@ function RootLayout() {
                 name="onboarding"
                 options={{ headerShown: false }}
               />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="(tabs)"
+                options={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: "transparent" },
+                }}
+              />
             </Stack>
             <StatusBar style="auto" />
             <Toast />

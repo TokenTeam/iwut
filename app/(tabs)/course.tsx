@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -11,10 +10,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
 import {
@@ -49,13 +45,7 @@ export default function CourseScreen() {
   const courses = useCourseStore((store) => store.courses);
   const termStart = useCourseStore((store) => store.termStart);
   const isBound = useUserBindStore((store) => store.isBound);
-  const backgroundImageUri = useScheduleStore((s) => s.backgroundImageUri);
-  const backgroundImageOpacity = useScheduleStore(
-    (s) => s.backgroundImageOpacity,
-  );
-  const backgroundImageBlurRadius = useScheduleStore(
-    (s) => s.backgroundImageBlurRadius,
-  );
+  const hasBgImage = useScheduleStore((s) => !!s.backgroundImageUri);
   const [week, setWeek] = useState<number>(() => getCurrentWeek(termStart));
   const today = getCurrentDayOfWeek();
   const haptic = useHaptics();
@@ -163,38 +153,23 @@ export default function CourseScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      {!!backgroundImageUri && (
-        <>
-          <Image
-            source={{ uri: backgroundImageUri }}
-            style={{
+      {hasBgImage && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            {
               position: "absolute",
               top: 0,
               left: 0,
               right: 0,
-              bottom: 0,
-              opacity: backgroundImageOpacity,
-            }}
-            contentFit="cover"
-            blurRadius={backgroundImageBlurRadius}
-          />
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              {
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: insets.top + COURSE_HEADER_HEIGHT,
-                backgroundColor: Colors[isDark ? "dark" : "light"].background,
-              },
-              headerBackdropStyle,
-            ]}
-          />
-        </>
+              height: insets.top + COURSE_HEADER_HEIGHT,
+              backgroundColor: Colors[isDark ? "dark" : "light"].background,
+            },
+            headerBackdropStyle,
+          ]}
+        />
       )}
-      <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
+      <View style={{ flex: 1, paddingTop: insets.top }}>
         <View
           className="w-full flex-row items-center px-3"
           style={{ height: COURSE_HEADER_HEIGHT }}
@@ -442,7 +417,7 @@ export default function CourseScreen() {
             </View>
           </View>
         </Modal>
-      </SafeAreaView>
+      </View>
 
       <GetCourse ref={importerRef} />
 

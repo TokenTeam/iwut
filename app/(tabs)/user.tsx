@@ -5,7 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { type ReactNode, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, {
   Defs,
   G,
@@ -46,6 +46,8 @@ function HeaderSection({
   isDark: boolean;
   children: ReactNode;
 }) {
+  const insets = useSafeAreaInsets();
+
   return (
     <MaskedView
       style={styles.header}
@@ -139,7 +141,7 @@ function HeaderSection({
           </G>
         </Svg>
       </View>
-      <SafeAreaView edges={["top"]}>{children}</SafeAreaView>
+      <View style={{ paddingTop: insets.top }}>{children}</View>
     </MaskedView>
   );
 }
