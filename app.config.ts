@@ -123,6 +123,9 @@ const config: ExpoConfig = {
           enableMinifyInReleaseBuilds: true,
           enableShrinkResourcesInReleaseBuilds: true,
           usesCleartextTraffic: IS_DEV,
+          extraMavenRepos: [
+            "https://maven.cnb.cool/TokenTeam/android-deps/-/packages/",
+          ],
         },
       },
     ],
