@@ -26,6 +26,7 @@ export function MenuItem({
   right,
   showArrow,
   badge,
+  disabled,
   highlight,
 }: Readonly<{
   icon: ComponentProps<typeof MaterialIcons>["name"];
@@ -37,6 +38,7 @@ export function MenuItem({
   right?: ReactNode;
   showArrow?: boolean;
   badge?: boolean;
+  disabled?: boolean;
   highlight?: boolean;
 }>) {
   const router = useRouter();
@@ -45,7 +47,7 @@ export function MenuItem({
   const haptic = useHaptics();
 
   const hasCustomRight = right !== undefined;
-  const shouldShowArrow = showArrow ?? !hasCustomRight;
+  const shouldShowArrow = (showArrow ?? !hasCustomRight) && !disabled;
 
   // 从外部带参跳转时闪烁高亮，提示用户目标项位置
   const flash = useSharedValue(0);
@@ -68,6 +70,7 @@ export function MenuItem({
   const flashStyle = useAnimatedStyle(() => ({ opacity: flash.value }));
 
   const handlePress = () => {
+    if (disabled) return;
     haptic();
     onPress?.();
     if (href) {
@@ -77,8 +80,11 @@ export function MenuItem({
 
   return (
     <Pressable
+      accessibilityState={{ disabled }}
       className="flex-row items-center px-4 py-3 active:bg-neutral-100 dark:active:bg-neutral-700"
+      disabled={disabled}
       onPress={handlePress}
+      style={{ opacity: disabled ? 0.5 : 1 }}
     >
       <Animated.View
         pointerEvents="none"

@@ -30,17 +30,22 @@ import {
   scheduleWeeklyReminders,
 } from "@/services/course-notification";
 import { type ImportType, useCourseStore } from "@/store/course";
+import { type AccountMode, useAccountStore } from "@/store/account";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useSettingsStore } from "@/store/settings";
 import { useUserBindStore } from "@/store/user-bind";
 
-type StepId = "account" | "setup";
+type StepId = "identity" | "campus" | "setup";
 
 const appIcon = require("@/assets/images/icon.png");
 
-function getInitialStep(isBound: boolean, hasCourses: boolean): StepId {
+function getInitialStep(
+  isBound: boolean,
+  hasCourses: boolean,
+  accountMode: AccountMode,
+): StepId {
   if (isBound || hasCourses) return "setup";
-  return "account";
+  return accountMode === "pending" ? "identity" : "campus";
 }
 
 export default function OnboardingScreen() {
@@ -48,6 +53,8 @@ export default function OnboardingScreen() {
   const t = useT();
   const haptic = useHaptics();
   const isDark = useColorScheme() === "dark";
+  const accountMode = useAccountStore((s) => s.mode);
+  const continueAsGuest = useAccountStore((s) => s.continueAsGuest);
   const isBound = useUserBindStore((s) => s.isBound);
   const courseCount = useCourseStore((s) => s.courses.length);
   const completeOnboarding = useOnboardingStore((s) => s.complete);
@@ -57,25 +64,44 @@ export default function OnboardingScreen() {
   const setCalendarSync = useSettingsStore((s) => s.setCalendarSync);
 
   const hasCourses = courseCount > 0;
-  const [selectedStep] = useState<StepId>(() =>
-    getInitialStep(isBound, hasCourses),
+  const [selectedStep, setSelectedStep] = useState<StepId>(() =>
+    getInitialStep(isBound, hasCourses, accountMode),
   );
   const [acceptedLegal, setAcceptedLegal] = useState(false);
   const [notificationBusy, setNotificationBusy] = useState(false);
   const [permissionSheetVisible, setPermissionSheetVisible] = useState(false);
   const [calendarBusy, setCalendarBusy] = useState(false);
 
-  const step = selectedStep === "account" && !isBound ? "account" : "setup";
+  const step: StepId =
+    isBound || hasCourses
+      ? "setup"
+      : selectedStep === "identity" && accountMode !== "pending"
+        ? "campus"
+        : selectedStep;
+
+  const ensureLegalAccepted = () => {
+    if (acceptedLegal) return true;
+    Toast.show({
+      type: "info",
+      text1: t("onboarding.legalRequired"),
+      position: "bottom",
+    });
+    return false;
+  };
 
   const handleLogin = () => {
-    if (!acceptedLegal) {
-      Toast.show({
-        type: "info",
-        text1: t("onboarding.legalRequired"),
-        position: "bottom",
-      });
-      return;
-    }
+    if (!ensureLegalAccepted()) return;
+    haptic();
+    router.push("/auth/login" as never);
+  };
+
+  const handleGuest = () => {
+    if (!ensureLegalAccepted()) return;
+    haptic();
+    continueAsGuest();
+  };
+
+  const handleCampusBind = () => {
     haptic();
     router.push("/browser/bind");
   };
@@ -160,15 +186,29 @@ export default function OnboardingScreen() {
     Linking.openSettings().catch(() => {});
   };
 
-  if (step === "account") {
+  if (step === "identity") {
     return (
       <AccountWelcome
         acceptedLegal={acceptedLegal}
         isDark={isDark}
         onAcceptChange={setAcceptedLegal}
+        onGuest={handleGuest}
         onLogin={handleLogin}
         onOpenPrivacy={() => router.push("/legal/privacy-policy")}
         onOpenUserAgreement={() => router.push("/legal/user-agreement")}
+      />
+    );
+  }
+
+  if (step === "campus") {
+    return (
+      <CampusAccountStep
+        isDark={isDark}
+        onBind={handleCampusBind}
+        onSkip={() => {
+          haptic();
+          setSelectedStep("setup");
+        }}
       />
     );
   }
@@ -182,6 +222,7 @@ export default function OnboardingScreen() {
         courseReminder={courseReminder}
         hasCourses={hasCourses}
         isDark={isDark}
+        isBound={isBound}
         notificationBusy={notificationBusy}
         onCalendarToggle={handleCalendarToggle}
         onFinish={finish}
@@ -205,6 +246,7 @@ function AccountWelcome({
   acceptedLegal,
   isDark,
   onAcceptChange,
+  onGuest,
   onLogin,
   onOpenPrivacy,
   onOpenUserAgreement,
@@ -212,6 +254,7 @@ function AccountWelcome({
   acceptedLegal: boolean;
   isDark: boolean;
   onAcceptChange: (value: boolean) => void;
+  onGuest: () => void;
   onLogin: () => void;
   onOpenPrivacy: () => void;
   onOpenUserAgreement: () => void;
@@ -288,6 +331,11 @@ function AccountWelcome({
           label={t("onboarding.login")}
           onPress={onLogin}
         />
+        <SecondaryButton
+          isDark={isDark}
+          label={t("onboarding.continueAsGuest")}
+          onPress={onGuest}
+        />
         <Pressable
           onPress={() => onAcceptChange(!acceptedLegal)}
           style={({ pressed }) => ({
@@ -339,6 +387,85 @@ function AccountWelcome({
   );
 }
 
+function CampusAccountStep({
+  isDark,
+  onBind,
+  onSkip,
+}: Readonly<{
+  isDark: boolean;
+  onBind: () => void;
+  onSkip: () => void;
+}>) {
+  const t = useT();
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: isDark ? "#171717" : "#F5F5F5",
+        paddingHorizontal: 24,
+        paddingTop: insets.top + 64,
+        paddingBottom: insets.bottom + 24,
+      }}
+    >
+      <View style={{ flex: 1, alignItems: "center", paddingTop: 44 }}>
+        <View
+          style={{
+            width: 88,
+            height: 88,
+            borderRadius: 26,
+            borderCurve: "continuous",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: isDark ? "#1E3A5F" : "#E1F0FF",
+          }}
+        >
+          <Ionicons name="school" size={42} color="#007AFF" />
+        </View>
+        <Text
+          selectable
+          style={{
+            marginTop: 28,
+            color: isDark ? "#FAFAFA" : "#171717",
+            fontSize: 30,
+            fontWeight: "700",
+            textAlign: "center",
+          }}
+        >
+          {t("onboarding.campusTitle")}
+        </Text>
+        <Text
+          selectable
+          style={{
+            marginTop: 10,
+            maxWidth: 320,
+            color: isDark ? "#A3A3A3" : "#737373",
+            fontSize: 15,
+            lineHeight: 22,
+            textAlign: "center",
+          }}
+        >
+          {t("onboarding.campusSubtitle")}
+        </Text>
+      </View>
+
+      <View style={{ gap: 12 }}>
+        <PrimaryButton
+          color="#007AFF"
+          label={t("onboarding.bindCampusNow")}
+          onPress={onBind}
+        />
+        <SecondaryButton
+          isDark={isDark}
+          label={t("onboarding.skipCampus")}
+          onPress={onSkip}
+        />
+      </View>
+    </View>
+  );
+}
+
 function SetupScreen({
   calendarBusy,
   calendarSync,
@@ -346,6 +473,7 @@ function SetupScreen({
   courseReminder,
   hasCourses,
   isDark,
+  isBound,
   notificationBusy,
   onCalendarToggle,
   onFinish,
@@ -358,6 +486,7 @@ function SetupScreen({
   courseReminder: boolean;
   hasCourses: boolean;
   isDark: boolean;
+  isBound: boolean;
   notificationBusy: boolean;
   onCalendarToggle: (value: boolean) => void;
   onFinish: () => void;
@@ -444,7 +573,11 @@ function SetupScreen({
                 <MenuItem
                   icon="calendar-today"
                   iconBg="#34C759"
+                  disabled={!isBound}
                   label={t("onboarding.importNow")}
+                  value={
+                    isBound ? undefined : t("onboarding.needCampusAccountShort")
+                  }
                   onPress={() => {
                     haptic();
                     setShowChoices(true);
@@ -543,6 +676,43 @@ function PrimaryButton({
       })}
     >
       <Text style={{ color: "#fff", fontSize: 17, fontWeight: "700" }}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function SecondaryButton({
+  isDark,
+  label,
+  onPress,
+}: Readonly<{
+  isDark: boolean;
+  label: string;
+  onPress: () => void;
+}>) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        height: 52,
+        borderRadius: 18,
+        borderCurve: "continuous",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: isDark ? "#262626" : "#FFFFFF",
+        borderWidth: 1,
+        borderColor: isDark ? "#404040" : "#E5E5E5",
+        opacity: pressed ? 0.72 : 1,
+      })}
+    >
+      <Text
+        style={{
+          color: isDark ? "#D4D4D4" : "#525252",
+          fontSize: 16,
+          fontWeight: "600",
+        }}
+      >
         {label}
       </Text>
     </Pressable>

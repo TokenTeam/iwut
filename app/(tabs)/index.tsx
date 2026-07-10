@@ -51,6 +51,7 @@ import { useCourseStore } from "@/store/course";
 import type { Exam } from "@/store/exam";
 import { useExamStore } from "@/store/exam";
 import { useScheduleStore } from "@/store/schedule";
+import { useUserBindStore } from "@/store/user-bind";
 
 type GreetingSlot = {
   start: number;
@@ -164,6 +165,7 @@ export default function HomeScreen() {
   const haptic = useHaptics();
   const courses = useCourseStore((s) => s.courses);
   const termStart = useCourseStore((s) => s.termStart);
+  const isBound = useUserBindStore((s) => s.isBound);
   const exams = useExamStore((s) => s.exams);
   const examTerm = useExamStore((s) => s.term);
   const clearExamData = useExamStore((s) => s.clearExamData);
@@ -462,7 +464,7 @@ export default function HomeScreen() {
             }`}
           />
 
-          {vacation ? (
+          {vacation && hasCourses ? (
             <VacationState isDark={isDark} hasBg={hasBgImage} />
           ) : (
             <>
@@ -655,6 +657,7 @@ export default function HomeScreen() {
                   ) : (
                     <EmptyState
                       hasCourses={hasCourses}
+                      isBound={isBound}
                       isDark={isDark}
                       hasBg={hasBgImage}
                       variant="today"
@@ -692,6 +695,7 @@ export default function HomeScreen() {
                   ) : (
                     <EmptyState
                       hasCourses={hasCourses}
+                      isBound={isBound}
                       isDark={isDark}
                       hasBg={hasBgImage}
                       variant="tomorrow"
@@ -1004,32 +1008,47 @@ function CardMetaRow({
 
 function EmptyState({
   hasCourses,
+  isBound,
   isDark,
   hasBg = false,
   variant = "today",
 }: {
   hasCourses: boolean;
+  isBound: boolean;
   isDark: boolean;
   hasBg?: boolean;
   variant?: "today" | "tomorrow";
 }) {
   const t = useT();
+  const haptic = useHaptics();
   const isTomorrow = variant === "tomorrow";
-  const title = !hasCourses
-    ? t("home.emptyNoCourses")
-    : isTomorrow
-      ? t("home.emptyTomorrowNone")
-      : t("home.emptyTodayNone");
-  const sub = !hasCourses
-    ? t("home.emptyNoCoursesSub")
-    : isTomorrow
-      ? t("home.emptyTomorrowNoneSub")
-      : t("home.emptyTodayNoneSub");
-  const iconName: React.ComponentProps<typeof Ionicons>["name"] = !hasCourses
-    ? "calendar-outline"
-    : isTomorrow
-      ? "moon-outline"
-      : "sunny-outline";
+  const needsBinding = !hasCourses && !isBound;
+  const title = needsBinding
+    ? t("course.needBindTitle")
+    : !hasCourses
+      ? t("home.emptyNoCourses")
+      : isTomorrow
+        ? t("home.emptyTomorrowNone")
+        : t("home.emptyTodayNone");
+  const sub = needsBinding
+    ? t("course.needBindSub")
+    : !hasCourses
+      ? t("home.emptyNoCoursesSub")
+      : isTomorrow
+        ? t("home.emptyTomorrowNoneSub")
+        : t("home.emptyTodayNoneSub");
+  const iconName: React.ComponentProps<typeof Ionicons>["name"] = needsBinding
+    ? "person-circle-outline"
+    : !hasCourses
+      ? "calendar-outline"
+      : isTomorrow
+        ? "moon-outline"
+        : "sunny-outline";
+
+  const handleBind = () => {
+    haptic();
+    router.navigate("/(tabs)/user");
+  };
 
   return (
     <View
@@ -1063,6 +1082,7 @@ function EmptyState({
         />
       </View>
       <Text
+        selectable
         style={{
           fontSize: 15,
           fontWeight: "600",
@@ -1072,6 +1092,7 @@ function EmptyState({
         {title}
       </Text>
       <Text
+        selectable
         style={{
           fontSize: 13,
           color: hasBg
@@ -1087,6 +1108,24 @@ function EmptyState({
       >
         {sub}
       </Text>
+      {needsBinding ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={handleBind}
+          style={({ pressed }) => ({
+            marginTop: 4,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 2,
+            opacity: pressed ? 0.5 : 1,
+          })}
+        >
+          <Text style={{ color: "#3b82f6", fontSize: 13, fontWeight: "500" }}>
+            {t("course.goBind")}
+          </Text>
+          <Ionicons name="chevron-forward" size={13} color="#3b82f6" />
+        </Pressable>
+      ) : null}
     </View>
   );
 }

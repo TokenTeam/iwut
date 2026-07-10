@@ -23,6 +23,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
+import { useAccountStore } from "@/store/account";
 import { useUserBindStore } from "@/store/user-bind";
 
 const HEADER_GRADIENT = {
@@ -321,6 +322,14 @@ export default function UserScreen() {
   useMarkRouteInteractive();
   const t = useT();
   const isDark = useColorScheme() === "dark";
+  const accountMode = useAccountStore((s) => s.mode);
+  const accountEmail = useAccountStore((s) => s.email);
+  const accountValue =
+    accountMode === "authenticated"
+      ? accountEmail
+      : accountMode === "guest"
+        ? t("account.guest")
+        : t("account.notSignedIn");
   return (
     <View className="flex-1 bg-neutral-100 dark:bg-neutral-900">
       <HeaderSection isDark={isDark}>
@@ -336,6 +345,15 @@ export default function UserScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View className="px-4">
+          <MenuGroup title={t("account.centerTitle")}>
+            <MenuItem
+              icon="account-circle"
+              iconBg="#5856D6"
+              label={t("account.account")}
+              value={accountValue}
+              href="/user/account"
+            />
+          </MenuGroup>
           <MenuGroup title={t("user.menuTools")}>
             <MenuItem
               icon="wifi"
