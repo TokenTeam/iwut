@@ -1,35 +1,22 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import MaskedView from "@react-native-masked-view/masked-view";
-import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import { type ReactNode, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { type ReactNode, useCallback, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, {
-  Defs,
-  G,
-  Mask,
-  Path,
-  RadialGradient,
-  Rect,
-  Stop,
-  LinearGradient as SvgLinearGradient,
-} from "react-native-svg";
 
+import { AccountAvatar } from "@/components/account/account-avatar";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
+import { UserHeroBackground } from "@/components/user/user-hero-background";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { getAuthCenterAvatarUrl } from "@/lib/auth-center-profile";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
 import { useAccountStore } from "@/store/account";
 import { useUserBindStore } from "@/store/user-bind";
-
-const HEADER_GRADIENT = {
-  light: ["#5aa0f0", "#6f7af5"] as const,
-  dark: ["#2a3a7a", "#3a3675"] as const,
-};
 
 const MASK_COLORS = ["#000000", "#000000", "rgba(0,0,0,0)"] as const;
 const MASK_LOCATIONS = [0, 0.6, 1] as const;
@@ -37,8 +24,6 @@ const MASK_LOCATIONS = [0, 0.6, 1] as const;
 const HERO_PADDING_TOP = 40;
 const HERO_PADDING_BOTTOM = 100;
 const MENU_PULL_UP = 60;
-
-const defaultAvatar = require("@/assets/images/default-avatar.png");
 
 function HeaderSection({
   isDark,
@@ -60,88 +45,11 @@ function HeaderSection({
         />
       }
     >
-      <LinearGradient
-        colors={isDark ? HEADER_GRADIENT.dark : HEADER_GRADIENT.light}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
+      <UserHeroBackground
+        artworkStyle={styles.svgWrap}
+        idPrefix="user-page"
+        isDark={isDark}
       />
-      <View style={styles.svgWrap} pointerEvents="none">
-        <Svg
-          width="100%"
-          height="100%"
-          viewBox="0 0 375 224"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          <Defs>
-            <RadialGradient
-              id="maskRadial"
-              cx="0"
-              cy="0"
-              r="1"
-              gradientUnits="userSpaceOnUse"
-              gradientTransform="translate(365 224) rotate(-140.338) scale(254.602 199.44)"
-            >
-              <Stop offset="0" stopColor="#6371FF" stopOpacity="1" />
-              <Stop offset="1" stopColor="#0085FF" stopOpacity="0" />
-            </RadialGradient>
-            <SvgLinearGradient
-              id="shape1"
-              x1="407.5"
-              y1="-34"
-              x2="211"
-              y2="270"
-              gradientUnits="userSpaceOnUse"
-            >
-              <Stop offset="0" stopColor="#CBE9FF" stopOpacity="0" />
-              <Stop offset="1" stopColor="#FFFFFF" stopOpacity="1" />
-            </SvgLinearGradient>
-            <SvgLinearGradient
-              id="shape2"
-              x1="379.5"
-              y1="-10.5"
-              x2="242"
-              y2="281.5"
-              gradientUnits="userSpaceOnUse"
-            >
-              <Stop offset="0" stopColor="#FFFFFF" stopOpacity="1" />
-              <Stop offset="1" stopColor="#96C5FF" stopOpacity="0.29" />
-            </SvgLinearGradient>
-            <Mask
-              id="alphaMask"
-              maskUnits="userSpaceOnUse"
-              x="0"
-              y="0"
-              width="375"
-              height="224"
-              maskType="alpha"
-            >
-              <Rect
-                width="375"
-                height="224"
-                fill="url(#maskRadial)"
-                fillOpacity="0.9"
-              />
-            </Mask>
-          </Defs>
-          <G opacity={0.6}>
-            <G mask="url(#alphaMask)">
-              <Path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M242.188 270.156H211.312L273.062 208.406L211.312 146.656L334.812 23.1562H365.688L303.938 84.9062L365.688 146.656L242.188 270.156ZM334.812 146.656L288.5 100.344L242.188 146.656L288.5 192.969L334.812 146.656Z"
-                fill="url(#shape1)"
-              />
-              <Path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M165 146.656L311.656 0L342.531 0L365.688 23.1562H334.812L311.656 46.3125L412 146.656L265.344 293.312H234.469L211.312 270.156H242.188L265.344 247L165 146.656ZM365.688 146.656L288.5 69.4688L211.312 146.656L288.5 223.844L365.688 146.656Z"
-                fill="url(#shape2)"
-              />
-            </G>
-          </G>
-        </Svg>
-      </View>
       <View style={{ paddingTop: insets.top }}>{children}</View>
     </MaskedView>
   );
@@ -186,10 +94,6 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: "rgba(255,255,255,0.3)",
     overflow: "hidden",
-  },
-  avatarImage: {
-    width: "100%",
-    height: "100%",
   },
   heroName: {
     fontSize: 19,
@@ -259,20 +163,17 @@ function BoundHero() {
   const college = useUserBindStore((s) => s.college);
   const eduLevel = useUserBindStore((s) => s.eduLevel);
   const unbind = useUserBindStore((s) => s.unbind);
+  const profile = useAccountStore((s) => s.profile);
   const [unbindVisible, setUnbindVisible] = useState(false);
+
+  const avatarUrl = getAuthCenterAvatarUrl(profile);
 
   const meta = [eduLevel, college].filter(Boolean).join(" · ");
 
   return (
     <>
       <View style={styles.heroRow}>
-        <View style={styles.avatarRing}>
-          <Image
-            source={defaultAvatar}
-            style={styles.avatarImage}
-            contentFit="cover"
-          />
-        </View>
+        <AccountAvatar size={AVATAR_SIZE} uri={avatarUrl} />
         <View style={styles.heroBody}>
           <Text style={styles.heroName} numberOfLines={1}>
             {studentName}
@@ -324,12 +225,20 @@ export default function UserScreen() {
   const isDark = useColorScheme() === "dark";
   const accountMode = useAccountStore((s) => s.mode);
   const accountEmail = useAccountStore((s) => s.email);
+  const refreshProfile = useAccountStore((s) => s.refreshProfile);
   const accountValue =
     accountMode === "authenticated"
       ? accountEmail
       : accountMode === "guest"
         ? t("account.guest")
         : t("account.notSignedIn");
+
+  useFocusEffect(
+    useCallback(() => {
+      if (accountMode === "authenticated") void refreshProfile();
+    }, [accountMode, refreshProfile]),
+  );
+
   return (
     <View className="flex-1 bg-neutral-100 dark:bg-neutral-900">
       <HeaderSection isDark={isDark}>

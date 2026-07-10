@@ -102,7 +102,12 @@ async function requestAuthCenter<T>(
     if (error instanceof Error && error.name === "AbortError") {
       throw new AuthCenterError("request timeout", "account.requestTimeout");
     }
-    throw new AuthCenterError("network request failed", "account.networkError");
+    const wrapped = new AuthCenterError(
+      "network request failed",
+      "account.networkError",
+    );
+    wrapped.cause = error;
+    throw wrapped;
   } finally {
     clearTimeout(timeout);
   }
@@ -174,13 +179,30 @@ export async function getAuthCenterProfile(
     throw new AuthCenterError("incomplete profile data", "account.badResponse");
   }
 
+  const attrs = payload.data.attrs;
   return {
     ...payload.data,
     attrs:
-      payload.data.attrs && typeof payload.data.attrs === "object"
-        ? payload.data.attrs
-        : {},
+      attrs && typeof attrs === "object" && !Array.isArray(attrs) ? attrs : {},
   };
+}
+
+export async function updateAuthCenterProfile(
+  accessToken: string,
+  attrs: Record<string, string>,
+): Promise<void> {
+  await requestAuthCenter<never>(
+    "/user/update-profile",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(attrs),
+    },
+    () => "account.profileUpdateFailed",
+  );
 }
 
 export async function sendRegisterCode(email: string): Promise<void> {

@@ -11,6 +11,7 @@ import {
   loginToAuthCenter,
   refreshAuthCenterTokens,
   registerAuthCenterAccount,
+  updateAuthCenterProfile,
 } from "@/services/auth-center";
 
 const ACCESS_TOKEN_KEY = "auth_center_access_token";
@@ -32,18 +33,26 @@ async function refreshStoredTokens(): Promise<AuthCenterTokens> {
     tokenRefreshPromise = (async () => {
       const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
       if (!refreshToken) {
+        await useAccountStore.getState().logout();
         throw new AuthCenterError(
           "session expired",
           "account.loginFailed",
           401,
         );
       }
-      const tokens = await refreshAuthCenterTokens(refreshToken);
-      await Promise.all([
-        SecureStore.setItemAsync(ACCESS_TOKEN_KEY, tokens.accessToken),
-        SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokens.refreshToken),
-      ]);
-      return tokens;
+      try {
+        const tokens = await refreshAuthCenterTokens(refreshToken);
+        await Promise.all([
+          SecureStore.setItemAsync(ACCESS_TOKEN_KEY, tokens.accessToken),
+          SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokens.refreshToken),
+        ]);
+        return tokens;
+      } catch (error) {
+        if (error instanceof AuthCenterError && error.code === 401) {
+          await useAccountStore.getState().logout();
+        }
+        throw error;
+      }
     })().finally(() => {
       tokenRefreshPromise = null;
     });
@@ -66,7 +75,8 @@ interface AccountStore {
   ) => Promise<void>;
   logout: () => Promise<void>;
   getAccessToken: () => Promise<string | null>;
-  refreshProfile: () => Promise<void>;
+  refreshProfile: (options?: { silent?: boolean }) => Promise<void>;
+  updateProfile: (attrs: Record<string, string>) => Promise<void>;
 }
 
 export const useAccountStore = create<AccountStore>()(
@@ -133,7 +143,7 @@ export const useAccountStore = create<AccountStore>()(
 
       getAccessToken: () => SecureStore.getItemAsync(ACCESS_TOKEN_KEY),
 
-      refreshProfile: async () => {
+      refreshProfile: async (options) => {
         if (get().mode !== "authenticated" || get().profileLoading) return;
         const accountEmail = get().email;
         set({ profileLoading: true, profileLoadFailed: false });
@@ -164,7 +174,11 @@ export const useAccountStore = create<AccountStore>()(
             set({ email: profile.email, profile, profileLoadFailed: false });
           }
         } catch {
-          if (get().mode === "authenticated" && get().email === accountEmail) {
+          if (
+            !options?.silent &&
+            get().mode === "authenticated" &&
+            get().email === accountEmail
+          ) {
             set({ profileLoadFailed: true });
           }
         } finally {
@@ -172,6 +186,40 @@ export const useAccountStore = create<AccountStore>()(
             set({ profileLoading: false });
           }
         }
+      },
+
+      updateProfile: async (attrs) => {
+        let accessToken = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+        if (!accessToken) {
+          throw new AuthCenterError(
+            "session expired",
+            "account.loginFailed",
+            401,
+          );
+        }
+
+        try {
+          await updateAuthCenterProfile(accessToken, attrs);
+        } catch (error) {
+          if (!(error instanceof AuthCenterError) || error.code !== 401) {
+            throw error;
+          }
+          const tokens = await refreshStoredTokens();
+          accessToken = tokens.accessToken;
+          await updateAuthCenterProfile(accessToken, attrs);
+        }
+
+        const profile = get().profile;
+        if (profile) {
+          set({
+            profile: {
+              ...profile,
+              attrs: { ...profile.attrs, ...attrs },
+              updatedAt: new Date().toISOString(),
+            },
+          });
+        }
+        await get().refreshProfile({ silent: true });
       },
     }),
     {
