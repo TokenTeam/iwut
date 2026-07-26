@@ -8,6 +8,7 @@ import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import java.util.Calendar
 import java.util.Date
+import java.util.GregorianCalendar
 import java.util.Locale
 import java.util.TimeZone
 
@@ -89,7 +90,7 @@ object ScheduleData {
             match.groupValues[2].toInt() - 1,
             match.groupValues[3].toInt(),
         )
-        val nowCalendar = Calendar.getInstance().apply { time = now }
+        val nowCalendar = localCalendar().apply { time = now }
         val nowDay = normalizedDay(
             nowCalendar.get(Calendar.YEAR),
             nowCalendar.get(Calendar.MONTH),
@@ -101,18 +102,21 @@ object ScheduleData {
     }
 
     private fun normalizedDay(year: Int, month: Int, day: Int): Long =
-        Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+        GregorianCalendar(TimeZone.getTimeZone("UTC"), Locale.US).apply {
             clear()
             set(year, month, day)
         }.timeInMillis
 
+    private fun localCalendar(): Calendar =
+        GregorianCalendar(TimeZone.getDefault(), Locale.US)
+
     private const val DAY_MS = 24 * 60 * 60 * 1000L
 
     fun getCurrentWeek(termStart: String): Int =
-        getWeek(termStart, Calendar.getInstance().time)
+        getWeek(termStart, Date())
 
     fun getDayOfWeek(): Int {
-        val cal = Calendar.getInstance()
+        val cal = localCalendar()
         val dow = cal.get(Calendar.DAY_OF_WEEK)
         return if (dow == Calendar.SUNDAY) 7 else dow - 1
     }
@@ -123,7 +127,7 @@ object ScheduleData {
     }
 
     fun getTomorrowWeek(termStart: String): Int {
-        val tomorrow = Calendar.getInstance().apply {
+        val tomorrow = localCalendar().apply {
             add(Calendar.DAY_OF_YEAR, 1)
         }.time
         return getWeek(termStart, tomorrow)
@@ -133,7 +137,7 @@ object ScheduleData {
         context.getString(R.string.widget_week_n, week)
 
     fun getDateStr(context: Context): String {
-        val cal = Calendar.getInstance()
+        val cal = localCalendar()
         return context.getString(
             R.string.widget_month_day,
             cal.get(Calendar.MONTH) + 1,
