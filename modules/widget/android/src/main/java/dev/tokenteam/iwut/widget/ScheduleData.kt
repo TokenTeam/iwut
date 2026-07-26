@@ -8,6 +8,7 @@ import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -82,19 +83,21 @@ object ScheduleData {
         return if (locales.isEmpty) Locale.getDefault() else locales.get(0)
     }
 
-    fun getCurrentWeek(termStart: String): Int {
+    private fun getWeek(termStart: String, now: Date): Int {
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
         val startDate = try {
             sdf.parse(termStart) ?: return 1
         } catch (e: Exception) {
             return 1
         }
-        val now = Calendar.getInstance().time
         val diffMs = now.time - startDate.time
         if (diffMs < 0) return 0
         val diffDays = TimeUnit.MILLISECONDS.toDays(diffMs)
         return (diffDays / 7 + 1).toInt()
     }
+
+    fun getCurrentWeek(termStart: String): Int =
+        getWeek(termStart, Calendar.getInstance().time)
 
     fun getDayOfWeek(): Int {
         val cal = Calendar.getInstance()
@@ -108,9 +111,10 @@ object ScheduleData {
     }
 
     fun getTomorrowWeek(termStart: String): Int {
-        val today = getDayOfWeek()
-        val week = getCurrentWeek(termStart)
-        return if (today == 7) week + 1 else week
+        val tomorrow = Calendar.getInstance().apply {
+            add(Calendar.DAY_OF_YEAR, 1)
+        }.time
+        return getWeek(termStart, tomorrow)
     }
 
     fun getWeekStr(context: Context, week: Int): String =

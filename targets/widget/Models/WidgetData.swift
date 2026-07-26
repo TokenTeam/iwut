@@ -122,9 +122,8 @@ struct ScheduleHelper {
     }
 
     static func tomorrowWeek(termStart: String, now: Date) -> Int {
-        let today = dayOfWeek(for: now)
-        let week = currentWeek(termStart: termStart, now: now)
-        return today == 7 ? week + 1 : week
+        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: now) ?? now
+        return currentWeek(termStart: termStart, now: tomorrow)
     }
 
     static func weekStr(week: Int) -> String {
