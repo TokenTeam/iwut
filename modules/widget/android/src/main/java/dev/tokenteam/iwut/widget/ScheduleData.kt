@@ -6,11 +6,10 @@ import android.content.res.Configuration
 import android.os.Build
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
-import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import java.util.concurrent.TimeUnit
+import java.util.TimeZone
 
 data class WidgetCourse(
     @SerializedName("name") val name: String = "",
@@ -84,17 +83,30 @@ object ScheduleData {
     }
 
     private fun getWeek(termStart: String, now: Date): Int {
-        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-        val startDate = try {
-            sdf.parse(termStart) ?: return 1
-        } catch (e: Exception) {
-            return 1
-        }
-        val diffMs = now.time - startDate.time
-        if (diffMs < 0) return 0
-        val diffDays = TimeUnit.MILLISECONDS.toDays(diffMs)
+        val match = Regex("^(\\d{4})-(\\d{1,2})-(\\d{1,2})").find(termStart) ?: return 1
+        val startDay = normalizedDay(
+            match.groupValues[1].toInt(),
+            match.groupValues[2].toInt() - 1,
+            match.groupValues[3].toInt(),
+        )
+        val nowCalendar = Calendar.getInstance().apply { time = now }
+        val nowDay = normalizedDay(
+            nowCalendar.get(Calendar.YEAR),
+            nowCalendar.get(Calendar.MONTH),
+            nowCalendar.get(Calendar.DAY_OF_MONTH),
+        )
+        val diffDays = (nowDay - startDay) / DAY_MS
+        if (diffDays < 0) return 0
         return (diffDays / 7 + 1).toInt()
     }
+
+    private fun normalizedDay(year: Int, month: Int, day: Int): Long =
+        Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+            clear()
+            set(year, month, day)
+        }.timeInMillis
+
+    private const val DAY_MS = 24 * 60 * 60 * 1000L
 
     fun getCurrentWeek(termStart: String): Int =
         getWeek(termStart, Calendar.getInstance().time)
