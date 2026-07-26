@@ -6,10 +6,11 @@ import android.content.res.Configuration
 import android.os.Build
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
-import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
+import java.util.GregorianCalendar
 import java.util.Locale
-import java.util.concurrent.TimeUnit
+import java.util.TimeZone
 
 data class WidgetCourse(
     @SerializedName("name") val name: String = "",
@@ -82,22 +83,40 @@ object ScheduleData {
         return if (locales.isEmpty) Locale.getDefault() else locales.get(0)
     }
 
-    fun getCurrentWeek(termStart: String): Int {
-        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-        val startDate = try {
-            sdf.parse(termStart) ?: return 1
-        } catch (e: Exception) {
-            return 1
-        }
-        val now = Calendar.getInstance().time
-        val diffMs = now.time - startDate.time
-        if (diffMs < 0) return 0
-        val diffDays = TimeUnit.MILLISECONDS.toDays(diffMs)
+    private fun getWeek(termStart: String, now: Date): Int {
+        val match = Regex("^(\\d{4})-(\\d{1,2})-(\\d{1,2})").find(termStart) ?: return 1
+        val startDay = normalizedDay(
+            match.groupValues[1].toInt(),
+            match.groupValues[2].toInt() - 1,
+            match.groupValues[3].toInt(),
+        )
+        val nowCalendar = localCalendar().apply { time = now }
+        val nowDay = normalizedDay(
+            nowCalendar.get(Calendar.YEAR),
+            nowCalendar.get(Calendar.MONTH),
+            nowCalendar.get(Calendar.DAY_OF_MONTH),
+        )
+        val diffDays = (nowDay - startDay) / DAY_MS
+        if (diffDays < 0) return 0
         return (diffDays / 7 + 1).toInt()
     }
 
+    private fun normalizedDay(year: Int, month: Int, day: Int): Long =
+        GregorianCalendar(TimeZone.getTimeZone("UTC"), Locale.US).apply {
+            clear()
+            set(year, month, day)
+        }.timeInMillis
+
+    private fun localCalendar(): Calendar =
+        GregorianCalendar(TimeZone.getDefault(), Locale.US)
+
+    private const val DAY_MS = 24 * 60 * 60 * 1000L
+
+    fun getCurrentWeek(termStart: String): Int =
+        getWeek(termStart, Date())
+
     fun getDayOfWeek(): Int {
-        val cal = Calendar.getInstance()
+        val cal = localCalendar()
         val dow = cal.get(Calendar.DAY_OF_WEEK)
         return if (dow == Calendar.SUNDAY) 7 else dow - 1
     }
@@ -108,16 +127,17 @@ object ScheduleData {
     }
 
     fun getTomorrowWeek(termStart: String): Int {
-        val today = getDayOfWeek()
-        val week = getCurrentWeek(termStart)
-        return if (today == 7) week + 1 else week
+        val tomorrow = localCalendar().apply {
+            add(Calendar.DAY_OF_YEAR, 1)
+        }.time
+        return getWeek(termStart, tomorrow)
     }
 
     fun getWeekStr(context: Context, week: Int): String =
         context.getString(R.string.widget_week_n, week)
 
     fun getDateStr(context: Context): String {
-        val cal = Calendar.getInstance()
+        val cal = localCalendar()
         return context.getString(
             R.string.widget_month_day,
             cal.get(Calendar.MONTH) + 1,
