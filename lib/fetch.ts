@@ -3,8 +3,7 @@ import TcpSocket from "react-native-tcp-socket";
 
 type FetchHeaderValue = string | number | boolean;
 type FetchHeadersInit =
-  | Record<string, FetchHeaderValue>
-  | [string, FetchHeaderValue][];
+  Record<string, FetchHeaderValue> | [string, FetchHeaderValue][];
 
 type FetchBodyInit = string | URLSearchParams | ArrayBuffer | Uint8Array;
 

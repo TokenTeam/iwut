@@ -22,7 +22,7 @@ struct ScheduleEntry: TimelineEntry {
 
     var weekStr: String {
         guard let data = data else { return WidgetStrings.localized("widget.weekUnknown") }
-        return ScheduleHelper.weekStr(week: ScheduleHelper.currentWeek(termStart: data.termStart, now: date))
+        return ScheduleHelper.weekDisplayString(termStart: data.termStart, now: date)
     }
 
     var dateStr: String {

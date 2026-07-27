@@ -83,8 +83,8 @@ object ScheduleData {
         return if (locales.isEmpty) Locale.getDefault() else locales.get(0)
     }
 
-    private fun getWeek(termStart: String, now: Date): Int {
-        val match = Regex("^(\\d{4})-(\\d{1,2})-(\\d{1,2})").find(termStart) ?: return 1
+    private fun rawWeek(termStart: String, now: Date): Int? {
+        val match = Regex("^(\\d{4})-(\\d{1,2})-(\\d{1,2})").find(termStart) ?: return null
         val startDay = normalizedDay(
             match.groupValues[1].toInt(),
             match.groupValues[2].toInt() - 1,
@@ -97,7 +97,6 @@ object ScheduleData {
             nowCalendar.get(Calendar.DAY_OF_MONTH),
         )
         val diffDays = (nowDay - startDay) / DAY_MS
-        if (diffDays < 0) return 0
         return (diffDays / 7 + 1).toInt()
     }
 
@@ -111,9 +110,17 @@ object ScheduleData {
         GregorianCalendar(TimeZone.getDefault(), Locale.US)
 
     private const val DAY_MS = 24 * 60 * 60 * 1000L
+    const val MAX_WEEK = 20
 
-    fun getCurrentWeek(termStart: String): Int =
-        getWeek(termStart, Date())
+    fun getCurrentWeek(termStart: String): Int {
+        val week = rawWeek(termStart, Date()) ?: return 1
+        return week.coerceIn(1, MAX_WEEK)
+    }
+
+    fun isVacation(termStart: String): Boolean {
+        val week = rawWeek(termStart, Date()) ?: return false
+        return week < 1 || week > MAX_WEEK
+    }
 
     fun getDayOfWeek(): Int {
         val cal = localCalendar()
@@ -130,11 +137,16 @@ object ScheduleData {
         val tomorrow = localCalendar().apply {
             add(Calendar.DAY_OF_YEAR, 1)
         }.time
-        return getWeek(termStart, tomorrow)
+        val week = rawWeek(termStart, tomorrow) ?: return 1
+        return week.coerceIn(1, MAX_WEEK)
     }
 
-    fun getWeekStr(context: Context, week: Int): String =
-        context.getString(R.string.widget_week_n, week)
+    fun getWeekDisplayStr(context: Context, termStart: String): String {
+        if (isVacation(termStart)) {
+            return context.getString(R.string.widget_vacation)
+        }
+        return context.getString(R.string.widget_week_n, getCurrentWeek(termStart))
+    }
 
     fun getDateStr(context: Context): String {
         val cal = localCalendar()

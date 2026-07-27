@@ -24,5 +24,6 @@
         <item>周日</item>
     </string-array>
     <string name="widget_week_n">第%d周</string>
+    <string name="widget_vacation">假期中</string>
     <string name="widget_month_day">%1$d月%2$d日</string>
 </resources>
