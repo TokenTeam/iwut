@@ -94,7 +94,7 @@ private struct AnyDecodable: Decodable {
 /// courses. Keeping these helpers pure of `entry.date` guarantees each entry
 /// renders the correct content for the time it represents.
 struct ScheduleHelper {
-    static let maxWeek = 20
+    private static let maxWeek = 20
 
     static func rawWeek(termStart: String, now: Date) -> Int? {
         let formatter = DateFormatter()
@@ -106,17 +106,12 @@ struct ScheduleHelper {
         let startOfTerm = cal.startOfDay(for: startDate)
         let startOfNow = cal.startOfDay(for: now)
         let diffDays = cal.dateComponents([.day], from: startOfTerm, to: startOfNow).day ?? 0
+        if diffDays < 0 { return 0 }
         return diffDays / 7 + 1
     }
 
     static func currentWeek(termStart: String, now: Date) -> Int {
-        guard let week = rawWeek(termStart: termStart, now: now) else { return 1 }
-        return max(1, min(week, maxWeek))
-    }
-
-    static func isVacation(termStart: String, now: Date) -> Bool {
-        guard let week = rawWeek(termStart: termStart, now: now) else { return false }
-        return week < 1 || week > maxWeek
+        rawWeek(termStart: termStart, now: now) ?? 1
     }
 
     static func dayOfWeek(for date: Date) -> Int {
@@ -138,11 +133,11 @@ struct ScheduleHelper {
         String(format: WidgetStrings.localized("widget.weekDisplay"), week)
     }
 
-    static func weekDisplayString(termStart: String, now: Date) -> String {
-        if isVacation(termStart: termStart, now: now) {
+    static func weekDisplayString(week: Int) -> String {
+        if !(1...maxWeek).contains(week) {
             return WidgetStrings.localized("widget.vacation")
         }
-        return weekStr(week: currentWeek(termStart: termStart, now: now))
+        return weekStr(week: week)
     }
 
     static func dateStr(for date: Date) -> String {

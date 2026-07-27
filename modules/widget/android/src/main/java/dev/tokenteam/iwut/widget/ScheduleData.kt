@@ -97,6 +97,7 @@ object ScheduleData {
             nowCalendar.get(Calendar.DAY_OF_MONTH),
         )
         val diffDays = (nowDay - startDay) / DAY_MS
+        if (diffDays < 0) return 0
         return (diffDays / 7 + 1).toInt()
     }
 
@@ -110,17 +111,9 @@ object ScheduleData {
         GregorianCalendar(TimeZone.getDefault(), Locale.US)
 
     private const val DAY_MS = 24 * 60 * 60 * 1000L
-    const val MAX_WEEK = 20
+    private const val MAX_WEEK = 20
 
-    fun getCurrentWeek(termStart: String): Int {
-        val week = rawWeek(termStart, Date()) ?: return 1
-        return week.coerceIn(1, MAX_WEEK)
-    }
-
-    fun isVacation(termStart: String): Boolean {
-        val week = rawWeek(termStart, Date()) ?: return false
-        return week < 1 || week > MAX_WEEK
-    }
+    fun getCurrentWeek(termStart: String): Int = rawWeek(termStart, Date()) ?: 1
 
     fun getDayOfWeek(): Int {
         val cal = localCalendar()
@@ -137,15 +130,14 @@ object ScheduleData {
         val tomorrow = localCalendar().apply {
             add(Calendar.DAY_OF_YEAR, 1)
         }.time
-        val week = rawWeek(termStart, tomorrow) ?: return 1
-        return week.coerceIn(1, MAX_WEEK)
+        return rawWeek(termStart, tomorrow) ?: 1
     }
 
-    fun getWeekDisplayStr(context: Context, termStart: String): String {
-        if (isVacation(termStart)) {
+    fun getWeekDisplayStr(context: Context, week: Int): String {
+        if (week !in 1..MAX_WEEK) {
             return context.getString(R.string.widget_vacation)
         }
-        return context.getString(R.string.widget_week_n, getCurrentWeek(termStart))
+        return context.getString(R.string.widget_week_n, week)
     }
 
     fun getDateStr(context: Context): String {

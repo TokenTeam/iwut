@@ -66,7 +66,7 @@ class ScheduleWidget : AppWidgetProvider() {
             val tomorrowDay = ScheduleData.getTomorrowDayOfWeek()
             val tomorrowWeek = ScheduleData.getTomorrowWeek(data.termStart)
 
-            views.setTextViewText(R.id.tv_week, ScheduleData.getWeekDisplayStr(ctx, data.termStart))
+            views.setTextViewText(R.id.tv_week, ScheduleData.getWeekDisplayStr(ctx, week))
             views.setTextViewText(R.id.tv_date, ScheduleData.getDateStr(ctx))
             views.setTextViewText(R.id.tv_day_of_week, ScheduleData.getDayOfWeekStr(ctx, today))
 
