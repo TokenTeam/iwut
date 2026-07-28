@@ -1,5 +1,5 @@
 import * as Clipboard from "expo-clipboard";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, Share, Text, View } from "react-native";
 import QRCode from "qrcode";
 import { SvgXml } from "react-native-svg";
@@ -8,27 +8,55 @@ import Toast from "react-native-toast-message";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useT } from "@/lib/i18n";
-import { QR_SAFE_BYTE_LIMIT, utf8ByteLength } from "@/lib/scan";
+import {
+  QR_SAFE_BYTE_LIMIT,
+  type ScanEnvelope,
+  utf8ByteLength,
+} from "@/lib/scan";
+import { buildShareArtifacts, resolveShortLink } from "@/lib/share";
 
-export function ScanCodeSheet({
+export function ShareSheet({
   visible,
   onClose,
   title,
   description,
-  qrValue,
-  shareValue,
+  envelope,
 }: Readonly<{
   visible: boolean;
   onClose: () => void;
   title: string;
   description: string;
-  qrValue: string;
-  shareValue?: string;
+  envelope: ScanEnvelope;
 }>) {
   const t = useT();
   const haptic = useHaptics();
-  const link = shareValue ?? qrValue;
+
+  const { qrValue, deepLink } = useMemo(
+    () => buildShareArtifacts(envelope),
+    [envelope],
+  );
   const tooLarge = utf8ByteLength(qrValue) > QR_SAFE_BYTE_LIMIT;
+
+  const [shortLinkResult, setShortLinkResult] = useState<{
+    key: string;
+    url: string | null;
+  } | null>(null);
+  const shortLink =
+    shortLinkResult?.key === qrValue ? shortLinkResult.url : null;
+  const link = shortLink ?? deepLink;
+
+  useEffect(() => {
+    if (!visible) return;
+    let cancelled = false;
+    resolveShortLink(envelope)
+      .then((url) => {
+        if (!cancelled) setShortLinkResult({ key: qrValue, url });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [envelope, qrValue, visible]);
 
   const [qrResult, setQrResult] = useState<{
     value: string;
@@ -69,7 +97,7 @@ export function ScanCodeSheet({
     await Clipboard.setStringAsync(link);
     Toast.show({
       type: "success",
-      text1: t("scan.codeCopied"),
+      text1: t("share.codeCopied"),
       position: "bottom",
     });
   };
@@ -89,13 +117,13 @@ export function ScanCodeSheet({
         <View className="h-64 w-64 items-center justify-center rounded-2xl bg-white p-3">
           {tooLarge ? (
             <Text className="px-2 text-center text-sm leading-5 text-neutral-500">
-              {t("scan.codeTooLarge")}
+              {t("share.codeTooLarge")}
             </Text>
           ) : qrSvg ? (
             <SvgXml xml={qrSvg} width={232} height={232} />
           ) : failed ? (
             <Text className="text-center text-sm text-red-500">
-              {t("scan.codeRenderFailed")}
+              {t("share.codeRenderFailed")}
             </Text>
           ) : (
             <ActivityIndicator />
@@ -109,7 +137,7 @@ export function ScanCodeSheet({
           onPress={copy}
         >
           <Text className="text-base font-medium text-neutral-600 dark:text-neutral-300">
-            {t("scan.copyCode")}
+            {t("share.copyCode")}
           </Text>
         </Pressable>
         <Pressable
@@ -117,7 +145,7 @@ export function ScanCodeSheet({
           onPress={share}
         >
           <Text className="text-base font-medium text-white">
-            {t("scan.shareCode")}
+            {t("share.shareCode")}
           </Text>
         </Pressable>
       </View>

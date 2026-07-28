@@ -12,11 +12,11 @@ import {
 import type PagerView from "react-native-pager-view";
 import { type PagerViewOnPageSelectedEvent } from "react-native-pager-view";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CourseDetailModal } from "@/components/layout/course-detail-modal";
+import { CourseShareSheet } from "@/components/share/course-share-sheet";
 import { HomeMenu } from "@/components/layout/home-menu";
-import { TabBackground } from "@/components/layout/tab-background";
 import { AnnouncementBanner } from "@/components/ui/announcement-banner";
 import { getDayLabels } from "@/constants/weekdays";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -40,8 +40,9 @@ import {
 import { type TKey, useT } from "@/lib/i18n";
 import { filterActiveAnnouncements } from "@/services/announcements";
 import {
-  formatCourseSectionTimeRange,
-  SECTION_TIMES,
+  formatCourseTimeRange,
+  getCourseEndMin,
+  getCourseStartMin,
 } from "@/services/course-time";
 import { isExamInTerm, shouldClearExamDataForTerm } from "@/services/exam-term";
 import { useAnnouncementStore } from "@/store/announcements";
@@ -111,13 +112,13 @@ type Countdown = { kind: "start" | "end"; mins: number };
 
 function isCourseFinished(course: Course, nowMs: number): boolean {
   const nowMin = getShanghaiMinutesOfDay(nowMs);
-  return nowMin > (SECTION_TIMES[course.sectionEnd]?.[3] ?? 0);
+  return nowMin > getCourseEndMin(course);
 }
 
 function getCourseCountdown(course: Course, nowMs: number): Countdown | null {
   const nowMin = getShanghaiMinutesOfDay(nowMs);
-  const startMin = SECTION_TIMES[course.sectionStart]?.[2] ?? 0;
-  const endMin = SECTION_TIMES[course.sectionEnd]?.[3] ?? 0;
+  const startMin = getCourseStartMin(course);
+  const endMin = getCourseEndMin(course);
 
   if (nowMin > endMin) return null;
   if (nowMin < startMin) {
@@ -159,6 +160,7 @@ export default function HomeScreen() {
   const t = useT();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const insets = useSafeAreaInsets();
   const haptic = useHaptics();
   const courses = useCourseStore((s) => s.courses);
   const termStart = useCourseStore((s) => s.termStart);
@@ -276,6 +278,7 @@ export default function HomeScreen() {
 
   const [activeTab, setActiveTab] = useState(() => (allTodayFinished ? 1 : 0));
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [shareName, setShareName] = useState<string | null>(null);
 
   const openCourseDetail = useCallback(
     (course: Course) => {
@@ -292,6 +295,15 @@ export default function HomeScreen() {
       params: { name: course.name },
     });
   }, []);
+
+  const handleShareCourse = useCallback(
+    (course: Course) => {
+      haptic();
+      setSelectedCourse(null);
+      setShareName(course.name);
+    },
+    [haptic],
+  );
 
   const pagerRef = useRef<PagerView>(null);
   const [initialPage] = useState(() => (allTodayFinished ? 1 : 0));
@@ -390,8 +402,7 @@ export default function HomeScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <TabBackground />
-      <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
+      <View style={{ flex: 1, paddingTop: insets.top }}>
         <View className="flex-1">
           <View className="px-6 pb-2 pt-8">
             <View className="flex-row items-center justify-between">
@@ -691,7 +702,7 @@ export default function HomeScreen() {
             </>
           )}
         </View>
-      </SafeAreaView>
+      </View>
 
       <CourseDetailModal
         course={selectedCourse}
@@ -700,6 +711,12 @@ export default function HomeScreen() {
         }
         onClose={() => setSelectedCourse(null)}
         onEdit={handleEditCourse}
+        onShare={handleShareCourse}
+      />
+
+      <CourseShareSheet
+        courseName={shareName}
+        onClose={() => setShareName(null)}
       />
     </View>
   );
@@ -821,12 +838,7 @@ const CourseCard = memo(function CourseCard({
         </View>
         <CardMetaRow
           color={subColor}
-          timeText={compactTimeRange(
-            formatCourseSectionTimeRange(
-              course.sectionStart,
-              course.sectionEnd,
-            ),
-          )}
+          timeText={compactTimeRange(formatCourseTimeRange(course))}
           placeText={course.room}
           style={{ marginTop: 5 }}
           timeWidth={80}

@@ -94,21 +94,24 @@ private struct AnyDecodable: Decodable {
 /// courses. Keeping these helpers pure of `entry.date` guarantees each entry
 /// renders the correct content for the time it represents.
 struct ScheduleHelper {
-    static func currentWeek(termStart: String, now: Date) -> Int {
+    private static let maxWeek = 20
+
+    static func rawWeek(termStart: String, now: Date) -> Int? {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         formatter.locale = Locale(identifier: "en_US_POSIX")
-        guard let startDate = formatter.date(from: termStart) else { return 1 }
+        guard let startDate = formatter.date(from: termStart) else { return nil }
 
-        // Compare from the *start of day* in the device timezone so the week
-        // number flips exactly at local midnight rather than drifting with the
-        // time component of `termStart`.
         let cal = Calendar.current
         let startOfTerm = cal.startOfDay(for: startDate)
         let startOfNow = cal.startOfDay(for: now)
         let diffDays = cal.dateComponents([.day], from: startOfTerm, to: startOfNow).day ?? 0
         if diffDays < 0 { return 0 }
         return diffDays / 7 + 1
+    }
+
+    static func currentWeek(termStart: String, now: Date) -> Int {
+        rawWeek(termStart: termStart, now: now) ?? 1
     }
 
     static func dayOfWeek(for date: Date) -> Int {
@@ -122,13 +125,19 @@ struct ScheduleHelper {
     }
 
     static func tomorrowWeek(termStart: String, now: Date) -> Int {
-        let today = dayOfWeek(for: now)
-        let week = currentWeek(termStart: termStart, now: now)
-        return today == 7 ? week + 1 : week
+        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: now) ?? now
+        return currentWeek(termStart: termStart, now: tomorrow)
     }
 
     static func weekStr(week: Int) -> String {
         String(format: WidgetStrings.localized("widget.weekDisplay"), week)
+    }
+
+    static func weekDisplayString(week: Int) -> String {
+        if !(1...maxWeek).contains(week) {
+            return WidgetStrings.localized("widget.vacation")
+        }
+        return weekStr(week: week)
     }
 
     static func dateStr(for date: Date) -> String {

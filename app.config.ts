@@ -9,7 +9,7 @@ const IS_DEV = !PROFILE || PROFILE === "development";
 const config: ExpoConfig = {
   name: IS_DEV ? "掌上吾理 Dev" : "掌上吾理 Pro",
   slug: "iwut",
-  version: "0.3.11",
+  version: "0.3.14",
   runtimeVersion: {
     policy: "appVersion",
   },
@@ -84,6 +84,7 @@ const config: ExpoConfig = {
     ...(IS_DEV ? ["expo-dev-client"] : []),
     "expo-router",
     "expo-font",
+    "expo-status-bar",
     "expo-web-browser",
     "expo-asset",
     "expo-image",
@@ -118,17 +119,21 @@ const config: ExpoConfig = {
       {
         android: {
           buildArchs: ["arm64-v8a"],
+          compileSdkVersion: 37,
+          targetSdkVersion: 37,
           useLegacyPackaging: true,
           enableMinifyInReleaseBuilds: true,
           enableShrinkResourcesInReleaseBuilds: true,
           usesCleartextTraffic: IS_DEV,
+          extraMavenRepos: [
+            "https://maven.cnb.cool/TokenTeam/android-deps/-/packages/",
+          ],
         },
       },
     ],
     "@sentry/react-native",
     "@bacons/apple-targets",
     "./plugins/with-gradle-props.js",
-    "./plugins/with-gradle-wrapper.js",
     ...(IS_DEV ? [] : ["./plugins/with-network-security-config.js"]),
   ],
   experiments: {

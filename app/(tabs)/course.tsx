@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -11,10 +10,8 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 import {
   COURSE_HEADER_HEIGHT,
@@ -26,6 +23,7 @@ import {
   GetCourse,
   type GetCourseHandle,
 } from "@/components/layout/course-importer";
+import { LabImportSheet } from "@/components/layout/lab-import-sheet";
 import { Schedule } from "@/components/layout/schedule";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -47,18 +45,13 @@ export default function CourseScreen() {
   const courses = useCourseStore((store) => store.courses);
   const termStart = useCourseStore((store) => store.termStart);
   const isBound = useUserBindStore((store) => store.isBound);
-  const backgroundImageUri = useScheduleStore((s) => s.backgroundImageUri);
-  const backgroundImageOpacity = useScheduleStore(
-    (s) => s.backgroundImageOpacity,
-  );
-  const backgroundImageBlurRadius = useScheduleStore(
-    (s) => s.backgroundImageBlurRadius,
-  );
+  const hasBgImage = useScheduleStore((s) => !!s.backgroundImageUri);
   const [week, setWeek] = useState<number>(() => getCurrentWeek(termStart));
   const today = getCurrentDayOfWeek();
   const haptic = useHaptics();
   const [showWeekPicker, setShowWeekPicker] = useState(false);
   const [showTypePicker, setShowTypePicker] = useState(false);
+  const [showLabImport, setShowLabImport] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
 
   const scheme = useColorScheme();
@@ -123,6 +116,19 @@ export default function CourseScreen() {
     haptic();
     setShowTypePicker(false);
     setFabOpen(false);
+    if (type === "lab") {
+      // 实验系统只返回绝对日期，需要学期起始日才能换算周次
+      if (!termStart) {
+        Toast.show({
+          type: "error",
+          text1: t("course.labNeedBaseTimetable"),
+          position: "bottom",
+        });
+        return;
+      }
+      setShowLabImport(true);
+      return;
+    }
     importerRef.current?.startImport(type);
   };
 
@@ -147,38 +153,23 @@ export default function CourseScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      {!!backgroundImageUri && (
-        <>
-          <Image
-            source={{ uri: backgroundImageUri }}
-            style={{
+      {hasBgImage && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            {
               position: "absolute",
               top: 0,
               left: 0,
               right: 0,
-              bottom: 0,
-              opacity: backgroundImageOpacity,
-            }}
-            contentFit="cover"
-            blurRadius={backgroundImageBlurRadius}
-          />
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              {
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: insets.top + COURSE_HEADER_HEIGHT,
-                backgroundColor: Colors[isDark ? "dark" : "light"].background,
-              },
-              headerBackdropStyle,
-            ]}
-          />
-        </>
+              height: insets.top + COURSE_HEADER_HEIGHT,
+              backgroundColor: Colors[isDark ? "dark" : "light"].background,
+            },
+            headerBackdropStyle,
+          ]}
+        />
       )}
-      <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
+      <View style={{ flex: 1, paddingTop: insets.top }}>
         <View
           className="w-full flex-row items-center px-3"
           style={{ height: COURSE_HEADER_HEIGHT }}
@@ -426,7 +417,7 @@ export default function CourseScreen() {
             </View>
           </View>
         </Modal>
-      </SafeAreaView>
+      </View>
 
       <GetCourse ref={importerRef} />
 
@@ -453,7 +444,21 @@ export default function CourseScreen() {
             {t("course.master")}
           </Text>
         </Pressable>
+        <Pressable
+          className="flex-row items-center px-5 py-3.5 active:bg-neutral-100 dark:active:bg-neutral-700"
+          onPress={() => doImport("lab")}
+        >
+          <IconSymbol name="science" size={22} color={iconColor} />
+          <Text className="ml-3 flex-1 text-base text-neutral-800 dark:text-neutral-200">
+            {t("course.lab")}
+          </Text>
+        </Pressable>
       </BottomSheet>
+
+      <LabImportSheet
+        visible={showLabImport}
+        onClose={() => setShowLabImport(false)}
+      />
 
       <CourseDrawer
         visible={showDrawer}

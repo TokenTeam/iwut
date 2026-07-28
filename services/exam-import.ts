@@ -1,4 +1,4 @@
-import type { Exam, ExamStatus, NotArrangedExamCourse } from "@/store/exam";
+import type { Exam, NotArrangedExamCourse } from "@/store/exam";
 
 export const EXAM_LOGIN_URL =
   "https://zhlgd.whut.edu.cn/tpass/login?service=https%3A%2F%2Fjwxt.whut.edu.cn%2Fjwapp%2Fsys%2Fwdkwapp%2F*default%2Findex.do%3FforceCas%3D1%23%2Fwdks";
@@ -114,16 +114,6 @@ function clean(value: unknown): string {
   return text;
 }
 
-function normalizeStatus(value: unknown): ExamStatus {
-  const text = clean(value);
-  if (text === "0" || text.includes("未开始")) return "upcoming";
-  if (text === "1" || text.includes("进行")) return "ongoing";
-  if (text === "2" || text.includes("完成") || text.includes("已结束")) {
-    return "finished";
-  }
-  return "unknown";
-}
-
 function normalizeExamClock(value: string): string {
   return value.replace(/^(\d):/, "0$1:");
 }
@@ -169,7 +159,6 @@ function normalizeExam(row: RawExamRow, index: number): Exam {
     courseName: clean(row.KCM),
     courseCode: clean(row.KCH),
     sequence: clean(row.KXH),
-    status: normalizeStatus(rawStatus),
     rawStatus,
     ...time,
     place: clean(row.JASMC),

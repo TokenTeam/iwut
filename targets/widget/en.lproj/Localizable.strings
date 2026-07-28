@@ -10,6 +10,7 @@
 "widget.tomorrowRemaining.one" = "%d class tomorrow";
 "widget.tomorrowRemaining.other" = "%d classes tomorrow";
 "widget.weekDisplay" = "Week %d";
+"widget.vacation" = "On vacation";
 "widget.monthDay" = "%1$d/%2$d";
 "widget.noRoom" = "No room";
 "widget.weekUnknown" = "Week -";

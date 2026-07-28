@@ -10,6 +10,7 @@
 "widget.tomorrowRemaining.one" = "明天还有%d节课";
 "widget.tomorrowRemaining.other" = "明天还有%d节课";
 "widget.weekDisplay" = "第%d周";
+"widget.vacation" = "假期中";
 "widget.monthDay" = "%1$d月%2$d日";
 "widget.noRoom" = "暂无教室信息";
 "widget.weekUnknown" = "第-周";

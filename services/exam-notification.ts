@@ -1,4 +1,5 @@
 import { t } from "@/lib/i18n";
+import { getExamStatus } from "@/services/exam-status";
 import type { Exam } from "@/store/exam";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -41,7 +42,7 @@ export function buildExamReminders(
   const items: ExamReminderItem[] = [];
 
   for (const exam of exams) {
-    if (exam.status === "finished") continue;
+    if (getExamStatus(exam, nowMs) === "finished") continue;
 
     const startMs = Date.parse(exam.startAt);
     if (Number.isNaN(startMs)) continue;

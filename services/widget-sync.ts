@@ -64,8 +64,8 @@ export async function syncWidgetData(): Promise<void> {
     weekEnd: c.weekEnd ?? 0,
     sectionStart: c.sectionStart ?? 0,
     sectionEnd: c.sectionEnd ?? 0,
-    startTime: SECTION_TIMES[c.sectionStart]?.[0] ?? "",
-    endTime: SECTION_TIMES[c.sectionEnd]?.[1] ?? "",
+    startTime: c.startTime || (SECTION_TIMES[c.sectionStart]?.[0] ?? ""),
+    endTime: c.endTime || (SECTION_TIMES[c.sectionEnd]?.[1] ?? ""),
   }));
 
   const data: ScheduleWidgetData = {

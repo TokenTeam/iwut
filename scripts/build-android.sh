@@ -51,19 +51,19 @@ export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:
 
 if ! command -v sdkmanager &> /dev/null; then
   mkdir -p /opt/android-sdk/cmdline-tools
-  wget https://dl.google.com/android/repository/commandlinetools-linux-14742923_latest.zip -O /tmp/tools.zip
+  wget https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip -O /tmp/tools.zip
   unzip /tmp/tools.zip -d /opt/android-sdk/cmdline-tools
   mv /opt/android-sdk/cmdline-tools/cmdline-tools /opt/android-sdk/cmdline-tools/latest
   rm /tmp/tools.zip
 fi
 
-if [ ! -d "$ANDROID_HOME/platforms/android-36" ]; then
-  yes | sdkmanager --licenses
-  sdkmanager --install \
+if [ ! -d "$ANDROID_HOME/platforms/android-37.0" ]; then
+  yes | sdkmanager --licenses || true
+  sdkmanager \
     "platform-tools" \
-    "platforms;android-36" \
-    "build-tools;36.0.0" \
-    "ndk;27.1.12297006"
+    "platforms;android-37.0" \
+    "build-tools;37.0.0" \
+    "ndk;29.0.14206865"
 fi
 
 if ! command -v eas &> /dev/null; then

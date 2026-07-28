@@ -1,0 +1,14 @@
+diff --git a/node_modules/expo-blur/.bun-tag-81e2b3e5ac65ac33 b/.bun-tag-81e2b3e5ac65ac33
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/android/build.gradle b/android/build.gradle
+index d6ccc18aab7927e69794f69af38844cfe04371e4..01f3a07f48d73dc3bebcc1efbabcb4ff78f532bd 100644
+--- a/android/build.gradle
++++ b/android/build.gradle
+@@ -15,5 +15,5 @@ android {
+ }
+ 
+ dependencies {
+-  implementation 'com.github.Dimezis:BlurView:version-3.1.0'
++  implementation 'com.github.Dimezis:BlurView:3.2.0'
+ }

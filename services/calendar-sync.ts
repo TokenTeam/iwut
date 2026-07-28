@@ -406,8 +406,9 @@ function createEventsForCourse(
   termStart: string,
   reminderOffset: number,
 ): EventInput[] {
-  const startTime = SECTION_TIMES[course.sectionStart];
-  const endTime = SECTION_TIMES[course.sectionEnd];
+  const startTime =
+    course.startTime || SECTION_TIMES[course.sectionStart]?.[0];
+  const endTime = course.endTime || SECTION_TIMES[course.sectionEnd]?.[1];
   if (!startTime || !endTime) return [];
 
   // Anchor the recurring event at the first week the course occurs, then let
@@ -419,13 +420,13 @@ function createEventsForCourse(
     termStart,
     course.weekStart,
     course.day,
-    startTime[0],
+    startTime,
   );
   const endMs = getTermClassTimeMs(
     termStart,
     course.weekStart,
     course.day,
-    endTime[1],
+    endTime,
   );
   if (startMs == null || endMs == null || startMs >= endMs) return [];
 

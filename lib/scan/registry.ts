@@ -1,4 +1,5 @@
 import { parseScanText } from "./protocol";
+import { courseSingleScanAction } from "./actions/course-single";
 import { schedulePaletteScanAction } from "./actions/schedule-palette";
 import type {
   ResolvedScanAction,
@@ -6,7 +7,10 @@ import type {
   ScanActionHandler,
 } from "./types";
 
-const defaultHandlers: ScanActionHandler[] = [schedulePaletteScanAction];
+const defaultHandlers: ScanActionHandler[] = [
+  schedulePaletteScanAction,
+  courseSingleScanAction,
+];
 const extraHandlers: ScanActionHandler[] = [];
 
 export function registerScanActionHandler(handler: ScanActionHandler): void {

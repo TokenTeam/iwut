@@ -13,9 +13,8 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { TabBackground } from "@/components/layout/tab-background";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { IS_DEV } from "@/constants/is-dev";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -97,6 +96,13 @@ const SECTIONS: Section[] = [
         uri: "https://zhlgd.whut.edu.cn/tpass/login?service=http://nyyzf.whut.edu.cn/MobileWebOnlineHall/#/",
         lan: false,
       },
+      {
+        icon: "wifi-outline",
+        labelKey: "fn.app.netPay",
+        color: "#2563eb",
+        uri: "https://zhlgd.whut.edu.cn/tpass/login?service=http://cwsf.whut.edu.cn/netdetails515N023",
+        lan: false,
+      },
     ],
   },
   {
@@ -123,6 +129,7 @@ export default function FunctionScreen() {
   const haptic = useHaptics();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const insets = useSafeAreaInsets();
   const hasBgImage = useScheduleStore((s) => !!s.backgroundImageUri);
   const { height } = useWindowDimensions();
   const [showBrowser, setShowBrowser] = useState(false);
@@ -151,8 +158,7 @@ export default function FunctionScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <TabBackground />
-      <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
+      <View style={{ flex: 1, paddingTop: insets.top }}>
         <ScrollView
           className="flex-1"
           contentContainerStyle={{ paddingBottom: 32 }}
@@ -299,7 +305,7 @@ export default function FunctionScreen() {
           confirmText={t("fn.lanConfirm")}
           onConfirm={handleConfirmLan}
         />
-      </SafeAreaView>
+      </View>
     </View>
   );
 }
