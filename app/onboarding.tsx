@@ -109,8 +109,22 @@ export default function OnboardingScreen() {
 
   const handleCalendarToggle = async (value: boolean) => {
     if (!value) {
-      await deleteAppCalendar();
-      setCalendarSync(false);
+      setCalendarBusy(true);
+      try {
+        const result = await deleteAppCalendar();
+        if (result.success) {
+          setCalendarSync(false);
+        } else {
+          Toast.show({
+            type: "error",
+            text1: t("calendarSet.syncFailed"),
+            text2: result.error,
+            position: "bottom",
+          });
+        }
+      } finally {
+        setCalendarBusy(false);
+      }
       return;
     }
     if (!hasCourses) {
