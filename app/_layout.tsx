@@ -47,7 +47,10 @@ import { UpdateModal } from "@/components/ui/update-modal";
 import { Colors, Themes } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { refreshSystemLocale } from "@/lib/i18n";
-import { syncCoursesToCalendar } from "@/services/calendar-sync";
+import {
+  clearSyncedCalendarData,
+  syncCoursesToCalendar,
+} from "@/services/calendar-sync";
 import {
   initNotificationChannel,
   registerBackgroundRefresh,
@@ -176,9 +179,13 @@ function RootLayout() {
           scheduleWeeklyReminders().catch(() => {});
           if (useSettingsStore.getState().calendarSync) {
             const ids = useSettingsStore.getState().syncedCalendarIds;
-            syncCoursesToCalendar(ids.length > 0 ? ids : undefined).catch(
-              () => {},
-            );
+            if (!state.termStart || state.courses.length === 0) {
+              clearSyncedCalendarData().catch(() => {});
+            } else {
+              syncCoursesToCalendar(ids.length > 0 ? ids : undefined).catch(
+                () => {},
+              );
+            }
           }
         }, 400);
       }

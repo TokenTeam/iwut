@@ -1,15 +1,19 @@
 import { Stack } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
+  Pressable,
   ScrollView,
   Switch,
+  Text,
+  View,
 } from "react-native";
 import Toast from "react-native-toast-message";
 
-import { AlertDialog } from "@/components/ui/alert-dialog";
-import { CalendarPickerSheet } from "@/components/ui/calendar-picker-sheet";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { BUILTIN_PALETTE_NAME_KEYS } from "@/constants/course-palettes";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
@@ -20,7 +24,7 @@ import {
   getWritableCalendars,
   requestCalendarPermission,
   syncCoursesToCalendar,
-  type WritableCalendars,
+  type CalendarInfo,
 } from "@/services/calendar-sync";
 import { useCourseStore } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
@@ -41,52 +45,65 @@ export default function CalendarSettingsScreen() {
   const colorPalette = useScheduleStore((s) => s.colorPalette);
 
   const courses = useCourseStore((s) => s.courses);
+  const termStart = useCourseStore((s) => s.termStart);
   const calendarSync = useSettingsStore((s) => s.calendarSync);
   const setCalendarSync = useSettingsStore((s) => s.setCalendarSync);
   const syncedCalendarIds = useSettingsStore((s) => s.syncedCalendarIds);
 
   const [syncing, setSyncing] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
-  // Calendars fetched up-front so the picker can render without re-enumerating.
-  const [pickerData, setPickerData] = useState<WritableCalendars | undefined>();
+  const [writableCalendars, setWritableCalendars] = useState<CalendarInfo[]>(
+    [],
+  );
+  const [selectedCalendarIds, setSelectedCalendarIds] = useState<Set<string>>(
+    () => new Set([APP_LOCAL_CALENDAR_ID]),
+  );
   const [confirmRemoveVisible, setConfirmRemoveVisible] = useState(false);
-  // Set synchronously the moment the user flips the switch ON, so the toggle
-  // stays visually ON across the async permission / calendar-loading gap
-  // instead of snapping back to OFF and flickering.
   const [pendingOn, setPendingOn] = useState(false);
-  // Mirror of pendingOn for turn-off: flip the switch OFF immediately while the
-  // remove confirmation is shown, then smoothly back ON if the user cancels.
-  const [pendingOff, setPendingOff] = useState(false);
-
-  // Switch shows ON while synced / picker open / a turn-on is in progress,
-  // unless a turn-off confirmation is pending (then it reads OFF).
-  const displaySwitchOn =
-    (calendarSync || pickerVisible || pendingOn) && !pendingOff;
+  const displaySwitchOn = calendarSync || pickerVisible || pendingOn;
+  const localCalendarSelected = selectedCalendarIds.has(APP_LOCAL_CALENDAR_ID);
+  const externalCalendarSelected = [...selectedCalendarIds].some(
+    (id) => id !== APP_LOCAL_CALENDAR_ID,
+  );
 
   const courseCount = useMemo(() => {
     const names = new Set(courses.map((c) => c.name));
     return names.size;
   }, [courses]);
 
-  const performRemove = useCallback(async () => {
-    setSyncing(true);
-    await deleteAppCalendar();
-    setSyncing(false);
-    setCalendarSync(false);
+  const showSyncError = (message?: string) => {
     Toast.show({
-      type: "success",
-      text1: t("calendarSet.syncRemoved"),
+      type: "error",
+      text1: t("calendarSet.syncFailed"),
+      text2: message,
       position: "bottom",
     });
-  }, [setCalendarSync, t]);
+  };
 
-  const doSync = useCallback(
-    async (calendarIds: string[] | undefined) => {
-      setPickerVisible(false);
-      setSyncing(true);
-      const result = await syncCoursesToCalendar(calendarIds);
+  const performRemove = async () => {
+    setSyncing(true);
+    try {
+      const result = await deleteAppCalendar();
+      if (result.success) {
+        setCalendarSync(false);
+        Toast.show({
+          type: "success",
+          text1: t("calendarSet.syncRemoved"),
+          position: "bottom",
+        });
+      } else {
+        showSyncError(result.error);
+      }
+    } finally {
       setSyncing(false);
+    }
+  };
 
+  const doSync = async (calendarIds?: string[]) => {
+    setPickerVisible(false);
+    setSyncing(true);
+    try {
+      const result = await syncCoursesToCalendar(calendarIds);
       if (result.success) {
         setCalendarSync(true);
         Toast.show({
@@ -102,28 +119,19 @@ export default function CalendarSettingsScreen() {
           position: "bottom",
         });
       } else {
-        Toast.show({
-          type: "error",
-          text1: t("calendarSet.syncFailed"),
-          text2: result.error,
-          position: "bottom",
-        });
+        showSyncError(result.error);
       }
-    },
-    [setCalendarSync, t],
-  );
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const handleCalendarSyncToggle = async (value: boolean) => {
     if (!value) {
-      // Android may surface a system dialog when removing many events from a
-      // cloud/third-party calendar ("deletion count exceeds the limit"). Only
-      // warn in that case — a local-only sync deletes cleanly with no prompt.
       const syncedToNonLocal = syncedCalendarIds.some(
         (id) => id !== APP_LOCAL_CALENDAR_ID,
       );
       if (Platform.OS === "android" && syncedToNonLocal) {
-        // Flip the switch OFF first, then ask for confirmation.
-        setPendingOff(true);
         setConfirmRemoveVisible(true);
         return;
       }
@@ -131,42 +139,47 @@ export default function CalendarSettingsScreen() {
       return;
     }
 
-    // Optimistically keep the switch ON during the async work below.
+    if (!termStart || courses.length === 0) {
+      showSyncError(t("calSync.errNoData"));
+      return;
+    }
+
     setPendingOn(true);
 
-    const hasPerm = await requestCalendarPermission();
-    if (!hasPerm) {
+    try {
+      const hasPerm = await requestCalendarPermission();
+      if (!hasPerm) {
+        showSyncError(t("calSync.errNoPermission"));
+        return;
+      }
+
+      const calendars = await getWritableCalendars();
+
+      if (calendars.length === 0) {
+        await doSync(undefined);
+        return;
+      }
+
+      setWritableCalendars(calendars);
+      setSelectedCalendarIds(new Set([APP_LOCAL_CALENDAR_ID]));
+      setPickerVisible(true);
+    } catch (error) {
+      showSyncError(
+        error instanceof Error ? error.message : t("calSync.errUnknown"),
+      );
+    } finally {
       setPendingOn(false);
-      Toast.show({
-        type: "error",
-        text1: t("calendarSet.syncFailed"),
-        text2: t("calSync.errNoPermission"),
-        position: "bottom",
-      });
-      return;
     }
-
-    const writable = await getWritableCalendars();
-
-    if (writable.others.length === 0) {
-      // No selectable external calendars — write to the app-local one directly.
-      await doSync(undefined);
-      setPendingOn(false);
-      return;
-    }
-
-    // Hand the already-fetched calendars to the picker so it renders instantly,
-    // and keep the switch visually ON while it's open.
-    setPickerData(writable);
-    setPickerVisible(true);
-    setPendingOn(false);
   };
 
-  const handlePickerClose = useCallback(() => {
-    setPickerVisible(false);
-    // If sync was not committed, the switch should smoothly go back to OFF
-    // (calendarSync is still false at this point)
-  }, []);
+  const toggleCalendar = (id: string) => {
+    setSelectedCalendarIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const paletteKey = BUILTIN_PALETTE_NAME_KEYS[colorPalette.name];
   const paletteDisplayName = paletteKey ? t(paletteKey) : colorPalette.name;
@@ -235,6 +248,7 @@ export default function CalendarSettingsScreen() {
               ) : (
                 <Switch
                   value={displaySwitchOn}
+                  disabled={pendingOn}
                   onValueChange={handleCalendarSyncToggle}
                 />
               )
@@ -259,27 +273,102 @@ export default function CalendarSettingsScreen() {
         </MenuGroup>
       </ScrollView>
 
-      <CalendarPickerSheet
+      <BottomSheet
         visible={pickerVisible}
-        onClose={handlePickerClose}
-        onConfirm={doSync}
-        initialData={pickerData}
-      />
+        onClose={() => setPickerVisible(false)}
+        title={t("calendarSet.pickerTitle")}
+      >
+        <Text className="px-5 pb-3 text-sm text-neutral-500 dark:text-neutral-400">
+          {t("calendarSet.pickerHint")}
+        </Text>
+        <ScrollView style={{ maxHeight: 320 }}>
+          <Text className="px-5 pb-1 text-xs uppercase text-neutral-400 dark:text-neutral-500">
+            {t("calendarSet.pickerLocalGroup")}
+          </Text>
+          <MenuItem
+            icon="event"
+            iconBg="#007AFF"
+            label={t("calendarSet.pickerLocal")}
+            value="iwut"
+            showArrow={false}
+            onPress={() => toggleCalendar(APP_LOCAL_CALENDAR_ID)}
+            right={
+              <IconSymbol
+                name={
+                  localCalendarSelected
+                    ? "check-circle"
+                    : "radio-button-unchecked"
+                }
+                size={22}
+                color={localCalendarSelected ? "#007AFF" : "#A3A3A3"}
+              />
+            }
+          />
 
-      <AlertDialog
+          {writableCalendars.length > 0 && (
+            <>
+              <Text className="px-5 pb-1 pt-3 text-xs uppercase text-neutral-400 dark:text-neutral-500">
+                {t("calendarSet.pickerOther")}
+              </Text>
+              {writableCalendars.map((calendar) => {
+                const selected = selectedCalendarIds.has(calendar.id);
+                return (
+                  <MenuItem
+                    key={calendar.id}
+                    icon="event"
+                    iconBg={calendar.color || "#9CA3AF"}
+                    label={calendar.title}
+                    value={calendar.accountName}
+                    showArrow={false}
+                    onPress={() => toggleCalendar(calendar.id)}
+                    right={
+                      <IconSymbol
+                        name={
+                          selected ? "check-circle" : "radio-button-unchecked"
+                        }
+                        size={22}
+                        color={selected ? "#007AFF" : "#A3A3A3"}
+                      />
+                    }
+                  />
+                );
+              })}
+            </>
+          )}
+        </ScrollView>
+
+        {externalCalendarSelected && (
+          <Text className="mx-5 mt-2 rounded-xl bg-orange-50 px-3 py-2 text-xs leading-5 text-orange-800 dark:bg-orange-950/40 dark:text-orange-300">
+            {t("calendarSet.pickerOtherWarning")}
+          </Text>
+        )}
+
+        <View className="px-5 pt-3">
+          <Pressable
+            className={`items-center rounded-xl py-3 ${
+              selectedCalendarIds.size > 0
+                ? "bg-blue-500 active:bg-blue-600"
+                : "bg-neutral-300 dark:bg-neutral-700"
+            }`}
+            disabled={selectedCalendarIds.size === 0}
+            onPress={() => void doSync([...selectedCalendarIds])}
+          >
+            <Text className="text-base font-medium text-white">
+              {t("calendarSet.pickerSync")}
+            </Text>
+          </Pressable>
+        </View>
+      </BottomSheet>
+
+      <ConfirmSheet
         visible={confirmRemoveVisible}
-        onClose={() => {
-          // Cancelled: bring the switch smoothly back ON.
-          setConfirmRemoveVisible(false);
-          setPendingOff(false);
-        }}
+        onClose={() => setConfirmRemoveVisible(false)}
         title={t("calendarSet.removeConfirmTitle")}
         description={t("calendarSet.removeConfirmDesc")}
         confirmText={t("calendarSet.removeConfirmOk")}
         destructive
         onConfirm={() => {
           setConfirmRemoveVisible(false);
-          setPendingOff(false);
           void performRemove();
         }}
       />
