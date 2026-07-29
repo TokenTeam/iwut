@@ -1,3 +1,4 @@
+export const IWUT_WEB_URL = "https://iwut.tokenteam.net";
 export const CONFIG_REPO_CDN =
   "https://cdn.jsdmirror.com/cnb/TokenTeam/iwut-config@main";
 export const SENTRY_DSN =

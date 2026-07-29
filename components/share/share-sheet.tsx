@@ -31,7 +31,7 @@ export function ShareSheet({
   const t = useT();
   const haptic = useHaptics();
 
-  const { qrValue, deepLink } = useMemo(
+  const { qrValue, webLink } = useMemo(
     () => buildShareArtifacts(envelope),
     [envelope],
   );
@@ -43,7 +43,7 @@ export function ShareSheet({
   } | null>(null);
   const shortLink =
     shortLinkResult?.key === qrValue ? shortLinkResult.url : null;
-  const link = shortLink ?? deepLink;
+  const link = shortLink ?? webLink;
 
   useEffect(() => {
     if (!visible) return;

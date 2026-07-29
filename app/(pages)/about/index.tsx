@@ -14,6 +14,7 @@ import {
 import Toast from "react-native-toast-message";
 
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
+import { IWUT_WEB_URL } from "@/constants/api";
 import { IS_DEV } from "@/constants/is-dev";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -125,7 +126,7 @@ export default function AboutScreen() {
             icon="language"
             iconBg="#007AFF"
             label={t("about.website")}
-            onPress={() => Linking.openURL("https://iwut.tokenteam.net")}
+            onPress={() => Linking.openURL(IWUT_WEB_URL)}
           />
           <MenuItem
             icon="code"
