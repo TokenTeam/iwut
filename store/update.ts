@@ -65,16 +65,12 @@ export const useUpdateStore = create<UpdateStore>()(
 
       openModal: () => set({ modalOpen: true }),
       closeModal: () => {
-        const { level, latestVersion, requiredDismiss, blockedByMinVersion } =
-          get();
+        const { level, latestVersion, requiredDismiss } = get();
         if (!latestVersion) {
           set({ modalOpen: false });
           return;
         }
-        if (level === "required" && !blockedByMinVersion) {
-          // Soft-required: bump the dismiss counter. The modal component
-          // derives `remaining`/`hardBlock` from this on the next render and
-          // hides the close affordance once REQUIRED_MAX_DISMISS is hit.
+        if (level === "required") {
           const current =
             requiredDismiss && requiredDismiss.version === latestVersion
               ? requiredDismiss.count
@@ -88,8 +84,6 @@ export const useUpdateStore = create<UpdateStore>()(
               modalOpen: false,
             });
           }
-          // hardBlock case: ignore close — UI shouldn't even render a close
-          // affordance, but guard here defensively.
           return;
         }
         if (level === "recommended") {

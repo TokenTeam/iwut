@@ -111,7 +111,7 @@ export function UpdateModal() {
   const remaining = isRequired
     ? Math.max(0, REQUIRED_MAX_DISMISS - dismissCount)
     : REQUIRED_MAX_DISMISS;
-  const hardBlock = blockedByMinVersion || (isRequired && remaining === 0);
+  const hardBlock = isRequired && remaining === 0;
 
   const primaryRelease: Release | undefined = applicableReleases[0];
   const titleStr =
