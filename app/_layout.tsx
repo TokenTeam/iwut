@@ -215,18 +215,18 @@ function RootLayout() {
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-      <View
-        style={{
-          flex: 1,
-          backgroundColor:
-            Colors[colorScheme === "dark" ? "dark" : "light"].background,
-        }}
-        onLayout={onLayoutRootView}
-      >
-        <ThemeProvider
-          value={Themes[colorScheme === "dark" ? "dark" : "default"]}
+      <AppBlurTargetProvider>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor:
+              Colors[colorScheme === "dark" ? "dark" : "light"].background,
+          }}
+          onLayout={onLayoutRootView}
         >
-          <AppBlurTargetProvider>
+          <ThemeProvider
+            value={Themes[colorScheme === "dark" ? "dark" : "default"]}
+          >
             <TabBackground />
             <Stack
               screenOptions={{
@@ -248,9 +248,9 @@ function RootLayout() {
             <StatusBar style="auto" />
             <Toast />
             <UpdateModal />
-          </AppBlurTargetProvider>
-        </ThemeProvider>
-      </View>
+          </ThemeProvider>
+        </View>
+      </AppBlurTargetProvider>
     </SafeAreaProvider>
   );
 }
