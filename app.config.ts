@@ -9,7 +9,7 @@ const IS_DEV = !PROFILE || PROFILE === "development";
 const config: ExpoConfig = {
   name: IS_DEV ? "掌上吾理 Dev" : "掌上吾理 Pro",
   slug: "iwut",
-  version: "0.3.14",
+  version: "0.3.15",
   runtimeVersion: {
     policy: "appVersion",
   },
@@ -119,8 +119,6 @@ const config: ExpoConfig = {
       {
         android: {
           buildArchs: ["arm64-v8a"],
-          compileSdkVersion: 37,
-          targetSdkVersion: 37,
           useLegacyPackaging: true,
           enableMinifyInReleaseBuilds: true,
           enableShrinkResourcesInReleaseBuilds: true,

@@ -57,11 +57,11 @@ if ! command -v sdkmanager &> /dev/null; then
   rm /tmp/tools.zip
 fi
 
-if [ ! -d "$ANDROID_HOME/platforms/android-37.0" ]; then
+if [ ! -d "$ANDROID_HOME/platforms/android-36" ]; then
   yes | sdkmanager --licenses || true
   sdkmanager \
     "platform-tools" \
-    "platforms;android-37.0" \
+    "platforms;android-36" \
     "build-tools;37.0.0" \
     "ndk;29.0.14206865"
 fi
