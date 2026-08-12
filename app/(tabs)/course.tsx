@@ -33,7 +33,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { MAX_WEEK } from "@/lib/course-weeks";
-import { getCurrentDayOfWeek, getCurrentWeek } from "@/lib/date";
+import { getCurrentDayOfWeek, getCurrentWeek, isVacation } from "@/lib/date";
 import { useT } from "@/lib/i18n";
 import { type ImportType, useCourseStore } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
@@ -245,7 +245,11 @@ export default function CourseScreen() {
         <Schedule
           courses={courses}
           week={week}
-          today={week === getCurrentWeek(termStart) ? today : undefined}
+          today={
+            !isVacation(termStart) && week === getCurrentWeek(termStart)
+              ? today
+              : undefined
+          }
           termStart={termStart}
           onWeekChange={goToWeek}
         />

@@ -390,34 +390,45 @@ export default function AddEditCourseScreen() {
               </Text>
             </Pressable>
 
-            <Pressable
-              onPress={handleSave}
-              className="items-center rounded-xl bg-blue-500 py-3.5 active:bg-blue-600"
-            >
-              <Text className="text-base font-semibold text-white">
-                {t("common.save")}
-              </Text>
-            </Pressable>
+            {isEdit ? (
+              <View className="flex-row gap-3">
+                <Pressable
+                  onPress={handleSave}
+                  className="flex-1 flex-row items-center justify-center rounded-xl bg-blue-500 py-3.5 active:bg-blue-600"
+                >
+                  <Ionicons name="save-outline" size={18} color="#ffffff" />
+                  <Text className="ml-1.5 text-base font-semibold text-white">
+                    {t("common.save")}
+                  </Text>
+                </Pressable>
 
-            {isEdit && (
-              <Pressable
-                onPress={() => setShareVisible(true)}
-                className="mt-3 flex-row items-center justify-center rounded-xl bg-white py-3.5 active:bg-neutral-50 dark:bg-neutral-800 dark:active:bg-neutral-700"
-              >
-                <Ionicons name="qr-code-outline" size={18} color="#3b82f6" />
-                <Text className="ml-1.5 text-base font-medium text-blue-500">
-                  {t("schedule.shareCourse")}
-                </Text>
-              </Pressable>
-            )}
+                <Pressable
+                  onPress={() => setShareVisible(true)}
+                  className="flex-1 flex-row items-center justify-center rounded-xl bg-white py-3.5 active:bg-neutral-50 dark:bg-neutral-800 dark:active:bg-neutral-700"
+                >
+                  <Ionicons name="qr-code-outline" size={18} color="#3b82f6" />
+                  <Text className="ml-1.5 text-base font-medium text-blue-500">
+                    {t("common.share")}
+                  </Text>
+                </Pressable>
 
-            {isEdit && (
+                <Pressable
+                  onPress={() => setShowDeleteConfirm(true)}
+                  className="flex-1 flex-row items-center justify-center rounded-xl bg-red-500 py-3.5 active:bg-red-600"
+                >
+                  <Ionicons name="trash-outline" size={18} color="#ffffff" />
+                  <Text className="ml-1.5 text-base font-semibold text-white">
+                    {t("common.delete")}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : (
               <Pressable
-                onPress={() => setShowDeleteConfirm(true)}
-                className="mt-3 items-center rounded-xl py-3 active:bg-red-50 dark:active:bg-red-950"
+                onPress={handleSave}
+                className="items-center rounded-xl bg-blue-500 py-3.5 active:bg-blue-600"
               >
-                <Text className="text-base font-medium text-red-500">
-                  {t("courseManage.deleteCourseTitle")}
+                <Text className="text-base font-semibold text-white">
+                  {t("common.save")}
                 </Text>
               </Pressable>
             )}

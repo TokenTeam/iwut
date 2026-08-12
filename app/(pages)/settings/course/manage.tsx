@@ -166,10 +166,11 @@ export default function ManageCourseScreen() {
 
         {courses.length > 0 && (
           <Pressable
-            className="mt-4 items-center rounded-xl bg-white py-3.5 active:bg-neutral-50 dark:bg-neutral-800 dark:active:bg-neutral-700"
+            className="mt-4 flex-row items-center justify-center rounded-xl bg-red-500 py-3.5 active:bg-red-600"
             onPress={() => setClearVisible(true)}
           >
-            <Text className="text-sm font-medium text-red-500">
+            <Ionicons name="trash-outline" size={18} color="#ffffff" />
+            <Text className="ml-1.5 text-sm font-semibold text-white">
               {t("courseManage.clearAll")}
             </Text>
           </Pressable>
