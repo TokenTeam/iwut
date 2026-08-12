@@ -656,6 +656,16 @@ function SlotCard({
     slot.sectionStart,
     slot.sectionEnd,
   );
+  const primarySummary = `${dayOptions[slot.day - 1]} · ${t(
+    "courseAdd.currentRange",
+    {
+      start: slot.sectionStart,
+      end: slot.sectionEnd,
+    },
+  )}`;
+  const secondarySummary = [slot.room.trim(), sectionTimeRange]
+    .filter(Boolean)
+    .join(" · ");
   const summary = slot.room
     ? t("courseAdd.slotSummaryWithRoom", {
         weekday: dayOptions[slot.day - 1],
@@ -674,43 +684,95 @@ function SlotCard({
   return (
     <View
       className="mb-3 overflow-hidden rounded-xl"
-      style={{ backgroundColor: cardBg }}
+      style={{ backgroundColor: cardBg, borderCurve: "continuous" }}
     >
       {/* 摘要行 */}
       <Pressable
         className="flex-row items-center px-4 py-3.5"
         onPress={onToggle}
+        accessibilityRole="button"
+        accessibilityLabel={summary}
+        accessibilityState={{ expanded }}
       >
         <View
           style={{
-            width: 22,
-            height: 22,
-            borderRadius: 11,
+            width: 28,
+            height: 28,
+            borderRadius: 14,
             backgroundColor: "#3b82f6",
             alignItems: "center",
             justifyContent: "center",
-            marginRight: 10,
+            marginRight: 12,
           }}
         >
-          <Text style={{ fontSize: 11, fontWeight: "700", color: "#fff" }}>
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: "700",
+              color: "#fff",
+              fontVariant: ["tabular-nums"],
+            }}
+          >
             {index + 1}
           </Text>
         </View>
-        <Text
-          className="flex-1 text-sm text-neutral-700 dark:text-neutral-300"
-          numberOfLines={1}
-        >
-          {summary}
-        </Text>
-        {canDelete && (
-          <Pressable hitSlop={12} onPress={onDelete} style={{ marginRight: 8 }}>
-            <Ionicons name="trash-outline" size={16} color="#ef4444" />
-          </Pressable>
-        )}
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 4,
+            }}
+          >
+            <Text
+              numberOfLines={1}
+              style={{
+                flex: 1,
+                fontSize: 15,
+                fontWeight: "600",
+                color: isDark ? "#f5f5f5" : "#171717",
+              }}
+            >
+              {primarySummary}
+            </Text>
+            <View
+              style={{
+                maxWidth: 96,
+                borderRadius: 6,
+                backgroundColor: isDark ? "#172554" : "#eff6ff",
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+              }}
+            >
+              <Text
+                numberOfLines={1}
+                style={{
+                  fontSize: 11,
+                  fontWeight: "600",
+                  color: isDark ? "#60a5fa" : "#2563eb",
+                  fontVariant: ["tabular-nums"],
+                }}
+              >
+                {weeksLabel}
+              </Text>
+            </View>
+          </View>
+          <Text
+            numberOfLines={1}
+            style={{
+              fontSize: 13,
+              color: isDark ? "#a3a3a3" : "#737373",
+            }}
+          >
+            {secondarySummary}
+          </Text>
+        </View>
         <Ionicons
           name={expanded ? "chevron-up" : "chevron-down"}
           size={16}
           color={isDark ? "#525252" : "#a3a3a3"}
+          style={{ marginLeft: 10 }}
         />
       </Pressable>
 
@@ -889,6 +951,44 @@ function SlotCard({
               style={{ height: 40 }}
             />
           </View>
+
+          {canDelete && (
+            <View
+              style={{
+                borderTopWidth: 1,
+                borderTopColor: isDark ? "#404040" : "#e5e5e5",
+                marginTop: 8,
+                paddingTop: 12,
+              }}
+            >
+              <Pressable
+                onPress={onDelete}
+                accessibilityRole="button"
+                accessibilityLabel={t("courseAdd.deleteSlot")}
+                style={({ pressed }) => ({
+                  minHeight: 44,
+                  borderRadius: 10,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: isDark ? "#450a0a" : "#fef2f2",
+                  opacity: pressed ? 0.72 : 1,
+                })}
+              >
+                <Ionicons name="trash-outline" size={17} color="#ef4444" />
+                <Text
+                  style={{
+                    marginLeft: 6,
+                    fontSize: 14,
+                    fontWeight: "600",
+                    color: "#ef4444",
+                  }}
+                >
+                  {t("courseAdd.deleteSlot")}
+                </Text>
+              </Pressable>
+            </View>
+          )}
         </View>
       )}
     </View>

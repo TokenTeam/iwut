@@ -353,6 +353,7 @@
     "slotNoWeeks": "Slot {n}: no weeks selected",
     "slotInvalidRange": "Slot {n}: invalid period range",
     "addSlot": "Add slot",
+    "deleteSlot": "Delete this slot",
     "weekday": "Weekday",
     "room": "Room",
     "roomPlaceholder": "Optional",

@@ -353,6 +353,7 @@
     "slotNoWeeks": "时段 {n} 未选择周次",
     "slotInvalidRange": "时段 {n} 节次范围有误",
     "addSlot": "添加时段",
+    "deleteSlot": "删除此时段",
     "weekday": "星期",
     "room": "教室",
     "roomPlaceholder": "可选",
