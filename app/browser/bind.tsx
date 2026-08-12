@@ -8,14 +8,13 @@ import { router, Stack } from "expo-router";
 import { useEffect, useRef } from "react";
 import { View } from "react-native";
 import Toast from "react-native-toast-message";
-import { WebView, type WebViewNavigation } from "react-native-webview";
+import { WebView } from "react-native-webview";
 import type {
   WebViewErrorEvent,
   WebViewHttpErrorEvent,
 } from "react-native-webview/lib/WebViewTypes";
 
 const TALENT_HOST = "talent.whut.edu.cn";
-const CAS_LOGIN = "zhlgd.whut.edu.cn/tpass/login";
 const TALENT_ROOT_URL = `https://${TALENT_HOST}/`;
 const TALENT_APP_PATH = "/information-center/center/index.html?appId=2";
 const TALENT_CAS_URL = `https://zhlgd.whut.edu.cn/tpass/login?service=${encodeURIComponent(
@@ -197,21 +196,6 @@ export default function BindScreen() {
     }
   };
 
-  const onNavigationStateChange = (state: WebViewNavigation) => {
-    if (isBound.current || state.url.startsWith("about:") || state.url === "")
-      return;
-
-    const isLoginPage = state.url.includes(CAS_LOGIN);
-    if (isLoginPage || !pendingCredentials.current) return;
-
-    const isOnTalent = state.url.includes(TALENT_HOST);
-    if (!isOnTalent) {
-      webview.current?.injectJavaScript(
-        `window.location.href="${TALENT_CAS_URL}";`,
-      );
-    }
-  };
-
   const onMessage = async (event: { nativeEvent: { data: string } }) => {
     try {
       const msg = JSON.parse(event.nativeEvent.data);
@@ -255,7 +239,7 @@ export default function BindScreen() {
 
       <WebView
         ref={webview}
-        source={{ uri: "https://zhlgd.whut.edu.cn/tpass/login" }}
+        source={{ uri: TALENT_CAS_URL }}
         style={{ flex: 1 }}
         javaScriptEnabled
         domStorageEnabled
@@ -265,7 +249,6 @@ export default function BindScreen() {
         originWhitelist={["*"]}
         webviewDebuggingEnabled={IS_DEV}
         injectedJavaScript={INJECTED_JS}
-        onNavigationStateChange={onNavigationStateChange}
         onMessage={onMessage}
         onError={onError}
         onHttpError={onHttpError}
