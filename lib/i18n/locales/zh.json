@@ -9,7 +9,6 @@
     "share": "分享",
     "add": "添加",
     "minutes": "分钟",
-    "minutesBefore": "提前 {minutes} 分钟",
     "weekN": "第 {n} 周",
     "monthSuffix": "月",
     "monthDay": "{m}月{d}日"
@@ -175,11 +174,9 @@
     "weeks": "周次",
     "weeksValue": "第 {start}-{end} 周",
     "time": "时间",
-    "countdownEndTag": "end",
     "slotListTitle": "该时段课程",
     "slotCountValue": "共 {n} 门",
     "otherWeekTag": "非本周",
-    "shareCourse": "分享课程",
     "addAtSameSlot": "添加课程",
     "quickAdd": {
       "title": "添加课程",
@@ -220,7 +217,6 @@
       "netPay": "网络缴费",
       "campusNews": "校园公告"
     },
-    "openUrl": "打开网页",
     "lanTitle": "请确认校园网环境",
     "lanDesc": "「{app}」需要在校园网环境下访问。请确认当前已连接校园网后继续打开。",
     "lanConfirm": "已连接，继续打开"
@@ -499,7 +495,6 @@
     "checkUpdate": "检查更新",
     "newVersionAvailable": "新版本 {v}",
     "newVersionFound": "发现新版本",
-    "newVersionTip": "v{v} 可用，点击下载",
     "upToDate": "当前已是最新版本",
     "linksGroup": "链接",
     "website": "官方网站",
@@ -519,7 +514,6 @@
     "requiredReasonTitle": "为什么必须升级",
     "requiredRemaining": "本次更新建议立即升级（还可忽略 {n} 次）",
     "requiredExhausted": "已达忽略上限，请立即升级以继续使用",
-    "hardBlockTitle": "需要升级",
     "hardBlockDesc": "当前版本过低或已被弃用，请升级到 v{v} 后继续使用",
     "downloadFailed": "无法打开下载链接，请稍后再试"
   },

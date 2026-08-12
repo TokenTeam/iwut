@@ -9,7 +9,6 @@
     "share": "Share",
     "add": "Add",
     "minutes": "min",
-    "minutesBefore": "{minutes} min before",
     "weekN": "Week {n}",
     "monthSuffix": "",
     "monthDay": "{m}/{d}"
@@ -175,11 +174,9 @@
     "weeks": "Weeks",
     "weeksValue": "Weeks {start}-{end}",
     "time": "Time",
-    "countdownEndTag": "end",
     "slotListTitle": "Courses at this slot",
     "slotCountValue": "{n} courses",
     "otherWeekTag": "Other week",
-    "shareCourse": "Share course",
     "addAtSameSlot": "Add course",
     "quickAdd": {
       "title": "Add course",
@@ -220,7 +217,6 @@
       "netPay": "Network Payment",
       "campusNews": "Campus News"
     },
-    "openUrl": "Open URL",
     "lanTitle": "Confirm campus network",
     "lanDesc": "{app} is only available on the campus network. Please confirm you are connected before continuing.",
     "lanConfirm": "Connected, open"
@@ -499,7 +495,6 @@
     "checkUpdate": "Check for update",
     "newVersionAvailable": "New version {v}",
     "newVersionFound": "New version available",
-    "newVersionTip": "v{v} is out, tap to download",
     "upToDate": "You're on the latest version",
     "linksGroup": "Links",
     "website": "Website",
@@ -519,7 +514,6 @@
     "requiredReasonTitle": "Why upgrade is required",
     "requiredRemaining": "Please update soon ({n} skips left)",
     "requiredExhausted": "Skip limit reached. Please update now to continue.",
-    "hardBlockTitle": "Update required",
     "hardBlockDesc": "Your version is too old or no longer supported. Please update to v{v} to continue.",
     "downloadFailed": "Could not open the download link. Please try again."
   },
