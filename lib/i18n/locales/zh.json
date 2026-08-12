@@ -8,7 +8,6 @@
     "edit": "编辑",
     "share": "分享",
     "add": "添加",
-    "loading": "加载中",
     "minutes": "分钟",
     "minutesBefore": "提前 {minutes} 分钟",
     "weekN": "第 {n} 周",
@@ -27,6 +26,7 @@
     "legalAcceptAnd": "和",
     "legalRequired": "请先阅读并同意用户协议和隐私政策",
     "login": "登录账号",
+    "skipLogin": "跳过登录",
     "setupTitle": "完成设置",
     "setupSubtitle": "导入课表并开启可选功能，后续你可以在设置中调整。",
     "scheduleSection": "课表",
@@ -417,7 +417,6 @@
     "invalidUnsupported": "这不是本应用支持的二维码。",
     "invalidNoHandler": "当前版本暂不支持这种二维码类型。",
     "invalidMalformed": "二维码内容格式不正确。",
-    "scanAgain": "继续扫描",
     "executeFailed": "操作失败，请重试",
     "palettePreviewTitle": "导入课表格子配色",
     "palettePreviewDesc": "将导入「{name}」并设为当前课表配色。",
@@ -441,6 +440,7 @@
     "slotsCount": "{n} 个时段"
   },
   "share": {
+    "receiveTitle": "接收分享",
     "copyCode": "复制链接",
     "shareCode": "分享",
     "codeCopied": "分享链接已复制",

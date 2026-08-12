@@ -1,6 +1,6 @@
 export const IWUT_SCAN_APP = "iwut";
 export const IWUT_SCAN_VERSION = 1;
-export const IWUT_SCAN_URL = "iwut://scan";
+export const IWUT_SHARE_URL = "iwut://share";
 
 const MAX_SCAN_TEXT_LENGTH = 12000;
 
@@ -49,8 +49,8 @@ export type ScanParseResult =
       reason: ScanParseError;
     };
 
-export function createScanUrl(envelope: ScanEnvelope): string {
-  return `${IWUT_SCAN_URL}?data=${encodeURIComponent(
+export function createShareUrl(envelope: ScanEnvelope): string {
+  return `${IWUT_SHARE_URL}?data=${encodeURIComponent(
     JSON.stringify(envelope),
   )}`;
 }
@@ -81,15 +81,24 @@ function extractEnvelopeText(raw: string): string | null {
 
   try {
     const url = new URL(raw);
-    const isIwutScan =
+    const isIwutShare =
       url.protocol === "iwut:" &&
-      (url.hostname === "scan" || url.hostname === "import");
-    const isWebScan =
+      ["share", "scan", "import"].includes(url.hostname);
+    const isWebShare =
       (url.protocol === "https:" || url.protocol === "http:") &&
-      url.pathname.replace(/\/+$/, "") === "/scan";
+      ["/share", "/scan"].includes(url.pathname.replace(/\/+$/, ""));
 
-    if (!isIwutScan && !isWebScan) return null;
-    return url.searchParams.get("data");
+    if (isIwutShare) return url.searchParams.get("data");
+    if (!isWebShare) return null;
+
+    const data = url.searchParams.get("data");
+    if (data) return data;
+
+    const appTarget = url.searchParams.get("iwut");
+    if (!appTarget) return null;
+    const appUrl = new URL(`iwut://${appTarget}`);
+    if (!["share", "scan", "import"].includes(appUrl.hostname)) return null;
+    return appUrl.searchParams.get("data");
   } catch {
     return null;
   }

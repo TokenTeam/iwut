@@ -16,6 +16,7 @@ import Toast from "react-native-toast-message";
 
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
+import { IS_DEV } from "@/constants/is-dev";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
@@ -183,6 +184,7 @@ export default function OnboardingScreen() {
         onLogin={handleLogin}
         onOpenPrivacy={() => router.push("/legal/privacy-policy")}
         onOpenUserAgreement={() => router.push("/legal/user-agreement")}
+        onSkip={finish}
       />
     );
   }
@@ -222,6 +224,7 @@ function AccountWelcome({
   onLogin,
   onOpenPrivacy,
   onOpenUserAgreement,
+  onSkip,
 }: Readonly<{
   acceptedLegal: boolean;
   isDark: boolean;
@@ -229,6 +232,7 @@ function AccountWelcome({
   onLogin: () => void;
   onOpenPrivacy: () => void;
   onOpenUserAgreement: () => void;
+  onSkip: () => void;
 }>) {
   const t = useT();
   const muted = isDark ? "#A3A3A3" : "#737373";
@@ -349,6 +353,26 @@ function AccountWelcome({
           </Text>
         </Pressable>
       </View>
+
+      {IS_DEV && (
+        <Pressable
+          hitSlop={12}
+          onPress={onSkip}
+          style={({ pressed }) => ({
+            position: "absolute",
+            bottom: insets.bottom + 18,
+            left: 24,
+            right: 24,
+            alignItems: "center",
+            paddingVertical: 6,
+            opacity: pressed ? 0.55 : 1,
+          })}
+        >
+          <Text style={{ color: muted, fontSize: 12 }}>
+            {t("onboarding.skipLogin")}
+          </Text>
+        </Pressable>
+      )}
     </View>
   );
 }

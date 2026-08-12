@@ -8,7 +8,6 @@
     "edit": "Edit",
     "share": "Share",
     "add": "Add",
-    "loading": "Loading",
     "minutes": "min",
     "minutesBefore": "{minutes} min before",
     "weekN": "Week {n}",
@@ -27,6 +26,7 @@
     "legalAcceptAnd": " and ",
     "legalRequired": "Please agree to the user agreement and privacy policy first",
     "login": "Sign in",
+    "skipLogin": "Skip sign in",
     "setupTitle": "Finish setup",
     "setupSubtitle": "Import your timetable and enable optional features. You can adjust them later in Settings.",
     "scheduleSection": "Timetable",
@@ -417,7 +417,6 @@
     "invalidUnsupported": "This QR code isn't supported.",
     "invalidNoHandler": "This QR code type isn't supported in the current version.",
     "invalidMalformed": "The QR code content is invalid.",
-    "scanAgain": "Scan again",
     "executeFailed": "Action failed, please retry",
     "palettePreviewTitle": "Import schedule cell palette",
     "palettePreviewDesc": "Import \"{name}\" and apply it as the current schedule palette.",
@@ -441,6 +440,7 @@
     "slotsCount": "{n} slots"
   },
   "share": {
+    "receiveTitle": "Shared content",
     "copyCode": "Copy link",
     "shareCode": "Share",
     "codeCopied": "Share link copied",
