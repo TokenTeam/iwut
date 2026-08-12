@@ -1,6 +1,6 @@
 ---
 name: expo-module
-description: Guide for creating and writing Expo native modules and views using the Expo Modules API (Swift, Kotlin, TypeScript). Covers module definition DSL, native views, shared objects, config plugins, lifecycle hooks, autolinking, and type system. Use when building or modifying native modules for Expo.
+description: Framework (OSS). Guide for creating and writing Expo native modules and views using the Expo Modules API (Swift, Kotlin, TypeScript). Covers module definition DSL, native views, shared objects, config plugins, lifecycle hooks, autolinking, and type system. Use when building or modifying native modules for Expo. Not for migrating an existing Swift module from the definition DSL to the Expo Modules API 2.0 macros; use expo-migrate-module (from the expo-experiments plugin) for that.
 version: 1.0.0
 license: MIT
 ---
@@ -17,6 +17,8 @@ Complete reference for building native modules and views using the Expo Modules 
 - Building config plugins that modify native project files
 - Adding Android, Apple, or web support to an existing Expo module
 - Editing `expo-module.config.json`, config plugins, or lifecycle hooks
+
+To migrate an existing Swift module from the definition DSL to the Expo Modules API 2.0 macros (`@ExpoModule`, `@JS`, `@Event`), use the `expo-migrate-module` skill (from the `expo-experiments` plugin) instead.
 
 ## References
 
@@ -52,11 +54,11 @@ See [references/create-expo-module.md](references/create-expo-module.md) before 
    - **Standalone module** for reuse, monorepos, or publishing
 2. Determine native `expo-module` features that you will need.
    - Based on the user's instructions determine which feature scaffolding will be useful.
-   - Available features: `Constant`, `Function`, `AsyncFunction`, `Event`, `View`,`ViewEvent`, `SharedObject`
+   - Available features: `Constant`, `Function`, `AsyncFunction`, `Event`, `View`, `ViewEvent`, `SharedObject`
 3. Scaffold deliberately:
    - pass an explicit slug or path
    - choose `--platform` intentionally instead of relying on defaults
-   - use `--features` to choose code samples which you will modify in the next stepto match the real implementation.
+   - use `--features` to choose code samples which you will modify in the next step to match the real implementation.
 4. Replace generated example code with the real implementation.
 5. If you add a new platform later, prefer `add-platform-support` over manual file copying.
 
@@ -139,3 +141,11 @@ export function hello(name: string): string {
 ```
 
 Note: iOS uses just the class name; Android uses the fully-qualified class name (package + class). See `references/module-config.md` for all fields.
+
+## Submitting Feedback
+If you encounter errors, misleading or outdated information in this skill, report it so Expo can improve:
+```bash
+npx --yes submit-expo-feedback@latest --category skills --subject "expo-module" "<actionable feedback>"
+```
+Only submit when you have something specific and actionable to report. Include as much relevant context as possible.
+If an AI agent repeatedly failed or the user had to take over an Expo task, load the expo-skill-feedback skill and follow its eval-candidate flow instead of reusing the command above.
