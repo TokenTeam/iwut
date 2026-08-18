@@ -1,7 +1,6 @@
 import forge from "node-forge";
-import { Platform } from "react-native";
 
-import { CONFIG_BASE } from "@/constants/api";
+import { CONFIG_REPO_CDN } from "@/constants/api";
 import { DefaultSpiderHttpClientProvider, Spider } from "@/lib/spider";
 import type { SpiderHttpClient, SpiderInfo } from "@/lib/spider";
 import { useUserBindStore } from "@/store/user-bind";
@@ -157,12 +156,9 @@ export class NativeRPCSpiderService implements NativeRPCService {
   }
 
   private async getSpiderByKey(spiderKey: string): Promise<SpiderInfo> {
-    const response = await fetch(`${CONFIG_BASE}blob/spider-${spiderKey}`, {
-      method: "GET",
-      headers: {
-        "iwut-platform": Platform.OS,
-      },
-    });
+    const response = await fetch(
+      `${CONFIG_REPO_CDN}/spider/${encodeURIComponent(spiderKey)}.json`,
+    );
 
     if (!response.ok) {
       throw nativeRPCError(
