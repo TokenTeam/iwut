@@ -5,6 +5,9 @@ const PROFILE = process.env.EAS_BUILD_PROFILE;
 const COMMIT = execSync("git rev-parse --short HEAD").toString().trim();
 // 仅在构建时生效，与 JS 层的 IS_DEV 无关
 const IS_DEV = !PROFILE || PROFILE === "development";
+// 测试包体允许访问任意 HTTP 地址
+const ALLOW_UNRESTRICTED_HTTP =
+  !PROFILE || PROFILE === "development" || PROFILE === "preview";
 
 const config: ExpoConfig = {
   name: IS_DEV ? "掌上吾理 Dev" : "掌上吾理 Pro",
@@ -42,24 +45,28 @@ const config: ExpoConfig = {
       NSSupportsLiveActivities: true,
       NSLocationWhenInUseUsageDescription:
         "用于在连接校园网时读取当前 Wi-Fi 相关信息并完成网络认证",
-      NSAppTransportSecurity: {
-        NSAllowsArbitraryLoadsInWebContent: true,
-        NSAllowsLocalNetworking: true,
-        NSExceptionDomains: {
-          "whut.edu.cn": {
-            NSExceptionAllowsInsecureHTTPLoads: true,
-            NSIncludesSubdomains: true,
+      NSAppTransportSecurity: ALLOW_UNRESTRICTED_HTTP
+        ? {
+            NSAllowsArbitraryLoads: true,
+          }
+        : {
+            NSAllowsArbitraryLoadsInWebContent: true,
+            NSAllowsLocalNetworking: true,
+            NSExceptionDomains: {
+              "whut.edu.cn": {
+                NSExceptionAllowsInsecureHTTPLoads: true,
+                NSIncludesSubdomains: true,
+              },
+              "223.5.5.5": {
+                NSExceptionAllowsInsecureHTTPLoads: true,
+                NSIncludesSubdomains: false,
+              },
+              "172.30.21.100": {
+                NSExceptionAllowsInsecureHTTPLoads: true,
+                NSIncludesSubdomains: false,
+              },
+            },
           },
-          "223.5.5.5": {
-            NSExceptionAllowsInsecureHTTPLoads: true,
-            NSIncludesSubdomains: false,
-          },
-          "172.30.21.100": {
-            NSExceptionAllowsInsecureHTTPLoads: true,
-            NSIncludesSubdomains: false,
-          },
-        },
-      },
     },
     entitlements: {
       "com.apple.security.application-groups": ["group.dev.tokenteam.iwut"],
@@ -122,7 +129,7 @@ const config: ExpoConfig = {
           useLegacyPackaging: true,
           enableMinifyInReleaseBuilds: true,
           enableShrinkResourcesInReleaseBuilds: true,
-          usesCleartextTraffic: IS_DEV,
+          usesCleartextTraffic: ALLOW_UNRESTRICTED_HTTP,
           extraMavenRepos: [
             "https://maven.cnb.cool/TokenTeam/android-deps/-/packages/",
           ],
@@ -132,7 +139,9 @@ const config: ExpoConfig = {
     "@sentry/react-native",
     "@bacons/apple-targets",
     "./plugins/with-gradle-props.js",
-    ...(IS_DEV ? [] : ["./plugins/with-network-security-config.js"]),
+    ...(ALLOW_UNRESTRICTED_HTTP
+      ? []
+      : ["./plugins/with-network-security-config.js"]),
   ],
   experiments: {
     typedRoutes: true,
