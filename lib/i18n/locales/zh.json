@@ -148,6 +148,30 @@
     "disclaimer": "仅供参考，请以教务系统为准",
     "reminderEntry": "考试提醒设置"
   },
+  "grade": {
+    "title": "成绩查询",
+    "queryTitle": "同步成绩",
+    "queryNow": "从教务系统导入",
+    "requery": "重新导入",
+    "queryingWait": "正在同步全部成绩",
+    "querySuccess": "更新成功",
+    "querySuccessSub": "已同步 {n} 条成绩",
+    "queryFail": "同步失败",
+    "queryFailSub": "请检查网络连接并重试",
+    "queryCancelled": "已取消同步",
+    "queryTimeout": "加载超时，请检查网络连接并重试",
+    "fetchFailed": "获取成绩失败",
+    "lastRefreshed": "最近刷新 {time}",
+    "notRefreshed": "尚未刷新成绩",
+    "rangeAll": "全部",
+    "termFilter": "学期",
+    "selectTerm": "选择学期",
+    "creditValue": "{n} 学分",
+    "unknownCourse": "未知课程",
+    "emptyTitle": "还没有成绩数据",
+    "emptySub": "同步后会在这里显示课程、成绩等内容",
+    "disclaimer": "仅供参考，请以教务系统为准"
+  },
   "schedule": {
     "weekday": {
       "mon": "周一",
@@ -208,9 +232,9 @@
     },
     "app": {
       "exam": "考试安排",
+      "grade": "成绩查询",
       "classroom": "自习室查询",
       "icSpace": "IC 空间预约",
-      "jwxt": "教务系统",
       "library": "图书馆管家",
       "card": "智寻卡片",
       "elec": "电费查询",

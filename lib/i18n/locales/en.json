@@ -148,6 +148,30 @@
     "disclaimer": "For reference only. The academic system is authoritative.",
     "reminderEntry": "Exam reminder settings"
   },
+  "grade": {
+    "title": "Grades",
+    "queryTitle": "Sync grades",
+    "queryNow": "Import from academic system",
+    "requery": "Re-import",
+    "queryingWait": "Syncing all grades",
+    "querySuccess": "Grades updated",
+    "querySuccessSub": "Synced {n} grade records",
+    "queryFail": "Sync failed",
+    "queryFailSub": "Please check your connection and try again",
+    "queryCancelled": "Sync cancelled",
+    "queryTimeout": "Request timed out, check your connection and retry",
+    "fetchFailed": "Failed to fetch grades",
+    "lastRefreshed": "Last refreshed {time}",
+    "notRefreshed": "Grades have not been refreshed",
+    "rangeAll": "All",
+    "termFilter": "Term",
+    "selectTerm": "Select term",
+    "creditValue": "{n} credits",
+    "unknownCourse": "Unknown course",
+    "emptyTitle": "No grades yet",
+    "emptySub": "Courses, grades, and other details will appear here after syncing",
+    "disclaimer": "For reference only. The academic system is authoritative."
+  },
   "schedule": {
     "weekday": {
       "mon": "Mon",
@@ -208,9 +232,9 @@
     },
     "app": {
       "exam": "Exams",
+      "grade": "Grades",
       "classroom": "Study Rooms",
       "icSpace": "IC Space Booking",
-      "jwxt": "Academic System",
       "library": "Library",
       "card": "Campus Card",
       "elec": "Electricity",

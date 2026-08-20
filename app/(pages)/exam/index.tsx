@@ -503,7 +503,7 @@ export default function ExamScreen() {
               style={{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" }}
             >
               <Ionicons
-                name="document-text-outline"
+                name="calendar-clear-outline"
                 size={24}
                 color="#3b82f6"
               />

@@ -44,7 +44,13 @@ const SECTIONS: Section[] = [
     titleKey: "fn.section.study",
     items: [
       {
-        icon: "document-text-outline",
+        icon: "bar-chart-outline",
+        labelKey: "fn.app.grade",
+        color: "#8b5cf6",
+        route: "/grade",
+      },
+      {
+        icon: "calendar-clear-outline",
         labelKey: "fn.app.exam",
         color: "#3b82f6",
         route: "/exam",
@@ -62,13 +68,6 @@ const SECTIONS: Section[] = [
         color: "#06b6d4",
         uri: "https://zhlgd.whut.edu.cn/tpass/login?service=https%3A%2F%2Fzw.whut.edu.cn%2Frem%2Fstatic%2Fsso%2FwebOAuthRed",
         lan: true,
-      },
-      {
-        icon: "school-outline",
-        labelKey: "fn.app.jwxt",
-        color: "#8b5cf6",
-        uri: "https://zhlgd.whut.edu.cn/tpass/login?service=https%3A%2F%2Fjwxt.whut.edu.cn%2Fjwapp%2Fsys%2Fhomeapp%2Findex.do%3FforceCas%3D1",
-        lan: false,
       },
       {
         icon: "library-outline",
