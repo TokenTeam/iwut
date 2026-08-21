@@ -5,11 +5,14 @@
   "private": true,
   "license": "AGPL-3.0-or-later",
   "scripts": {
+    "prepare": "git config --local core.hooksPath .git/hooks && lefthook install --force",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "lint": "expo lint",
+    "typecheck": "tsc --noEmit",
     "i18n-check": "bun scripts/i18n-check/index.ts",
+    "check": "bun run lint && bun run typecheck && bun run i18n-check",
     "format": "prettier --write . --ignore-path .gitignore --ignore-path .prettierignore"
   },
   "dependencies": {
@@ -83,6 +86,7 @@
     "eslint-config-expo": "~57.0.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
+    "lefthook": "^2.1.10",
     "prettier": "^3.9.6",
     "typescript": "~6.0.3"
   },
