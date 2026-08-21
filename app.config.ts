@@ -12,7 +12,7 @@ const ALLOW_UNRESTRICTED_HTTP =
 const config: ExpoConfig = {
   name: IS_DEV ? "掌上吾理 Dev" : "掌上吾理 Pro",
   slug: "iwut",
-  version: "0.3.16",
+  version: "0.3.17",
   runtimeVersion: {
     policy: "appVersion",
   },

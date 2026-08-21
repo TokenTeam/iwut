@@ -27,7 +27,8 @@ main:
             export BUN_INSTALL="$HOME/.bun"
             export PATH="$BUN_INSTALL/bin:$PATH"
             bun install --frozen-lockfile
-            bun run lint
+            bunx expo customize tsconfig.json
+            bun run check
 
   web_trigger_ota:
     - docker:
