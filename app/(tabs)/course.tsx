@@ -195,7 +195,7 @@ export default function CourseScreen() {
             </Pressable>
 
             <Pressable
-              className="w-20 items-center"
+              className="min-w-20 max-w-40 items-center"
               onPress={() => setShowWeekPicker(true)}
             >
               <Text className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
@@ -214,9 +214,8 @@ export default function CourseScreen() {
           </View>
 
           <Pressable
+            className="min-w-12 max-w-20 items-center"
             style={{
-              width: 48,
-              alignItems: "center",
               opacity: week !== getCurrentWeek(termStart) ? 1 : 0,
             }}
             disabled={week === getCurrentWeek(termStart)}
