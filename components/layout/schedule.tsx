@@ -835,12 +835,12 @@ export function Schedule({
               getItemLayout={getPagerItemLayout}
               initialScrollIndex={week - 1}
               renderItem={renderPagerItem}
-              extraData={week}
               onMomentumScrollEnd={onPagerMomentumEnd}
               onScrollToIndexFailed={onPagerScrollToIndexFailed}
               windowSize={3}
               initialNumToRender={1}
-              maxToRenderPerBatch={3}
+              maxToRenderPerBatch={1}
+              updateCellsBatchingPeriod={16}
               removeClippedSubviews
               bounces={false}
               overScrollMode="never"

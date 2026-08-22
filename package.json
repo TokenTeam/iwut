@@ -54,6 +54,8 @@
     "expo-updates": "~57.0.16",
     "expo-web-browser": "~57.0.2",
     "jszip": "^3.10.1",
+    "lucide": "^1.33.0",
+    "morphicons": "^1.7.0",
     "nativewind": "^5.0.0-preview.3",
     "node-forge": "^1.4.0",
     "qrcode": "^1.5.4",

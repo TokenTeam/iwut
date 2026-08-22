@@ -2,14 +2,15 @@ import { Feather } from "@expo/vector-icons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Stack } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import Animated, {
+  cancelAnimation,
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 import Toast from "react-native-toast-message";
 
 import { BottomSheet } from "@/components/ui/bottom-sheet";
@@ -22,6 +23,16 @@ import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
 import { login, requestPinnedShortcut } from "@/modules/wlan";
 import { useWlanStore } from "@/store/wlan";
+
+const CONNECT_ICON_LAYER = {
+  position: "absolute",
+  top: 0,
+  right: 0,
+  bottom: 0,
+  left: 0,
+  alignItems: "center",
+  justifyContent: "center",
+} as const;
 
 export default function WlanScreen() {
   useMarkRouteInteractive();
@@ -38,6 +49,8 @@ export default function WlanScreen() {
   const [sheetVisible, setSheetVisible] = useState(false);
   const [clearVisible, setClearVisible] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const connectionProgress = useSharedValue(0);
+  const spinnerRotation = useSharedValue(0);
 
   const [inputUser, setInputUser] = useState("");
   const [inputPass, setInputPass] = useState("");
@@ -49,6 +62,35 @@ export default function WlanScreen() {
       reportError(error, { module: "wlan-credentials" });
     });
   }, [syncCredentials]);
+
+  useEffect(() => {
+    connectionProgress.value = withTiming(connecting ? 1 : 0, {
+      duration: 180,
+    });
+    if (connecting) {
+      spinnerRotation.value = 0;
+      spinnerRotation.value = withRepeat(
+        withTiming(360, { duration: 900, easing: Easing.linear }),
+        -1,
+      );
+    } else {
+      cancelAnimation(spinnerRotation);
+      spinnerRotation.value = 0;
+    }
+    return () => cancelAnimation(spinnerRotation);
+  }, [connecting, connectionProgress, spinnerRotation]);
+
+  const wifiIconStyle = useAnimatedStyle(() => ({
+    opacity: 1 - connectionProgress.value,
+    transform: [{ scale: 1 - connectionProgress.value * 0.12 }],
+  }));
+  const spinnerStyle = useAnimatedStyle(() => ({
+    opacity: connectionProgress.value,
+    transform: [
+      { rotate: `${spinnerRotation.value}deg` },
+      { scale: 0.88 + connectionProgress.value * 0.12 },
+    ],
+  }));
 
   const openSheet = useCallback(() => {
     setInputUser(username);
@@ -195,11 +237,20 @@ export default function WlanScreen() {
             onPress={handleConnect}
             disabled={connecting}
           >
-            {connecting ? (
-              <ActivityIndicator size={48} color="#fff" />
-            ) : (
-              <Feather name="wifi" size={56} color="#fff" />
-            )}
+            <View style={{ height: 56, width: 56 }}>
+              <Animated.View
+                pointerEvents="none"
+                style={[CONNECT_ICON_LAYER, wifiIconStyle]}
+              >
+                <Feather name="wifi" size={56} color="#fff" />
+              </Animated.View>
+              <Animated.View
+                pointerEvents="none"
+                style={[CONNECT_ICON_LAYER, spinnerStyle]}
+              >
+                <Feather name="loader" size={52} color="#fff" />
+              </Animated.View>
+            </View>
           </Pressable>
         </View>
 

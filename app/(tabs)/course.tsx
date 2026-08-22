@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import { Menu, X } from "lucide";
 import { useEffect, useRef, useState } from "react";
 import { Modal, Pressable, Text, View } from "react-native";
 import Animated, {
@@ -27,6 +28,7 @@ import { LabImportSheet } from "@/components/layout/lab-import-sheet";
 import { Schedule } from "@/components/layout/schedule";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { MorphingIcon } from "@/components/ui/morphing-icon";
 import { ScrollPicker } from "@/components/ui/scroll-picker";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -181,7 +183,12 @@ export default function CourseScreen() {
               setShowDrawer((visible) => !visible);
             }}
           >
-            <Ionicons name="menu-outline" size={24} color={iconColor} />
+            <MorphingIcon
+              icon={showDrawer ? X : Menu}
+              size={24}
+              color={iconColor}
+              strokeWidth={2}
+            />
           </Pressable>
 
           <View className="flex-1 flex-row items-center justify-center">

@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { RangeSlider } from "@react-native-assets/slider";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { ChevronDown, ChevronUp } from "lucide";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -13,10 +14,16 @@ import {
   TextInput,
   View,
 } from "react-native";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  LinearTransition,
+} from "react-native-reanimated";
 import Toast from "react-native-toast-message";
 
 import { CourseShareSheet } from "@/components/share/course-share-sheet";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
+import { MorphingIcon } from "@/components/ui/morphing-icon";
 import { ScrollLockProvider, useScrollLock } from "@/components/ui/scroll-lock";
 import { WEEKDAY_KEYS as DAY_KEYS } from "@/constants/weekdays";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -33,6 +40,8 @@ interface TimeSlot {
   room: string;
   weeks: Set<number>;
 }
+
+const SLOT_LAYOUT_TRANSITION = LinearTransition.duration(220);
 
 function createEmptySlot(): TimeSlot {
   return {
@@ -169,7 +178,6 @@ export default function AddEditCourseScreen() {
   );
 
   const toggleExpand = useCallback((index: number) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedIndex((prev) => (prev === index ? null : index));
   }, []);
 
@@ -356,82 +364,92 @@ export default function AddEditCourseScreen() {
 
             {/* 时段列表 */}
             {slots.map((slot, index) => (
-              <SlotCard
-                key={index}
-                slot={slot}
-                index={index}
-                expanded={expandedIndex === index}
-                canDelete={slots.length > 1}
-                onToggle={() => toggleExpand(index)}
-                onUpdate={(patch) => updateSlot(index, patch)}
-                onDelete={() => removeSlot(index)}
-                isDark={isDark}
-                labelColor={labelColor}
-                chipBg={chipBg}
-                chipText={chipText}
-                inputBg={inputBg}
-                inputColor={inputColor}
-                placeholderColor={placeholderColor}
-                cardBg={cardBg}
-                dayOptions={dayOptions}
-                t={t}
-                notSelectedLabel={notSelectedLabel}
-                weeksSuffix={weeksSuffix}
-              />
+              <Animated.View key={index} layout={SLOT_LAYOUT_TRANSITION}>
+                <SlotCard
+                  key={index}
+                  slot={slot}
+                  index={index}
+                  expanded={expandedIndex === index}
+                  canDelete={slots.length > 1}
+                  onToggle={() => toggleExpand(index)}
+                  onUpdate={(patch) => updateSlot(index, patch)}
+                  onDelete={() => removeSlot(index)}
+                  isDark={isDark}
+                  labelColor={labelColor}
+                  chipBg={chipBg}
+                  chipText={chipText}
+                  inputBg={inputBg}
+                  inputColor={inputColor}
+                  placeholderColor={placeholderColor}
+                  cardBg={cardBg}
+                  dayOptions={dayOptions}
+                  t={t}
+                  notSelectedLabel={notSelectedLabel}
+                  weeksSuffix={weeksSuffix}
+                />
+              </Animated.View>
             ))}
 
-            <Pressable
-              className="mb-4 flex-row items-center justify-center rounded-xl border border-dashed border-blue-400 py-3 active:bg-blue-50 dark:border-blue-600 dark:active:bg-neutral-800"
-              onPress={addSlot}
-            >
-              <Ionicons name="add" size={18} color="#3b82f6" />
-              <Text className="ml-1 text-sm font-medium text-blue-500">
-                {t("courseAdd.addSlot")}
-              </Text>
-            </Pressable>
+            <Animated.View layout={SLOT_LAYOUT_TRANSITION}>
+              <Pressable
+                className="mb-4 flex-row items-center justify-center rounded-xl border border-dashed border-blue-400 py-3 active:bg-blue-50 dark:border-blue-600 dark:active:bg-neutral-800"
+                onPress={addSlot}
+              >
+                <Ionicons name="add" size={18} color="#3b82f6" />
+                <Text className="ml-1 text-sm font-medium text-blue-500">
+                  {t("courseAdd.addSlot")}
+                </Text>
+              </Pressable>
+            </Animated.View>
 
-            {isEdit ? (
-              <View className="flex-row gap-3">
+            <Animated.View layout={SLOT_LAYOUT_TRANSITION}>
+              {isEdit ? (
+                <View className="flex-row gap-3">
+                  <Pressable
+                    onPress={handleSave}
+                    className="flex-1 flex-row items-center justify-center rounded-xl bg-blue-500 py-3.5 active:bg-blue-600"
+                  >
+                    <Ionicons name="save-outline" size={18} color="#ffffff" />
+                    <Text className="ml-1.5 text-base font-semibold text-white">
+                      {t("common.save")}
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => setShareVisible(true)}
+                    className="flex-1 flex-row items-center justify-center rounded-xl bg-white py-3.5 active:bg-neutral-50 dark:bg-neutral-800 dark:active:bg-neutral-700"
+                  >
+                    <Ionicons
+                      name="qr-code-outline"
+                      size={18}
+                      color="#3b82f6"
+                    />
+                    <Text className="ml-1.5 text-base font-medium text-blue-500">
+                      {t("common.share")}
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => setShowDeleteConfirm(true)}
+                    className="flex-1 flex-row items-center justify-center rounded-xl bg-red-500 py-3.5 active:bg-red-600"
+                  >
+                    <Ionicons name="trash-outline" size={18} color="#ffffff" />
+                    <Text className="ml-1.5 text-base font-semibold text-white">
+                      {t("common.delete")}
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : (
                 <Pressable
                   onPress={handleSave}
-                  className="flex-1 flex-row items-center justify-center rounded-xl bg-blue-500 py-3.5 active:bg-blue-600"
+                  className="items-center rounded-xl bg-blue-500 py-3.5 active:bg-blue-600"
                 >
-                  <Ionicons name="save-outline" size={18} color="#ffffff" />
-                  <Text className="ml-1.5 text-base font-semibold text-white">
+                  <Text className="text-base font-semibold text-white">
                     {t("common.save")}
                   </Text>
                 </Pressable>
-
-                <Pressable
-                  onPress={() => setShareVisible(true)}
-                  className="flex-1 flex-row items-center justify-center rounded-xl bg-white py-3.5 active:bg-neutral-50 dark:bg-neutral-800 dark:active:bg-neutral-700"
-                >
-                  <Ionicons name="qr-code-outline" size={18} color="#3b82f6" />
-                  <Text className="ml-1.5 text-base font-medium text-blue-500">
-                    {t("common.share")}
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => setShowDeleteConfirm(true)}
-                  className="flex-1 flex-row items-center justify-center rounded-xl bg-red-500 py-3.5 active:bg-red-600"
-                >
-                  <Ionicons name="trash-outline" size={18} color="#ffffff" />
-                  <Text className="ml-1.5 text-base font-semibold text-white">
-                    {t("common.delete")}
-                  </Text>
-                </Pressable>
-              </View>
-            ) : (
-              <Pressable
-                onPress={handleSave}
-                className="items-center rounded-xl bg-blue-500 py-3.5 active:bg-blue-600"
-              >
-                <Text className="text-base font-semibold text-white">
-                  {t("common.save")}
-                </Text>
-              </Pressable>
-            )}
+              )}
+            </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
       </ScrollLockProvider>
@@ -682,7 +700,8 @@ function SlotCard({
       });
 
   return (
-    <View
+    <Animated.View
+      layout={SLOT_LAYOUT_TRANSITION}
       className="mb-3 overflow-hidden rounded-xl"
       style={{ backgroundColor: cardBg, borderCurve: "continuous" }}
     >
@@ -768,8 +787,8 @@ function SlotCard({
             {secondarySummary}
           </Text>
         </View>
-        <Ionicons
-          name={expanded ? "chevron-up" : "chevron-down"}
+        <MorphingIcon
+          icon={expanded ? ChevronUp : ChevronDown}
           size={16}
           color={isDark ? "#525252" : "#a3a3a3"}
           style={{ marginLeft: 10 }}
@@ -778,7 +797,11 @@ function SlotCard({
 
       {/* 展开编辑区域 */}
       {expanded && (
-        <View className="px-4 pb-4">
+        <Animated.View
+          entering={FadeIn.delay(50).duration(170)}
+          exiting={FadeOut.duration(100)}
+          className="px-4 pb-4"
+        >
           <View className="mb-3 border-t border-neutral-200 dark:border-neutral-700" />
 
           {/* 星期 */}
@@ -989,8 +1012,8 @@ function SlotCard({
               </Pressable>
             </View>
           )}
-        </View>
+        </Animated.View>
       )}
-    </View>
+    </Animated.View>
   );
 }

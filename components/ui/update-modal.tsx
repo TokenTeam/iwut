@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { ChevronDown, ChevronUp } from "lucide";
 import { useState } from "react";
 import {
   Linking,
@@ -18,6 +19,7 @@ import {
   getAndroidBlurProps,
   useAndroidBlurTarget,
 } from "@/components/ui/app-blur-target";
+import { MorphingIcon } from "@/components/ui/morphing-icon";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { getResolvedLang, useT } from "@/lib/i18n";
@@ -247,8 +249,8 @@ export function UpdateModal() {
                 <Text className="text-sm text-neutral-500 dark:text-neutral-400">
                   {t("update.viewFullChangelog")}
                 </Text>
-                <Ionicons
-                  name={showChangelog ? "chevron-up" : "chevron-down"}
+                <MorphingIcon
+                  icon={showChangelog ? ChevronUp : ChevronDown}
                   size={16}
                   color={isDark ? "#a3a3a3" : "#737373"}
                 />

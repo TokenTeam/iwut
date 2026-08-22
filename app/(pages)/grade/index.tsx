@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, Stack } from "expo-router";
+import { ChevronDown, ChevronUp } from "lucide";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { MorphingIcon } from "@/components/ui/morphing-icon";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
@@ -34,6 +36,7 @@ function formatSyncTime(value: string): string {
 function GradeHeader({
   selectedTerm,
   hasTerms,
+  termPickerVisible,
   hasSynced,
   syncedAt,
   onSync,
@@ -43,6 +46,7 @@ function GradeHeader({
 }: {
   selectedTerm: string | null;
   hasTerms: boolean;
+  termPickerVisible: boolean;
   hasSynced: boolean;
   syncedAt: string;
   onSync: () => void;
@@ -78,13 +82,12 @@ function GradeHeader({
             <Text
               className="text-[18px] font-bold text-neutral-900 dark:text-neutral-50"
               numberOfLines={1}
-              selectable
             >
               {selectedTerm ?? t("grade.rangeAll")}
             </Text>
             {hasTerms && (
-              <Ionicons
-                name="chevron-down"
+              <MorphingIcon
+                icon={termPickerVisible ? ChevronUp : ChevronDown}
                 size={17}
                 color={isDark ? "#737373" : "#a3a3a3"}
               />
@@ -164,16 +167,10 @@ function GradeRow({
   return (
     <View className="flex-row items-center gap-4 px-4">
       <View className="flex-1 py-4">
-        <Text
-          className="text-[15px] font-semibold leading-5 text-neutral-900 dark:text-neutral-50"
-          selectable
-        >
+        <Text className="text-[15px] font-semibold leading-5 text-neutral-900 dark:text-neutral-50">
           {grade.courseName || t("grade.unknownCourse")}
         </Text>
-        <Text
-          className="mt-1 text-[12px] leading-[17px] text-neutral-400 dark:text-neutral-500"
-          selectable
-        >
+        <Text className="mt-1 text-[12px] leading-[17px] text-neutral-400 dark:text-neutral-500">
           {metadata.join("  ·  ") || "--"}
         </Text>
       </View>
@@ -185,7 +182,6 @@ function GradeRow({
             fontVariant: ["tabular-nums"],
           }}
           numberOfLines={1}
-          selectable
         >
           {score}
         </Text>
@@ -211,10 +207,7 @@ function GradeGroup({
       style={{ borderCurve: "continuous" }}
     >
       <View className="bg-neutral-50 px-4 py-3 dark:bg-neutral-700/40">
-        <Text
-          className="text-[14px] font-semibold text-neutral-800 dark:text-neutral-100"
-          selectable
-        >
+        <Text className="text-[14px] font-semibold text-neutral-800 dark:text-neutral-100">
           {term}
         </Text>
       </View>
@@ -365,6 +358,7 @@ export default function GradeScreen() {
         <GradeHeader
           selectedTerm={activeTerm}
           hasTerms={terms.length > 0}
+          termPickerVisible={termPickerVisible}
           hasSynced={hasSynced}
           syncedAt={syncedAt}
           onSync={syncGrades}
