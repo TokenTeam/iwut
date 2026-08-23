@@ -1,3 +1,4 @@
+import * as Application from "expo-application";
 import * as Clipboard from "expo-clipboard";
 import Constants from "expo-constants";
 import { Image } from "expo-image";
@@ -32,7 +33,7 @@ export default function AboutScreen() {
   const haptic = useHaptics();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
-  const version = Constants.expoConfig?.version ?? "N/A";
+  const version = Application.nativeApplicationVersion ?? "N/A";
   const commit = Constants.expoConfig?.extra?.commit ?? "unknown";
   const hasUpdate = useUpdateStore((s) => s.hasUpdate);
   const latestVersion = useUpdateStore((s) => s.latestVersion);

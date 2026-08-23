@@ -1,4 +1,5 @@
-import Constants from "expo-constants";
+import * as Application from "expo-application";
+import * as Device from "expo-device";
 import { Platform } from "react-native";
 
 import type {
@@ -24,17 +25,10 @@ export class NativeRPCAppService implements NativeRPCService {
       throw nativeRPCError(NativeRPCErrorType.MethodNotFound);
     }
 
-    const expoConfig = Constants.expoConfig;
-    const version = expoConfig?.version ?? "0.0.0";
-    const appName = expoConfig?.name ?? "掌上吾理";
-    const bundleId =
-      Platform.OS === "android"
-        ? expoConfig?.android?.package
-        : expoConfig?.ios?.bundleIdentifier;
-    const nativeBuildVersion =
-      Platform.OS === "android"
-        ? String(Constants.platform?.android?.versionCode ?? "dev")
-        : (Constants.platform?.ios?.buildNumber ?? "dev");
+    const version = Application.nativeApplicationVersion ?? "0.0.0";
+    const appName = Application.applicationName ?? "掌上吾理";
+    const bundleId = Application.applicationId;
+    const nativeBuildVersion = Application.nativeBuildVersion ?? "dev";
     const buildVersion = `${version}-${nativeBuildVersion}`;
     const osType =
       Platform.OS === "ios"
@@ -42,16 +36,13 @@ export class NativeRPCAppService implements NativeRPCService {
         : Platform.OS === "android"
           ? "Android"
           : Platform.OS;
-    const osVersion =
-      Platform.OS === "ios"
-        ? Constants.platform?.ios?.systemVersion
-        : Platform.Version;
+    const osVersion = Device.osVersion ?? Platform.Version;
 
     return {
       version,
       osType,
       osVersion: String(osVersion ?? "unknown"),
-      device: Constants.deviceName ?? "Unknown",
+      device: Device.deviceName ?? "Unknown",
       name: appName,
       bundleId: bundleId ?? "Unknown",
       buildVersion,

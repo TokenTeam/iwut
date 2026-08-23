@@ -1,4 +1,4 @@
-import Constants from "expo-constants";
+import * as Application from "expo-application";
 import * as Updates from "expo-updates";
 import { Platform } from "react-native";
 
@@ -348,5 +348,5 @@ export function resolveLocalizedStringArray(
 }
 
 export function getCurrentAppVersion(): string {
-  return Constants.expoConfig?.version ?? "0.0.0";
+  return Application.nativeApplicationVersion ?? "0.0.0";
 }

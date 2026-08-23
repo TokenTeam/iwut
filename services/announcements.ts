@@ -1,4 +1,4 @@
-import Constants from "expo-constants";
+import * as Application from "expo-application";
 import { Platform } from "react-native";
 
 import { CONFIG_REPO_CDN } from "@/constants/api";
@@ -162,7 +162,7 @@ export function filterActiveAnnouncements(
   dismissedIds: readonly string[],
   now: Date = new Date(),
 ): Announcement[] {
-  const appVersion = Constants.expoConfig?.version ?? "0.0.0";
+  const appVersion = Application.nativeApplicationVersion ?? "0.0.0";
   const platform = Platform.OS as AnnouncementPlatform;
   const dismissed = new Set(dismissedIds);
   const nowMs = now.getTime();
