@@ -106,18 +106,18 @@ function GradeHeader({
         )}
       </View>
 
-      <View className="mt-4 flex-row items-center rounded-xl bg-neutral-50 px-3 py-2.5 dark:bg-neutral-700/40">
-        <Ionicons
-          name="time-outline"
-          size={16}
-          color={isDark ? "#737373" : "#a3a3a3"}
-        />
-        <Text className="ml-2 flex-1 text-[12px] text-neutral-500 dark:text-neutral-400">
-          {syncTime
-            ? t("grade.lastRefreshed", { time: syncTime })
-            : t("grade.notRefreshed")}
-        </Text>
-      </View>
+      {hasSynced && (
+        <View className="mt-4 flex-row items-center rounded-xl bg-neutral-50 px-3 py-2.5 dark:bg-neutral-700/40">
+          <Ionicons
+            name="time-outline"
+            size={16}
+            color={isDark ? "#737373" : "#a3a3a3"}
+          />
+          <Text className="ml-2 flex-1 text-[12px] text-neutral-500 dark:text-neutral-400">
+            {t("grade.lastRefreshed", { time: syncTime })}
+          </Text>
+        </View>
+      )}
 
       {!hasSynced && (
         <Pressable
@@ -157,31 +157,53 @@ function GradeRow({
   t: ReturnType<typeof useT>;
 }) {
   const score = grade.totalScore || "--";
-  const metadata = [
-    grade.courseCode,
-    grade.courseNature,
-    grade.credits ? t("grade.creditValue", { n: grade.credits }) : "",
-    grade.retakeLabel,
-  ].filter(Boolean);
 
   return (
     <View className="flex-row items-center gap-4 px-4">
-      <View className="flex-1 py-4">
+      <View className="min-w-0 flex-1 py-4">
         <Text className="text-[15px] font-semibold leading-5 text-neutral-900 dark:text-neutral-50">
           {grade.courseName || t("grade.unknownCourse")}
         </Text>
-        <Text className="mt-1 text-[12px] leading-[17px] text-neutral-400 dark:text-neutral-500">
-          {metadata.join("  ·  ") || "--"}
-        </Text>
+        <View className="mt-1 flex-row flex-wrap">
+          <View>
+            <Text className="text-[12px] leading-[17px] text-neutral-400 dark:text-neutral-500">
+              {[grade.courseCode, grade.courseNature]
+                .filter(Boolean)
+                .join("  ·  ")}
+            </Text>
+          </View>
+          {(grade.credits || grade.retakeLabel) && (
+            <View>
+              <Text className="text-[12px] leading-[17px] text-neutral-400 dark:text-neutral-500">
+                {grade.courseCode || grade.courseNature ? "  ·  " : ""}
+                {[
+                  grade.credits
+                    ? t("grade.creditValue", { n: grade.credits })
+                    : "",
+                  grade.retakeLabel,
+                ]
+                  .filter(Boolean)
+                  .join("  ·  ")}
+              </Text>
+            </View>
+          )}
+          {!grade.courseCode &&
+            !grade.courseNature &&
+            !grade.credits &&
+            !grade.retakeLabel && (
+              <Text className="text-[12px] leading-[17px] text-neutral-400 dark:text-neutral-500">
+                --
+              </Text>
+            )}
+        </View>
       </View>
-      <View className="w-20 items-end">
+      <View className="min-w-16 shrink-0 items-end justify-center self-stretch">
         <Text
           className="text-[22px] font-bold leading-7"
           style={{
             color: scoreColor(grade.totalScore, isDark),
             fontVariant: ["tabular-nums"],
           }}
-          numberOfLines={1}
         >
           {score}
         </Text>

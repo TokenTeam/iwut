@@ -54,6 +54,13 @@ function parseExamDate(date: string): ExamDateParts | null {
   };
 }
 
+function formatImportTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (part: number) => String(part).padStart(2, "0");
+  return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 function statusColor(status: ExamStatus, isDark: boolean) {
   switch (status) {
     case "upcoming":
@@ -490,6 +497,8 @@ export default function ExamScreen() {
   );
 
   const hasAnyData = currentTermExams.length > 0 || notArranged.length > 0;
+  const hasImported = Boolean(importedAt);
+  const importTime = formatImportTime(importedAt);
 
   return (
     <View className="flex-1 bg-neutral-100 dark:bg-neutral-900">
@@ -518,38 +527,69 @@ export default function ExamScreen() {
                   : t("exam.notImported")}
               </Text>
             </View>
-            <Pressable
-              className="p-1 active:opacity-60"
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel={t("exam.reminderEntry")}
-              onPress={() => {
-                haptic();
-                router.push({
-                  pathname: "/settings",
-                  params: { highlight: "examReminder" },
-                });
-              }}
-            >
-              <Ionicons
-                name={examReminder ? "notifications" : "notifications-outline"}
-                size={22}
-                color={
-                  examReminder ? "#3b82f6" : isDark ? "#525252" : "#a3a3a3"
-                }
-              />
-            </Pressable>
+            <View className="flex-row items-center gap-2">
+              <Pressable
+                className="p-1 active:opacity-60"
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={t("exam.reminderEntry")}
+                onPress={() => {
+                  haptic();
+                  router.push({
+                    pathname: "/settings",
+                    params: { highlight: "examReminder" },
+                  });
+                }}
+              >
+                <Ionicons
+                  name={
+                    examReminder ? "notifications" : "notifications-outline"
+                  }
+                  size={22}
+                  color={
+                    examReminder ? "#3b82f6" : isDark ? "#525252" : "#a3a3a3"
+                  }
+                />
+              </Pressable>
+              {hasImported && (
+                <Pressable
+                  className="h-11 w-11 items-center justify-center rounded-xl bg-blue-500 active:bg-blue-600"
+                  accessibilityRole="button"
+                  accessibilityLabel={t("exam.reimport")}
+                  onPress={importExams}
+                >
+                  <Ionicons name="sync" size={20} color="#ffffff" />
+                </Pressable>
+              )}
+            </View>
           </View>
 
-          <Pressable
-            className="mt-4 h-11 flex-row items-center justify-center gap-2 rounded-xl bg-blue-500 active:bg-blue-600"
-            onPress={importExams}
-          >
-            <Ionicons name="cloud-download-outline" size={18} color="white" />
-            <Text className="text-[15px] font-bold text-white">
-              {hasAnyData ? t("exam.reimport") : t("exam.importNow")}
-            </Text>
-          </Pressable>
+          {hasImported && (
+            <View className="mt-4 flex-row items-center rounded-xl bg-neutral-50 px-3 py-2.5 dark:bg-neutral-700/40">
+              <Ionicons
+                name="time-outline"
+                size={16}
+                color={isDark ? "#737373" : "#a3a3a3"}
+              />
+              <Text className="ml-2 flex-1 text-[12px] text-neutral-500 dark:text-neutral-400">
+                {t("exam.lastRefreshed", { time: importTime })}
+              </Text>
+            </View>
+          )}
+
+          {!hasImported && (
+            <Pressable
+              className="mt-3 h-11 flex-row items-center justify-center gap-2 rounded-xl bg-blue-500 active:bg-blue-600"
+              accessibilityRole="button"
+              accessibilityLabel={t("exam.importNow")}
+              onPress={importExams}
+            >
+              <Ionicons name="cloud-download-outline" size={18} color="white" />
+              <Text className="text-[15px] font-bold text-white">
+                {t("exam.importNow")}
+              </Text>
+            </Pressable>
+          )}
 
           <View className="mt-3 flex-row items-center justify-center gap-1.5">
             <Ionicons
