@@ -13,6 +13,7 @@
         "@react-native-masked-view/masked-view": "0.3.2",
         "@sentry/react-native": "~7.11.0",
         "expo": "~57.0.15",
+        "expo-application": "~57.0.2",
         "expo-asset": "~57.0.13",
         "expo-background-task": "~57.0.12",
         "expo-blur": "~57.0.2",
@@ -932,6 +933,8 @@
     "expo": ["expo@57.0.15", "https://mirrors.tencent.com/npm/expo/-/expo-57.0.15.tgz", { "dependencies": { "@babel/runtime": "^7.20.0", "@expo/cli": "^57.0.17", "@expo/config": "~57.0.8", "@expo/config-plugins": "~57.0.8", "@expo/devtools": "~57.0.1", "@expo/dom-webview": "~57.0.1", "@expo/fingerprint": "^0.20.9", "@expo/local-build-cache-provider": "^57.0.7", "@expo/log-box": "^57.0.3", "@expo/metro": "~56.0.0", "@expo/metro-config": "~57.0.9", "@ungap/structured-clone": "^1.3.0", "babel-preset-expo": "~57.0.7", "expo-asset": "~57.0.13", "expo-constants": "~57.0.13", "expo-file-system": "~57.0.5", "expo-font": "~57.0.1", "expo-keep-awake": "~57.0.1", "expo-modules-autolinking": "~57.0.10", "expo-modules-core": "~57.0.12", "pretty-format": "^29.7.0", "react-refresh": "^0.14.2", "whatwg-url-minimum": "^0.1.2" }, "peerDependencies": { "@expo/metro-runtime": "*", "react": "*", "react-dom": "*", "react-native": "*", "react-native-web": "*", "react-native-webview": "*" }, "optionalPeers": ["@expo/metro-runtime", "react-dom", "react-native-web", "react-native-webview"], "bin": { "expo": "bin/cli", "fingerprint": "bin/fingerprint", "expo-modules-autolinking": "bin/autolinking" } }, "sha512-9UooISw8S8Gxo9wpsPcGkyRlf2UzNr+F26LSU2+M8iaiZ1WAjPR0I75NKFX8ETbrSgthZ2lQHgy5IU2KE/mpBA=="],
 
     "expo-app-metrics": ["expo-app-metrics@57.0.13", "https://mirrors.tencent.com/npm/expo-app-metrics/-/expo-app-metrics-57.0.13.tgz", { "dependencies": { "expo-updates-interface": "~57.0.1" }, "peerDependencies": { "expo": "*", "react": "*", "react-native": "*" } }, "sha512-glGd35rk2ImT38DmT3MyXbI8FmYDlON9DbTVk5+tzGQnpP0u0DNe8Tt83HvQDykLJskRxXUDepFOvreKhZtE2g=="],
+
+    "expo-application": ["expo-application@57.0.2", "https://mirrors.cloud.tencent.com/npm/expo-application/-/expo-application-57.0.2.tgz", { "peerDependencies": { "expo": "*" } }, "sha512-q31YwcXyymviAmdrtDfAg3Dld4VMxLCNAfgMHip7vZpPX4lzF/AfwsywqBJUAjQnJknzaNAkzqvMVjO5XmKYDA=="],
 
     "expo-asset": ["expo-asset@57.0.13", "https://mirrors.tencent.com/npm/expo-asset/-/expo-asset-57.0.13.tgz", { "dependencies": { "@expo/image-utils": "^0.11.4", "expo-constants": "~57.0.13" }, "peerDependencies": { "expo": "*", "react": "*", "react-native": "*" } }, "sha512-RPjMcmPXRMb6UbQdTIkmSDEnQL5LKGTu7ZXatq3U67V6ldlSdQeQ9pQV7zlmk0DrbnaMEh3HYiEh2YxWLNyCzA=="],
 

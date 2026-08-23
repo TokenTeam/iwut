@@ -1,0 +1,9 @@
+{
+  "platforms": ["android", "ios"],
+  "android": {
+    "modules": ["dev.tokenteam.iwut.diagnostics.DiagnosticsModule"]
+  },
+  "ios": {
+    "modules": ["DiagnosticsModule"]
+  }
+}

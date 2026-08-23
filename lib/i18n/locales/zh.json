@@ -283,7 +283,6 @@
     "clearCacheConfirm": "清除",
     "cacheCleared": "缓存已清除",
     "clearCacheFailed": "清除失败",
-    "exportNoLog": "暂无日志",
     "exportFailed": "导出失败",
     "exportDialogTitle": "导出日志",
     "reminderRangeError": "请输入 1-120 之间的数字",

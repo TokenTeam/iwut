@@ -283,7 +283,6 @@
     "clearCacheConfirm": "Clear",
     "cacheCleared": "Cache cleared",
     "clearCacheFailed": "Failed to clear",
-    "exportNoLog": "No logs available",
     "exportFailed": "Export failed",
     "exportDialogTitle": "Export logs",
     "reminderRangeError": "Please enter a number between 1 and 120",

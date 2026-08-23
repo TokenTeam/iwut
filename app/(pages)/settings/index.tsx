@@ -1,6 +1,4 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import Constants from "expo-constants";
-import * as Device from "expo-device";
 import { Directory, File, Paths } from "expo-file-system";
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams } from "expo-router";
@@ -27,6 +25,7 @@ import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
+import { collectDiagnostics, formatDiagnostics } from "@/modules/diagnostics";
 import {
   ensureCourseNotificationPermission,
   registerBackgroundRefresh,
@@ -210,31 +209,14 @@ export default function SettingsScreen() {
     try {
       const paths = await FileLogger.getLogFilePaths();
 
-      if (paths.length === 0) {
-        Toast.show({
-          type: "info",
-          text1: t("settings.exportNoLog"),
-          position: "bottom",
-        });
-        return;
-      }
-
-      const version = Constants.expoConfig?.version;
-      const commit = Constants.expoConfig?.extra?.commit;
-
-      const info = [
-        `Version: ${version}, Commit: ${commit}`,
-        `Device: ${Device.manufacturer} ${Device.modelName} ${Device.modelId}`,
-        `OS: ${Device.osName} ${Device.osVersion} ${Device.osBuildId} ${Device.osInternalBuildId} ${Device.osBuildFingerprint}`,
-        `Architecture: ${Device.supportedCpuArchitectures}`,
-        `Memory: ${Device.totalMemory}`,
-        `Time: ${new Date().toISOString()}`,
-      ].join("\n");
+      const diagnostics = await collectDiagnostics();
+      const info = formatDiagnostics(diagnostics);
 
       // 动态加载 jszip，避免计入首屏 bundle
       const { default: JSZip } = await import("jszip");
       const archive = new JSZip();
       archive.file("info.txt", info);
+      archive.file("info.json", JSON.stringify(diagnostics, null, 2));
 
       for (const p of paths) {
         const uri = p.startsWith("file://") ? p : `file://${p}`;
