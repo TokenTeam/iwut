@@ -2,7 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Menu, X } from "lucide";
-import { useEffect, useRef, useState } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Modal, Pressable, Text, View } from "react-native";
 import Animated, {
   Easing,
@@ -48,7 +54,8 @@ export default function CourseScreen() {
   const termStart = useCourseStore((store) => store.termStart);
   const isBound = useUserBindStore((store) => store.isBound);
   const hasBgImage = useScheduleStore((s) => !!s.backgroundImageUri);
-  const [week, setWeek] = useState<number>(() => getCurrentWeek(termStart));
+  const currentWeek = getCurrentWeek(termStart);
+  const [week, setWeek] = useState<number>(() => currentWeek);
   const today = getCurrentDayOfWeek();
   const haptic = useHaptics();
   const [showWeekPicker, setShowWeekPicker] = useState(false);
@@ -147,6 +154,14 @@ export default function CourseScreen() {
     haptic();
     setWeek(clamped);
   };
+
+  // 滚轮需要实时跟随课表，但连续跨周不应阻塞滚动手势；
+  // transition 允许 React 丢弃已经过时的中间周渲染。
+  const handleWeekPickerSelect = useCallback((index: number) => {
+    startTransition(() => {
+      setWeek(index + 1);
+    });
+  }, []);
 
   const handleReimport = () => {
     haptic();
@@ -251,11 +266,8 @@ export default function CourseScreen() {
         <Schedule
           courses={courses}
           week={week}
-          today={
-            !isVacation(termStart) && week === getCurrentWeek(termStart)
-              ? today
-              : undefined
-          }
+          currentWeek={currentWeek}
+          today={!isVacation(termStart) ? today : undefined}
           termStart={termStart}
           onWeekChange={goToWeek}
         />
@@ -421,7 +433,7 @@ export default function CourseScreen() {
                     t("common.weekN", { n: i + 1 }),
                   )}
                   selectedIndex={week - 1}
-                  onSelect={(i) => setWeek(i + 1)}
+                  onSelect={handleWeekPickerSelect}
                 />
               </View>
             </View>

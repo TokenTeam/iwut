@@ -25,10 +25,11 @@ import { CourseShareSheet } from "@/components/share/course-share-sheet";
 import { WEEKDAY_KEYS } from "@/constants/weekdays";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
+import { useLatest } from "@/hooks/use-latest";
 import { buildColorMap, getCourseColor } from "@/lib/course-colors";
 import { MAX_WEEK } from "@/lib/course-weeks";
 import { getTermWeekDayNumbers, getTermWeekMonthLabel } from "@/lib/date";
-import { t, useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n";
 import type { Course } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 
@@ -67,33 +68,41 @@ const SECTION_GROUPS_COMPACT: number[][] = [
   [14, 15, 16],
 ];
 
-function getSidebarLabelsFull(): SidebarLabel[] {
+interface SidebarLabelText {
+  morning: string;
+  midday: string;
+  afternoon: string;
+  eveningEarly: string;
+  night: string;
+}
+
+function getSidebarLabelsFull(text: SidebarLabelText): SidebarLabel[] {
   return [
-    { label: t("schedule.sidebar.morning"), firstSection: 1, lastSection: 5 },
-    { label: t("schedule.sidebar.midday"), firstSection: 6, lastSection: 7 },
+    { label: text.morning, firstSection: 1, lastSection: 5 },
+    { label: text.midday, firstSection: 6, lastSection: 7 },
     {
-      label: t("schedule.sidebar.afternoon"),
+      label: text.afternoon,
       firstSection: 8,
       lastSection: 12,
     },
     {
-      label: t("schedule.sidebar.eveningEarly"),
+      label: text.eveningEarly,
       firstSection: 13,
       lastSection: 13,
     },
-    { label: t("schedule.sidebar.night"), firstSection: 14, lastSection: 16 },
+    { label: text.night, firstSection: 14, lastSection: 16 },
   ];
 }
 
-function getSidebarLabelsCompact(): SidebarLabel[] {
+function getSidebarLabelsCompact(text: SidebarLabelText): SidebarLabel[] {
   return [
-    { label: t("schedule.sidebar.morning"), firstSection: 1, lastSection: 5 },
+    { label: text.morning, firstSection: 1, lastSection: 5 },
     {
-      label: t("schedule.sidebar.afternoon"),
+      label: text.afternoon,
       firstSection: 8,
       lastSection: 12,
     },
-    { label: t("schedule.sidebar.night"), firstSection: 14, lastSection: 16 },
+    { label: text.night, firstSection: 14, lastSection: 16 },
   ];
 }
 
@@ -101,6 +110,11 @@ const HEADER_HEIGHT = 30;
 const HEADER_HEIGHT_WITH_DATES = 40;
 const SIDEBAR_WIDTH = 24;
 const PEEK_WIDTH = 20;
+const WEEK_DATA = Array.from({ length: MAX_WEEK }, (_, i) => i + 1);
+const weekKeyExtractor = (item: number) => String(item);
+const styles = StyleSheet.create({
+  fill: { flex: 1 },
+});
 
 // 超出上限时露出下一行的一部分提示可滚动
 const SLOT_ROW_HEIGHT = 56;
@@ -275,7 +289,7 @@ interface WeekPanelProps {
   onAddSlot: (day: number, sectionStart: number, sectionEnd: number) => void;
 }
 
-// 单周课表面板：自行计算该周的课程分布与冲突，便于三联面板各自渲染相邻周
+// 单周课表面板，计算该周的课程分布，冲突列表仅在交互时按需生成。
 const WeekPanel = React.memo(function WeekPanel({
   week,
   courses,
@@ -331,27 +345,29 @@ const WeekPanel = React.memo(function WeekPanel({
     return result;
   }, [currentDayCourses, otherDayCoursesAll]);
 
-  // 每门课对应的同日节次重叠列表，包含自身；本周课在前，非本周课按 weekStart 升序。
-  const conflictsByCourse = useMemo(() => {
-    const map = new Map<Course, Course[]>();
-    for (let d = 0; d < 7; d++) {
-      const allForDay = [...currentDayCourses[d], ...otherDayCoursesAll[d]];
-      for (const c of allForDay) {
-        const list = allForDay.filter(
-          (o) =>
-            o.sectionStart <= c.sectionEnd && c.sectionStart <= o.sectionEnd,
-        );
-        list.sort((a, b) => {
-          const aCur = isInWeek(a) ? 0 : 1;
-          const bCur = isInWeek(b) ? 0 : 1;
-          if (aCur !== bCur) return aCur - bCur;
-          return a.weekStart - b.weekStart;
-        });
-        map.set(c, list);
-      }
-    }
-    return map;
-  }, [currentDayCourses, otherDayCoursesAll, isInWeek]);
+  // 只为实际交互的课程查找同日重叠项，避免面板挂载时为所有课程做 O(n²) 计算。
+  const getConflicts = useCallback(
+    (course: Course) => {
+      const dayIdx = course.day - 1;
+      const allForDay = [
+        ...(currentDayCourses[dayIdx] ?? []),
+        ...(otherDayCoursesAll[dayIdx] ?? []),
+      ];
+      const conflicts = allForDay.filter(
+        (other) =>
+          other.sectionStart <= course.sectionEnd &&
+          course.sectionStart <= other.sectionEnd,
+      );
+      conflicts.sort((a, b) => {
+        const aCurrent = isInWeek(a) ? 0 : 1;
+        const bCurrent = isInWeek(b) ? 0 : 1;
+        if (aCurrent !== bCurrent) return aCurrent - bCurrent;
+        return a.weekStart - b.weekStart;
+      });
+      return conflicts.length > 0 ? conflicts : [course];
+    },
+    [currentDayCourses, otherDayCoursesAll, isInWeek],
+  );
 
   const dayNumbers = useMemo(
     () => (termStart ? getTermWeekDayNumbers(termStart, week) : null),
@@ -360,18 +376,16 @@ const WeekPanel = React.memo(function WeekPanel({
 
   const handlePress = useCallback(
     (course: Course, isOther: boolean) => {
-      const list = conflictsByCourse.get(course) ?? [course];
-      onCoursePress(course, list, isOther);
+      onCoursePress(course, getConflicts(course), isOther);
     },
-    [conflictsByCourse, onCoursePress],
+    [getConflicts, onCoursePress],
   );
 
   const handleLongPress = useCallback(
     (course: Course, isOther: boolean) => {
-      const list = conflictsByCourse.get(course) ?? [course];
-      onCourseLongPress(course, list, isOther);
+      onCourseLongPress(course, getConflicts(course), isOther);
     },
-    [conflictsByCourse, onCourseLongPress],
+    [getConflicts, onCourseLongPress],
   );
 
   return (
@@ -403,12 +417,14 @@ const WeekPanel = React.memo(function WeekPanel({
 export function Schedule({
   courses,
   week,
+  currentWeek,
   today,
   termStart,
   onWeekChange,
 }: Readonly<{
   courses: Course[];
   week: number;
+  currentWeek: number;
   today?: number;
   termStart?: string;
   onWeekChange?: (week: number) => void;
@@ -429,8 +445,11 @@ export function Schedule({
   const didInitialScroll = useRef(false);
   // 非周末模式：原生分页器，每页一周
   const pagerRef = useRef<FlatList<number>>(null);
+  const [initialWeek] = useState(week);
   // 标记切周来源，用户滑动触发的切周不再回弹
   const fromPagerRef = useRef(false);
+  const selectedWeekRef = useLatest(week);
+  const onWeekChangeRef = useLatest(onWeekChange);
 
   const haptic = useHaptics();
   const scrollWeekend = useScheduleStore((s) => s.scrollWeekend);
@@ -460,17 +479,25 @@ export function Schedule({
   const otherWeekBg = withColorAlpha(otherWeekCardColor, otherWeekCellOpacity);
   const otherWeekBorderColor = withColorAlpha(otherWeekCardColor, 0.32);
 
-  const dayLabels = useMemo(() => WEEKDAY_KEYS.map((k) => localT(k)), [localT]);
-  const monthLabelSuffix = localT("common.monthSuffix");
-
-  const layout = useMemo(
-    () =>
-      showMidday
-        ? computeLayout(SECTION_GROUPS_FULL, getSidebarLabelsFull())
-        : computeLayout(SECTION_GROUPS_COMPACT, getSidebarLabelsCompact()),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [showMidday, localT],
+  const dayLabels = useMemo(
+    () => WEEKDAY_KEYS.map((key) => localT(key)),
+    [localT],
   );
+  const monthLabelSuffix = localT("common.monthSuffix");
+  const otherWeekTag = localT("schedule.otherWeekTag");
+
+  const layout = useMemo(() => {
+    const text: SidebarLabelText = {
+      morning: localT("schedule.sidebar.morning"),
+      midday: localT("schedule.sidebar.midday"),
+      afternoon: localT("schedule.sidebar.afternoon"),
+      eveningEarly: localT("schedule.sidebar.eveningEarly"),
+      night: localT("schedule.sidebar.night"),
+    };
+    return showMidday
+      ? computeLayout(SECTION_GROUPS_FULL, getSidebarLabelsFull(text))
+      : computeLayout(SECTION_GROUPS_COMPACT, getSidebarLabelsCompact(text));
+  }, [showMidday, localT]);
 
   const colorMap = useMemo(
     () => buildColorMap(courses, paletteColors.length),
@@ -548,11 +575,6 @@ export function Schedule({
     pagerRef.current?.scrollToIndex({ index: week - 1, animated: false });
   }, [week, scrollWeekend]);
 
-  const weekData = useMemo(
-    () => Array.from({ length: MAX_WEEK }, (_, i) => i + 1),
-    [],
-  );
-
   const getPagerItemLayout = useCallback(
     (_: ArrayLike<number> | null | undefined, index: number) => ({
       length: availableWidth,
@@ -567,11 +589,13 @@ export function Schedule({
       if (availableWidth <= 0) return;
       const idx = Math.round(e.nativeEvent.contentOffset.x / availableWidth);
       const nextWeek = idx + 1;
-      if (nextWeek === week) return;
+      if (nextWeek === selectedWeekRef.current) return;
+      const handleWeekChange = onWeekChangeRef.current;
+      if (!handleWeekChange) return;
       fromPagerRef.current = true;
-      onWeekChange?.(nextWeek);
+      handleWeekChange(nextWeek);
     },
-    [availableWidth, week, onWeekChange],
+    [availableWidth, onWeekChangeRef, selectedWeekRef],
   );
 
   const onPagerScrollToIndexFailed = useCallback(
@@ -659,7 +683,7 @@ export function Schedule({
       roomFontSize,
       otherWeekBorderColor,
       otherWeekTextColor,
-      otherWeekTag: localT("schedule.otherWeekTag"),
+      otherWeekTag,
       locatorBg,
       isDark,
       mutedColor,
@@ -669,7 +693,7 @@ export function Schedule({
       roomFontSize,
       otherWeekBorderColor,
       otherWeekTextColor,
-      localT,
+      otherWeekTag,
       locatorBg,
       isDark,
       mutedColor,
@@ -689,12 +713,12 @@ export function Schedule({
   );
 
   const renderPanel = useCallback(
-    (panelWeek: number, isCenter: boolean) => (
+    (panelWeek: number) => (
       <WeekPanel
         week={panelWeek}
         courses={courses}
         termStart={termStart}
-        today={isCenter ? today : undefined}
+        today={panelWeek === currentWeek ? today : undefined}
         showDates={showDates}
         showOtherWeekCourses={showOtherWeekCourses}
         layout={layout}
@@ -711,6 +735,7 @@ export function Schedule({
     [
       courses,
       termStart,
+      currentWeek,
       today,
       showDates,
       showOtherWeekCourses,
@@ -729,10 +754,10 @@ export function Schedule({
   const renderPagerItem = useCallback(
     ({ item }: { item: number }) => (
       <View style={{ width: availableWidth, height: "100%" }}>
-        {renderPanel(item, item === week)}
+        {renderPanel(item)}
       </View>
     ),
-    [availableWidth, renderPanel, week],
+    [availableWidth, renderPanel],
   );
 
   return (
@@ -821,19 +846,20 @@ export function Schedule({
               overScrollMode="never"
               onContentSizeChange={handleScrollContentSizeChange}
             >
-              {renderPanel(week, true)}
+              {renderPanel(week)}
             </ScrollView>
           ) : (
             // 非周末模式：原生分页切周，每页一周
             <FlatList
               ref={pagerRef}
-              data={weekData}
+              data={WEEK_DATA}
+              style={styles.fill}
               horizontal
               pagingEnabled
               showsHorizontalScrollIndicator={false}
-              keyExtractor={(item) => String(item)}
+              keyExtractor={weekKeyExtractor}
               getItemLayout={getPagerItemLayout}
-              initialScrollIndex={week - 1}
+              initialScrollIndex={initialWeek - 1}
               renderItem={renderPagerItem}
               onMomentumScrollEnd={onPagerMomentumEnd}
               onScrollToIndexFailed={onPagerScrollToIndexFailed}

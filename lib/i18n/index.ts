@@ -1,5 +1,5 @@
 import { getLocales } from "expo-localization";
-import { useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
 import { getSystemLanguageTag } from "@/modules/locale";
 
@@ -34,6 +34,10 @@ type Leaves<T, P extends string = ""> = T extends string
     : never;
 
 export type TKey = Leaves<Dict>;
+export type Translator = (
+  key: TKey,
+  vars?: Record<string, string | number>,
+) => string;
 
 const dicts: Record<ResolvedLang, Dict> = {
   zh: zhJson as Dict,
@@ -64,6 +68,17 @@ function resolveSystem(): ResolvedLang {
 let currentLang: Lang = "system";
 let currentResolved: ResolvedLang = resolveSystem();
 const listeners = new Set<() => void>();
+
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function getResolvedLangSnapshot(): ResolvedLang {
+  return currentResolved;
+}
 
 function notify() {
   for (const l of listeners) l();
@@ -121,43 +136,38 @@ function interpolate(
   );
 }
 
-export function t(key: TKey, vars?: Record<string, string | number>): string {
-  const dict = dicts[currentResolved];
+function translateWithLang(
+  lang: ResolvedLang,
+  key: TKey,
+  vars?: Record<string, string | number>,
+): string {
+  const dict = dicts[lang];
   const raw =
     getByPath(dict, key) ?? getByPath(dicts.zh, key) ?? (key as string);
   return interpolate(raw, vars);
 }
 
-export function useT(): typeof t {
-  // Prevent React Compiler from wrapping the returned closure in an implicit
-  // useMemo. We *want* a fresh function reference per render (see comment
-  // below); auto-memoization would defeat the entire purpose of this hook.
-  "use no memo";
-  const lang = useSyncExternalStore(
-    (cb) => {
-      listeners.add(cb);
-      return () => {
-        listeners.delete(cb);
-      };
-    },
-    () => currentResolved,
-    () => currentResolved,
+export function t(key: TKey, vars?: Record<string, string | number>): string {
+  return translateWithLang(currentResolved, key, vars);
+}
+
+/** 订阅当前已解析语言 */
+export function useResolvedLang(): ResolvedLang {
+  return useSyncExternalStore(
+    subscribe,
+    getResolvedLangSnapshot,
+    getResolvedLangSnapshot,
   );
-  // Return a fresh closure on every render. This is intentional and required
-  // because React Compiler (`reactCompiler: true` in app.config.ts) memoizes
-  // expressions like `t("some.key")` based on the identity of `t`. If `t`
-  // had a stable identity (e.g. by returning the module-level `t` or a
-  // useMemo-cached wrapper), the compiler may hoist or cache call results
-  // forever and language switches would never propagate to consumers.
-  // Producing a fresh function reference per render guarantees those cached
-  // expressions are invalidated. The closure captures the `lang` primitive
-  // resolved at render time so all dict lookups resolve to the current
-  // language at call time, without re-reading module-level mutable state.
-  // Refs: facebook/react#29195, i18next/react-i18next#1863 + PR #1884.
-  const dict = dicts[lang];
-  return ((key, vars) => {
-    const raw =
-      getByPath(dict, key) ?? getByPath(dicts.zh, key) ?? (key as string);
-    return interpolate(raw, vars);
-  }) as typeof t;
+}
+
+/**
+ * 返回绑定到当前语言的 translator。
+ * 同一语言下引用稳定，语言变化时引用同步变化，兼顾 React Compiler 与 memo。
+ */
+export function useT(): Translator {
+  const lang = useResolvedLang();
+  return useCallback<Translator>(
+    (key, vars) => translateWithLang(lang, key, vars),
+    [lang],
+  );
 }
