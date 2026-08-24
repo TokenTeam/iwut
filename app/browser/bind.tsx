@@ -76,6 +76,11 @@ const INJECTED_JS = `(function(){
   function fetchTalentInfo(){
     if(location.hostname!=='talent.whut.edu.cn')return;
     if(window.__talentInfoSent)return;
+    function profileUnavailable(){
+      if(window.__talentInfoSent)return;
+      window.__talentInfoSent=true;
+      window.ReactNativeWebView.postMessage(JSON.stringify({type:'profileUnavailable'}));
+    }
     window.__talentTries=(window.__talentTries||0)+1;
     var giveUp=window.__talentTries>=8;
     function retry(){
@@ -95,6 +100,7 @@ const INJECTED_JS = `(function(){
       return '';
     }
     getJson('/information-center/xd/user/getLoginUserNew/2').then(function(u){
+      if(u&&u.code===50005){profileUnavailable();return;}
       if(!u||u.code!==0||!u.data||!u.data.sn){retry();return;}
       var sn=String(u.data.sn);
       var name=u.data.name||'';
@@ -104,6 +110,7 @@ const INJECTED_JS = `(function(){
         getJson('/information-center/xd/commons/getDictionByName/'+encodeURIComponent('\u5b66\u751f\u7c7b\u578b')).catch(function(){return null;})
       ]).then(function(rs){
         var stu=rs[0];
+        if(stu&&stu.code===50005){profileUnavailable();return;}
         if(!giveUp && (!stu||stu.status!==true||!stu.data||!stu.data.expandField)){
           retry();return;
         }
@@ -204,6 +211,16 @@ export default function BindScreen() {
           username: msg.username,
           password: msg.password,
         };
+      } else if (msg.type === "profileUnavailable") {
+        if (isBound.current || hasFailed.current) return;
+        hasFailed.current = true;
+        Toast.show({
+          type: "error",
+          text1: t("user.bindProfileUnavailable"),
+          text2: t("user.bindProfileUnavailableSub"),
+          position: "bottom",
+        });
+        if (router.canGoBack()) router.back();
       } else if (msg.type === "info" && pendingCredentials.current) {
         isBound.current = true;
         const { username, password } = pendingCredentials.current;

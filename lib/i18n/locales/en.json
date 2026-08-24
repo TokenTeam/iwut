@@ -256,6 +256,8 @@
     "bindSuccessSub": "Account {username} linked",
     "bindFailed": "Link failed",
     "bindFailedSub": "iWUT is temporarily unavailable, please try again later",
+    "bindProfileUnavailable": "Profile unavailable",
+    "bindProfileUnavailableSub": "Please try again when your information is available",
     "menuTools": "Tools",
     "menuSettings": "Settings",
     "menuOther": "Other",
