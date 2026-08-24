@@ -1,0 +1,132 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/TokenTeam/iwut/main/schemas/function-apps.schema.json",
+  "title": "iwut Function Apps",
+  "description": "iwut 功能页（学习工具/生活服务/校园资讯）的远程配置结构。内容仓库见 https://cnb.cool/TokenTeam/iwut-config",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "sections"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "version": {
+      "type": "integer",
+      "description": "协议版本号；字段语义发生不兼容变化时 +1。老客户端遇到不认识的 version 应放弃解析并回退到内置默认配置",
+      "const": 1
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "文件最后更新时间（ISO 8601 / UTC），便于排查 CDN 缓存。客户端不依赖此字段做业务判断"
+    },
+    "sections": {
+      "type": "array",
+      "description": "功能分区列表，客户端按顺序渲染。至少一个有效分区",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/functionSection" }
+    }
+  },
+  "definitions": {
+    "localizedString": {
+      "description": "本地化字符串。可以是单一字符串（所有语言相同），或按语言代码（zh / en）分别提供。客户端按当前 i18n 语言选择，缺失时回退到 zh",
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        {
+          "type": "object",
+          "required": ["zh"],
+          "properties": {
+            "zh": { "type": "string", "minLength": 1 },
+            "en": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        }
+      ]
+    },
+    "functionSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "items"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "稳定且唯一的分区 ID（kebab-case）。请勿随意修改，避免与客户端持久化状态冲突",
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "title": { "$ref": "#/definitions/localizedString" },
+        "enabled": {
+          "type": "boolean",
+          "description": "是否展示该分区；false 时客户端跳过整个分区（含其下所有入口）。默认 true",
+          "default": true
+        },
+        "items": {
+          "type": "array",
+          "description": "分区下的功能入口列表，至少一个有效入口",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/functionApp" }
+        }
+      }
+    },
+    "functionApp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "icon", "color"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "稳定且唯一的功能 ID（kebab-case）。发布后请勿修改，避免与客户端持久化状态冲突",
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "label": { "$ref": "#/definitions/localizedString" },
+        "icon": {
+          "type": "string",
+          "description": "Ionicons 图标名（如 \"bar-chart-outline\"），与客户端 Ionicons 字体可用的 name 一一对应",
+          "minLength": 1
+        },
+        "color": {
+          "type": "string",
+          "description": "图标强调色，十六进制 6 位色值",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "route": {
+          "type": "string",
+          "description": "应用内路由，客户端直接 router.push 跳转。当前仅允许白名单内的路由",
+          "enum": ["/grade", "/exam"]
+        },
+        "uri": {
+          "type": "string",
+          "description": "外部链接，客户端用内置浏览器（webview）打开。必须是 http:// 或 https://",
+          "format": "uri",
+          "pattern": "^https?://"
+        },
+        "lan": {
+          "type": "boolean",
+          "description": "是否仅限校园网访问；true 时客户端打开前先弹「校园网确认」提示。默认 false",
+          "default": false
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "是否展示该入口；false 时客户端跳过此入口。默认 true",
+          "default": true
+        }
+      },
+      "oneOf": [
+        {
+          "description": "应用内路由与外部链接二选一：填 route 则不能填 uri",
+          "required": ["route"],
+          "not": { "required": ["uri"] }
+        },
+        {
+          "description": "应用内路由与外部链接二选一：填 uri 则不能填 route",
+          "required": ["uri"],
+          "not": { "required": ["route"] }
+        }
+      ]
+    }
+  }
+}

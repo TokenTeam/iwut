@@ -225,22 +225,6 @@
   "fn": {
     "title": "Apps",
     "subtitle": "Campus services at your fingertips",
-    "section": {
-      "study": "Study",
-      "life": "Life",
-      "info": "Campus Info"
-    },
-    "app": {
-      "exam": "Exams",
-      "grade": "Grades",
-      "classroom": "Study Rooms",
-      "icSpace": "IC Space Booking",
-      "library": "Library",
-      "card": "Campus Card",
-      "elec": "Electricity",
-      "netPay": "Network Payment",
-      "campusNews": "Campus News"
-    },
     "lanTitle": "Confirm campus network",
     "lanDesc": "{app} is only available on the campus network. Please confirm you are connected before continuing.",
     "lanConfirm": "Connected, open"
