@@ -108,16 +108,15 @@ export function useZhlgdAutoLogin(
   const lastFilledUrl = useRef("");
   const [sms, setSms] = useState<SmsState>(INITIAL_SMS);
   const [code, setCode] = useState("");
-  const onCancelRef = useRef(options?.onCancel);
-  onCancelRef.current = options?.onCancel;
+  const onCancel = options?.onCancel;
 
   useEffect(() => {
-    useUserBindStore
-      .getState()
-      .getCredentials()
-      .then((c) => {
-        creds.current = c;
-      });
+    const userBind = useUserBindStore.getState();
+    if (!userBind.isBound) return;
+
+    userBind.getCredentials().then((c) => {
+      creds.current = c;
+    });
   }, []);
 
   const onLoadEnd = useCallback(
@@ -134,6 +133,10 @@ export function useZhlgdAutoLogin(
         return;
       }
 
+      if (!useUserBindStore.getState().isBound) {
+        creds.current = null;
+        return;
+      }
       if (!creds.current || lastFilledUrl.current === url) return;
       lastFilledUrl.current = url;
 
@@ -174,8 +177,8 @@ export function useZhlgdAutoLogin(
   const cancelSms = useCallback(() => {
     setSms(INITIAL_SMS);
     setCode("");
-    onCancelRef.current?.();
-  }, []);
+    onCancel?.();
+  }, [onCancel]);
 
   const smsNode = (
     <SmsPrompt

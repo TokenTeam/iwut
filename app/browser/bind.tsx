@@ -2,6 +2,7 @@ import { IS_DEV } from "@/constants/is-dev";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
+import { useOnboardingStore } from "@/store/onboarding";
 import { useUserBindStore } from "@/store/user-bind";
 import CookieManager from "@preeternal/react-native-cookie-manager";
 import { router, Stack } from "expo-router";
@@ -164,22 +165,22 @@ export default function BindScreen() {
     username: string;
     password: string;
   } | null>(null);
-  const isBound = useRef(false);
-  const hasFailed = useRef(false);
+  const flowFinished = useRef(false);
+  const preserveSession = useRef(false);
 
   useEffect(() => {
     const currentWebView = webview.current;
     return () => {
       currentWebView?.clearCache(true);
-      if (!isBound.current) {
+      if (!preserveSession.current) {
         CookieManager.clearAll(true).catch(() => {});
       }
     };
   }, []);
 
   const handleFailure = () => {
-    if (isBound.current || hasFailed.current) return;
-    hasFailed.current = true;
+    if (flowFinished.current) return;
+    flowFinished.current = true;
     Toast.show({
       type: "error",
       text1: t("user.bindFailed"),
@@ -212,17 +213,24 @@ export default function BindScreen() {
           password: msg.password,
         };
       } else if (msg.type === "profileUnavailable") {
-        if (isBound.current || hasFailed.current) return;
-        hasFailed.current = true;
+        if (flowFinished.current) return;
+        flowFinished.current = true;
+        preserveSession.current = true;
+        useOnboardingStore.getState().reset();
         Toast.show({
-          type: "error",
+          type: "info",
           text1: t("user.bindProfileUnavailable"),
           text2: t("user.bindProfileUnavailableSub"),
           position: "bottom",
         });
-        if (router.canGoBack()) router.back();
+        router.replace({
+          pathname: "/onboarding",
+          params: { step: "setup" },
+        });
       } else if (msg.type === "info" && pendingCredentials.current) {
-        isBound.current = true;
+        if (flowFinished.current) return;
+        flowFinished.current = true;
+        preserveSession.current = true;
         const { username, password } = pendingCredentials.current;
 
         await useUserBindStore

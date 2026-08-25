@@ -2,7 +2,7 @@ import { BlurTargetView, type BlurViewProps } from "expo-blur";
 import { createContext, useContext, useRef, type ReactNode } from "react";
 import { Platform, StyleSheet, type View } from "react-native";
 
-type BlurTargetRef = React.RefObject<View | null>;
+export type BlurTargetRef = React.RefObject<View | null>;
 
 const AppBlurTargetContext = createContext<BlurTargetRef | undefined>(
   undefined,

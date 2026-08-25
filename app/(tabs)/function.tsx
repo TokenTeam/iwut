@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
+import { BlurTargetView } from "expo-blur";
 import { type Href, router } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -16,12 +17,14 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
+import { OverlayBackdrop } from "@/components/ui/overlay-backdrop";
 import { IS_DEV } from "@/constants/is-dev";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { type TKey, useT } from "@/lib/i18n";
 import { useScheduleStore } from "@/store/schedule";
+import { useUserBindStore } from "@/store/user-bind";
 
 type WebApp = {
   icon: React.ComponentProps<typeof Ionicons>["name"];
@@ -130,6 +133,8 @@ export default function FunctionScreen() {
   const isDark = colorScheme === "dark";
   const insets = useSafeAreaInsets();
   const hasBgImage = useScheduleStore((s) => !!s.backgroundImageUri);
+  const isBound = useUserBindStore((s) => s.isBound);
+  const contentBlurTarget = useRef<View | null>(null);
   const { height } = useWindowDimensions();
   const [showBrowser, setShowBrowser] = useState(false);
   const [uri, setUri] = useState("");
@@ -158,79 +163,149 @@ export default function FunctionScreen() {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1, paddingTop: insets.top }}>
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ paddingBottom: 32 }}
-          showsVerticalScrollIndicator={false}
-        >
-          <View className="px-6 pb-2 pt-8">
-            <View className="flex-row items-center justify-between">
-              <Text
-                className="text-[32px] font-bold tracking-tight text-neutral-900 dark:text-neutral-50"
-                numberOfLines={1}
-              >
-                {t("fn.title")}
-              </Text>
-              {IS_DEV && (
-                <Pressable
-                  className="h-10 w-10 items-center justify-center rounded-full"
-                  style={{
-                    backgroundColor: isDark
-                      ? "rgba(255,255,255,0.06)"
-                      : "rgba(0,0,0,0.04)",
-                  }}
-                  onPress={() => {
-                    haptic();
-                    setShowBrowser(true);
-                  }}
+        <BlurTargetView ref={contentBlurTarget} style={{ flex: 1 }}>
+          <ScrollView
+            className="flex-1"
+            contentContainerStyle={{ paddingBottom: 32 }}
+            showsVerticalScrollIndicator={false}
+          >
+            <View className="px-6 pb-2 pt-8">
+              <View className="flex-row items-center justify-between">
+                <Text
+                  className="text-[32px] font-bold tracking-tight text-neutral-900 dark:text-neutral-50"
+                  numberOfLines={1}
                 >
-                  <Ionicons
-                    name="globe-outline"
-                    size={20}
-                    color={isDark ? "#a3a3a3" : "#737373"}
-                  />
-                </Pressable>
-              )}
+                  {t("fn.title")}
+                </Text>
+                {IS_DEV && (
+                  <Pressable
+                    className="h-10 w-10 items-center justify-center rounded-full"
+                    style={{
+                      backgroundColor: isDark
+                        ? "rgba(255,255,255,0.06)"
+                        : "rgba(0,0,0,0.04)",
+                    }}
+                    onPress={() => {
+                      haptic();
+                      setShowBrowser(true);
+                    }}
+                  >
+                    <Ionicons
+                      name="globe-outline"
+                      size={20}
+                      color={isDark ? "#a3a3a3" : "#737373"}
+                    />
+                  </Pressable>
+                )}
+              </View>
+              <Text
+                className={`mt-1.5 text-base ${
+                  hasBgImage
+                    ? "text-neutral-500 dark:text-neutral-400"
+                    : "text-neutral-400 dark:text-neutral-500"
+                }`}
+              >
+                {t("fn.subtitle")}
+              </Text>
+            </View>
+
+            <View
+              className={`mx-6 my-4 h-px ${
+                hasBgImage
+                  ? "bg-neutral-400/40 dark:bg-neutral-500/40"
+                  : "bg-neutral-100 dark:bg-neutral-800/60"
+              }`}
+            />
+
+            {SECTIONS.map((section) => (
+              <View key={section.titleKey} className="mb-5">
+                <Text className="mb-3 px-6 text-base font-semibold text-neutral-800 dark:text-neutral-100">
+                  {t(section.titleKey)}
+                </Text>
+                <View className="flex-row flex-wrap px-2">
+                  {section.items.map((app) => (
+                    <AppItem
+                      key={app.labelKey}
+                      app={app}
+                      label={t(app.labelKey)}
+                      isDark={isDark}
+                      hasBg={hasBgImage}
+                      onPress={() => handleOpenApp(app)}
+                    />
+                  ))}
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        </BlurTargetView>
+
+        {!isBound && (
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 12,
+            }}
+          >
+            <OverlayBackdrop blurTarget={contentBlurTarget} />
+            <View
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 28,
+                backgroundColor: isDark
+                  ? "rgba(255,255,255,0.06)"
+                  : "rgba(0,0,0,0.04)",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Ionicons
+                name="person-circle-outline"
+                size={26}
+                color={isDark ? "#525252" : "#a3a3a3"}
+              />
             </View>
             <Text
-              className={`mt-1.5 text-base ${
-                hasBgImage
-                  ? "text-neutral-500 dark:text-neutral-400"
-                  : "text-neutral-400 dark:text-neutral-500"
-              }`}
+              style={{
+                fontSize: 15,
+                fontWeight: "600",
+                color: isDark ? "#a3a3a3" : "#737373",
+              }}
             >
-              {t("fn.subtitle")}
+              {t("course.needBindTitle")}
             </Text>
-          </View>
-
-          <View
-            className={`mx-6 my-4 h-px ${
-              hasBgImage
-                ? "bg-neutral-400/40 dark:bg-neutral-500/40"
-                : "bg-neutral-100 dark:bg-neutral-800/60"
-            }`}
-          />
-
-          {SECTIONS.map((section) => (
-            <View key={section.titleKey} className="mb-5">
-              <Text className="mb-3 px-6 text-base font-semibold text-neutral-800 dark:text-neutral-100">
-                {t(section.titleKey)}
+            <Pressable
+              style={({ pressed }) => ({
+                marginTop: 4,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 2,
+                opacity: pressed ? 0.5 : 1,
+              })}
+              onPress={() => {
+                haptic();
+                router.navigate("/(tabs)/user");
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: "#3b82f6",
+                  fontWeight: "500",
+                }}
+              >
+                {t("course.goBind")}
               </Text>
-              <View className="flex-row flex-wrap px-2">
-                {section.items.map((app) => (
-                  <AppItem
-                    key={app.labelKey}
-                    app={app}
-                    label={t(app.labelKey)}
-                    isDark={isDark}
-                    hasBg={hasBgImage}
-                    onPress={() => handleOpenApp(app)}
-                  />
-                ))}
-              </View>
-            </View>
-          ))}
-        </ScrollView>
+              <Ionicons name="chevron-forward" size={13} color="#3b82f6" />
+            </Pressable>
+          </View>
+        )}
 
         {IS_DEV && (
           <Modal

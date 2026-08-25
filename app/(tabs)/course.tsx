@@ -62,6 +62,8 @@ export default function CourseScreen() {
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [showLabImport, setShowLabImport] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
+  const [pendingManualImport, setPendingManualImport] =
+    useState<ImportType | null>(null);
 
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
@@ -123,9 +125,18 @@ export default function CourseScreen() {
 
   const doImport = (type: ImportType) => {
     haptic();
-    setShowTypePicker(false);
     setFabOpen(false);
     if (type === "lab") {
+      setShowTypePicker(false);
+      if (!isBound) {
+        Toast.show({
+          type: "info",
+          text1: t("course.needBindTitle"),
+          text2: t("course.needBindSub"),
+          position: "bottom",
+        });
+        return;
+      }
       // 实验系统只返回绝对日期，需要学期起始日才能换算周次
       if (!termStart) {
         Toast.show({
@@ -138,7 +149,20 @@ export default function CourseScreen() {
       setShowLabImport(true);
       return;
     }
+    if (!isBound) {
+      setPendingManualImport(type);
+      setShowTypePicker(true);
+      return;
+    }
+    setShowTypePicker(false);
     importerRef.current?.startImport(type);
+  };
+
+  const continueManualImport = () => {
+    const type = pendingManualImport;
+    setPendingManualImport(null);
+    setShowTypePicker(false);
+    if (type) importerRef.current?.startImport(type);
   };
 
   const changeWeek = (delta: number) => {
@@ -272,88 +296,7 @@ export default function CourseScreen() {
           onWeekChange={goToWeek}
         />
 
-        {!isBound && (
-          <View
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: isDark
-                ? "rgba(0,0,0,0.65)"
-                : "rgba(255,255,255,0.75)",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 12,
-            }}
-          >
-            <View
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 28,
-                backgroundColor: isDark
-                  ? "rgba(255,255,255,0.06)"
-                  : "rgba(0,0,0,0.04)",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <Ionicons
-                name="person-circle-outline"
-                size={26}
-                color={isDark ? "#525252" : "#a3a3a3"}
-              />
-            </View>
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: "600",
-                color: isDark ? "#a3a3a3" : "#737373",
-              }}
-            >
-              {t("course.needBindTitle")}
-            </Text>
-            <Text
-              style={{
-                fontSize: 13,
-                color: isDark ? "#525252" : "#a3a3a3",
-                textAlign: "center",
-                paddingHorizontal: 40,
-                lineHeight: 20,
-              }}
-            >
-              {t("course.needBindSub")}
-            </Text>
-            <Pressable
-              style={({ pressed }) => ({
-                marginTop: 4,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 2,
-                opacity: pressed ? 0.5 : 1,
-              })}
-              onPress={() => {
-                haptic();
-                router.navigate("/(tabs)/user");
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 13,
-                  color: "#3b82f6",
-                  fontWeight: "500",
-                }}
-              >
-                {t("course.goBind")}
-              </Text>
-              <Ionicons name="chevron-forward" size={13} color="#3b82f6" />
-            </Pressable>
-          </View>
-        )}
-
-        {isBound && courses.length === 0 && (
+        {courses.length === 0 && (
           <>
             <Animated.View
               className="absolute inset-0 bg-black"
@@ -445,36 +388,78 @@ export default function CourseScreen() {
 
       <BottomSheet
         visible={showTypePicker}
-        onClose={() => setShowTypePicker(false)}
-        title={t("course.selectImportType")}
+        onClose={() => {
+          setShowTypePicker(false);
+          setPendingManualImport(null);
+        }}
+        title={
+          pendingManualImport
+            ? t("course.manualImportTitle")
+            : t("course.selectImportType")
+        }
       >
-        <Pressable
-          className="flex-row items-center px-5 py-3.5 active:bg-neutral-100 dark:active:bg-neutral-700"
-          onPress={() => doImport("bachelor")}
-        >
-          <IconSymbol name="school" size={22} color={iconColor} />
-          <Text className="ml-3 flex-1 text-base text-neutral-800 dark:text-neutral-200">
-            {t("course.bachelor")}
-          </Text>
-        </Pressable>
-        <Pressable
-          className="flex-row items-center px-5 py-3.5 active:bg-neutral-100 dark:active:bg-neutral-700"
-          onPress={() => doImport("master")}
-        >
-          <IconSymbol name="menu-book" size={22} color={iconColor} />
-          <Text className="ml-3 flex-1 text-base text-neutral-800 dark:text-neutral-200">
-            {t("course.master")}
-          </Text>
-        </Pressable>
-        <Pressable
-          className="flex-row items-center px-5 py-3.5 active:bg-neutral-100 dark:active:bg-neutral-700"
-          onPress={() => doImport("lab")}
-        >
-          <IconSymbol name="science" size={22} color={iconColor} />
-          <Text className="ml-3 flex-1 text-base text-neutral-800 dark:text-neutral-200">
-            {t("course.lab")}
-          </Text>
-        </Pressable>
+        {pendingManualImport ? (
+          <>
+            <Text className="px-5 pb-4 text-sm leading-5 text-neutral-500 dark:text-neutral-400">
+              {t("course.manualImportDesc")}
+            </Text>
+            <View className="mx-5 mb-2 flex-row gap-3">
+              <Pressable
+                className="flex-1 items-center rounded-xl bg-neutral-200 py-3 active:bg-neutral-300 dark:bg-neutral-700 dark:active:bg-neutral-600"
+                onPress={() => {
+                  haptic();
+                  setPendingManualImport(null);
+                  setShowTypePicker(false);
+                }}
+              >
+                <Text className="text-base font-medium text-neutral-600 dark:text-neutral-300">
+                  {t("common.cancel")}
+                </Text>
+              </Pressable>
+              <Pressable
+                className="flex-1 items-center rounded-xl bg-blue-500 py-3 active:bg-blue-600"
+                onPress={() => {
+                  haptic();
+                  continueManualImport();
+                }}
+              >
+                <Text className="text-base font-medium text-white">
+                  {t("course.manualImportContinue")}
+                </Text>
+              </Pressable>
+            </View>
+          </>
+        ) : (
+          <>
+            <Pressable
+              className="flex-row items-center px-5 py-3.5 active:bg-neutral-100 dark:active:bg-neutral-700"
+              onPress={() => doImport("bachelor")}
+            >
+              <IconSymbol name="school" size={22} color={iconColor} />
+              <Text className="ml-3 flex-1 text-base text-neutral-800 dark:text-neutral-200">
+                {t("course.bachelor")}
+              </Text>
+            </Pressable>
+            <Pressable
+              className="flex-row items-center px-5 py-3.5 active:bg-neutral-100 dark:active:bg-neutral-700"
+              onPress={() => doImport("master")}
+            >
+              <IconSymbol name="menu-book" size={22} color={iconColor} />
+              <Text className="ml-3 flex-1 text-base text-neutral-800 dark:text-neutral-200">
+                {t("course.master")}
+              </Text>
+            </Pressable>
+            <Pressable
+              className="flex-row items-center px-5 py-3.5 active:bg-neutral-100 dark:active:bg-neutral-700"
+              onPress={() => doImport("lab")}
+            >
+              <IconSymbol name="science" size={22} color={iconColor} />
+              <Text className="ml-3 flex-1 text-base text-neutral-800 dark:text-neutral-200">
+                {t("course.lab")}
+              </Text>
+            </Pressable>
+          </>
+        )}
       </BottomSheet>
 
       <LabImportSheet
@@ -485,7 +470,6 @@ export default function CourseScreen() {
       <CourseDrawer
         visible={showDrawer}
         onClose={() => setShowDrawer(false)}
-        isBound={isBound}
         onManage={() => router.push("/(pages)/settings/course/manage")}
         onReimport={handleReimport}
         onOpenSettings={() => router.push("/(pages)/settings/calendar")}

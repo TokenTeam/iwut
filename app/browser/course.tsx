@@ -1,5 +1,6 @@
+import CookieManager from "@preeternal/react-native-cookie-manager";
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import Animated, {
   Easing,
@@ -34,6 +35,7 @@ import {
 } from "@/services/course-import/master-import";
 import { syncWidgetData } from "@/services/widget-sync";
 import { type ImportType, useCourseStore } from "@/store/course";
+import { useUserBindStore } from "@/store/user-bind";
 
 function normalizeImportType(type: string | string[] | undefined): ImportType {
   return type === "master" ? "master" : "bachelor";
@@ -49,10 +51,12 @@ export default function CourseImportScreen() {
   const t = useT();
   const params = useLocalSearchParams<{ type?: string }>();
   const importType = normalizeImportType(params.type);
+  const isBound = useUserBindStore((s) => s.isBound);
   const webview = useRef<WebView>(null);
   const injected = useRef(false);
   const finished = useRef(false);
   const injectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showImportOverlay, setShowImportOverlay] = useState(isBound);
   const finish = useCallback(
     (success: boolean, message?: string) => {
       if (finished.current) return;
@@ -76,13 +80,26 @@ export default function CourseImportScreen() {
         });
       }
 
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace("/(tabs)/course");
+      const leaveImportScreen = () => {
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace("/(tabs)/course");
+        }
+      };
+
+      if (success && !isBound) {
+        CookieManager.clearAll(true)
+          .catch((error) =>
+            reportError(error, { module: "course-session-cleanup" }),
+          )
+          .finally(leaveImportScreen);
+        return;
       }
+
+      leaveImportScreen();
     },
-    [t],
+    [isBound, t],
   );
   const {
     onLoadEnd: autoLoginOnLoadEnd,
@@ -133,14 +150,14 @@ export default function CourseImportScreen() {
   }, []);
 
   useEffect(() => {
-    if (sms.visible) return;
+    if (!isBound || sms.visible) return;
     const timeout = setTimeout(() => {
       if (!injected.current) {
         finish(false, t("course.importTimeout"));
       }
     }, 30000);
     return () => clearTimeout(timeout);
-  }, [sms.visible, finish, t]);
+  }, [isBound, sms.visible, finish, t]);
 
   const handleError = useCallback(
     (syntheticEvent: {
@@ -165,6 +182,7 @@ export default function CourseImportScreen() {
       const url = e.nativeEvent.url;
 
       if (importType === "bachelor" && url.startsWith(BACHELOR_HOME_PREFIX)) {
+        setShowImportOverlay(true);
         injected.current = true;
         const script = buildBachelorFetchScript({
           fetchUserFailed: t("course.fetchUserFailed"),
@@ -176,6 +194,7 @@ export default function CourseImportScreen() {
       }
 
       if (importType === "master" && url.startsWith(MASTER_MAIN_PREFIX)) {
+        setShowImportOverlay(true);
         injected.current = true;
         const script = buildMasterFetchScript({
           fetchUserFailed: t("course.fetchUserFailed"),
@@ -280,115 +299,117 @@ export default function CourseImportScreen() {
         onMessage={handleMessage}
         ref={webview}
       />
-      <View
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          top: 0,
-          bottom: 0,
-          backgroundColor: "rgba(0,0,0,0.72)",
-        }}
-        onStartShouldSetResponder={() => true}
-        onMoveShouldSetResponder={() => true}
-      >
+      {showImportOverlay && (
         <View
           style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            paddingHorizontal: 28,
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.72)",
           }}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}
         >
           <View
             style={{
-              width: "100%",
-              maxWidth: 320,
-              borderRadius: 8,
-              backgroundColor: "white",
-              paddingHorizontal: 18,
-              paddingBottom: 12,
-              paddingTop: 28,
+              flex: 1,
+              justifyContent: "center",
               alignItems: "center",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.22,
-              shadowRadius: 18,
-              elevation: 10,
+              paddingHorizontal: 28,
             }}
           >
             <View
               style={{
-                position: "absolute",
-                top: -28,
-                width: 56,
-                height: 56,
-                borderRadius: 28,
+                width: "100%",
+                maxWidth: 320,
+                borderRadius: 8,
                 backgroundColor: "white",
-                justifyContent: "center",
+                paddingHorizontal: 18,
+                paddingBottom: 12,
+                paddingTop: 28,
                 alignItems: "center",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.22,
+                shadowRadius: 18,
+                elevation: 10,
               }}
             >
-              <IconSymbol name="local-cafe" size={30} color="#111827" />
-            </View>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 10,
-                marginBottom: 10,
-              }}
-            >
-              <ActivityIndicator size="small" color="#178f8b" />
-              <Text
+              <View
                 style={{
-                  fontSize: 16,
-                  fontWeight: "500",
-                  color: "#111827",
+                  position: "absolute",
+                  top: -28,
+                  width: 56,
+                  height: 56,
+                  borderRadius: 28,
+                  backgroundColor: "white",
+                  justifyContent: "center",
+                  alignItems: "center",
                 }}
               >
-                {importingWait}
-              </Text>
-            </View>
-            <View
-              style={{
-                width: "100%",
-                height: 6,
-                overflow: "hidden",
-                backgroundColor: "#4b5563",
-              }}
-            >
-              <Animated.View
-                style={[
-                  {
-                    position: "absolute",
-                    top: -9,
-                    left: 0,
-                    height: 24,
-                    flexDirection: "row",
-                  },
-                  stripeStyle,
-                ]}
+                <IconSymbol name="local-cafe" size={30} color="#111827" />
+              </View>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 10,
+                  marginBottom: 10,
+                }}
               >
-                {PROGRESS_STRIPES.map((stripe) => (
-                  <View
-                    key={stripe}
-                    style={{
-                      width: PROGRESS_STRIPE_WIDTH,
-                      height: 28,
-                      marginRight: PROGRESS_STRIPE_GAP,
-                      backgroundColor: "#111827",
-                      opacity: 0.5,
-                      transform: [{ rotate: "30deg" }],
-                    }}
-                  />
-                ))}
-              </Animated.View>
+                <ActivityIndicator size="small" color="#178f8b" />
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "500",
+                    color: "#111827",
+                  }}
+                >
+                  {importingWait}
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: "100%",
+                  height: 6,
+                  overflow: "hidden",
+                  backgroundColor: "#4b5563",
+                }}
+              >
+                <Animated.View
+                  style={[
+                    {
+                      position: "absolute",
+                      top: -9,
+                      left: 0,
+                      height: 24,
+                      flexDirection: "row",
+                    },
+                    stripeStyle,
+                  ]}
+                >
+                  {PROGRESS_STRIPES.map((stripe) => (
+                    <View
+                      key={stripe}
+                      style={{
+                        width: PROGRESS_STRIPE_WIDTH,
+                        height: 28,
+                        marginRight: PROGRESS_STRIPE_GAP,
+                        backgroundColor: "#111827",
+                        opacity: 0.5,
+                        transform: [{ rotate: "30deg" }],
+                      }}
+                    />
+                  ))}
+                </Animated.View>
+              </View>
             </View>
           </View>
         </View>
-      </View>
+      )}
       {smsNode}
     </View>
   );

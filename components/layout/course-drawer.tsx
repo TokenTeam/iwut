@@ -1,11 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
 import { useEffect, useRef, useState } from "react";
 import {
   Modal,
   Platform,
   Pressable,
-  StyleSheet,
   Text,
   useWindowDimensions,
   View,
@@ -19,10 +17,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import {
-  getAndroidBlurProps,
-  useAndroidBlurTarget,
-} from "@/components/ui/app-blur-target";
+import { OverlayBackdrop } from "@/components/ui/overlay-backdrop";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useT } from "@/lib/i18n";
@@ -34,7 +29,6 @@ export const DRAWER_EXIT_MS = 200;
 interface Props {
   visible: boolean;
   onClose: () => void;
-  isBound: boolean;
   onManage: () => void;
   onReimport: () => void;
   onOpenSettings: () => void;
@@ -43,7 +37,6 @@ interface Props {
 export function CourseDrawer({
   visible,
   onClose,
-  isBound,
   onManage,
   onReimport,
   onOpenSettings,
@@ -53,7 +46,6 @@ export function CourseDrawer({
   const isDark = scheme === "dark";
   const { width: screenWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const blurTarget = useAndroidBlurTarget();
 
   // 按比例取宽并限制最大宽度，避免在平板等宽屏设备上过宽
   const drawerWidth = Math.round(Math.min(screenWidth * 0.66, 320));
@@ -151,22 +143,7 @@ export function CourseDrawer({
           overlayStyle,
         ]}
       >
-        <BlurView
-          {...getAndroidBlurProps(blurTarget)}
-          intensity={25}
-          tint={isDark ? "dark" : "default"}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
-        <Pressable
-          style={[
-            StyleSheet.absoluteFill,
-            {
-              backgroundColor: isDark ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.12)",
-            },
-          ]}
-          onPress={onClose}
-        />
+        <OverlayBackdrop onPress={onClose} />
       </Animated.View>
 
       <Pressable
@@ -222,7 +199,6 @@ export function CourseDrawer({
             textColor={primaryText}
             chevronColor={chevronColor}
             isDark={isDark}
-            disabled={!isBound}
             onPress={() => dismissThen(onReimport)}
           />
           <DrawerItem
