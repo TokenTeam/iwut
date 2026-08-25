@@ -291,6 +291,15 @@
     "custom": "自定义",
     "customPlaceholder": "1-120"
   },
+  "developer": {
+    "title": "开发人员选项",
+    "dataSection": "数据",
+    "reset": "恢复出厂设置",
+    "resetTitle": "恢复出厂设置",
+    "resetDesc": "将清除全部本地数据并重启 App，此操作不可恢复。",
+    "resetConfirm": "确认",
+    "resetFailed": "执行失败"
+  },
   "appearance": {
     "title": "外观设置",
     "themeGroup": "主题",

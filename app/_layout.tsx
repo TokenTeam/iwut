@@ -56,6 +56,7 @@ import {
   registerBackgroundRefresh,
   scheduleWeeklyReminders,
   showUpcomingLiveActivity,
+  unregisterBackgroundRefresh,
 } from "@/services/course-notification";
 import { syncWidgetData } from "@/services/widget-sync";
 import { useAnnouncementStore } from "@/store/announcements";
@@ -143,7 +144,12 @@ function RootLayout() {
   useEffect(() => {
     initNotificationChannel().catch(() => {});
     scheduleWeeklyReminders().catch(() => {});
-    registerBackgroundRefresh().catch(() => {});
+    const { courseReminder, examReminder } = useSettingsStore.getState();
+    if (courseReminder || examReminder) {
+      registerBackgroundRefresh().catch(() => {});
+    } else {
+      unregisterBackgroundRefresh().catch(() => {});
+    }
     showUpcomingLiveActivity().catch(() => {});
   }, []);
 

@@ -19,6 +19,7 @@ import Svg, {
 
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
+import { IS_DEV } from "@/constants/is-dev";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
@@ -371,6 +372,14 @@ export default function UserScreen() {
               label={t("user.menuAbout")}
               href="/about"
             />
+            {IS_DEV && (
+              <MenuItem
+                icon="developer-mode"
+                iconBg="#FF9500"
+                label={t("developer.title")}
+                href="/settings/developer"
+              />
+            )}
           </MenuGroup>
         </View>
       </ScrollView>

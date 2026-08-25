@@ -170,6 +170,17 @@ class ScheduleWidget : AppWidgetProvider() {
         }
 
         fun scheduleNextAlarm(context: Context) {
+            val alarmManager =
+                context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val intent = Intent(context, ScheduleWidget::class.java).apply {
+                action = ACTION_AUTO_REFRESH
+            }
+            val pendingIntent = PendingIntent.getBroadcast(
+                context, BROADCAST_REQUEST_CODE, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            alarmManager.cancel(pendingIntent)
+
             val data = ScheduleData.load(context) ?: return
             if (data.termStart.isEmpty()) return
 
@@ -205,15 +216,6 @@ class ScheduleWidget : AppWidgetProvider() {
                 }
             }
 
-            val intent = Intent(context, ScheduleWidget::class.java).apply {
-                action = ACTION_AUTO_REFRESH
-            }
-            val pendingIntent = PendingIntent.getBroadcast(
-                context, BROADCAST_REQUEST_CODE, intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-
-            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             alarmManager.set(
                 AlarmManager.RTC_WAKEUP,
                 alarmTime.timeInMillis,

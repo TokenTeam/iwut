@@ -291,6 +291,15 @@
     "custom": "Custom",
     "customPlaceholder": "1-120"
   },
+  "developer": {
+    "title": "Developer options",
+    "dataSection": "Data",
+    "reset": "Factory reset",
+    "resetTitle": "Factory reset",
+    "resetDesc": "This clears all local data and restarts the app. This cannot be undone.",
+    "resetConfirm": "Confirm",
+    "resetFailed": "Operation failed"
+  },
   "appearance": {
     "title": "Appearance",
     "themeGroup": "Theme",
