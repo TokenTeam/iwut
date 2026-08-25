@@ -26,7 +26,7 @@
             android:layout_marginTop="18dp"
             android:textSize="@dimen/widget_week_text_size"
             android:textColor="@color/widget_schedule_accent"
-            tools:text="第1周"
+            android:text="第1周"
             tools:ignore="SpUsage" />
 
         <TextView
@@ -37,7 +37,7 @@
             android:layout_marginTop="5dp"
             android:textSize="@dimen/widget_date_text_size"
             android:textColor="@color/widget_schedule_text_primary"
-            tools:text="12月1日"
+            android:text="12月1日"
             tools:ignore="SpUsage" />
 
         <TextView
@@ -50,7 +50,7 @@
             android:gravity="center"
             android:textColor="@color/widget_schedule_text_on_accent"
             android:textSize="@dimen/widget_day_of_week_text_size"
-            tools:text="周一"
+            android:text="周一"
             tools:ignore="SpUsage" />
     </RelativeLayout>
 
@@ -68,8 +68,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:visibility="gone"
-            tools:visibility="visible">
+            android:visibility="visible">
 
             <TextView
                 android:id="@+id/course_1_name"
@@ -79,7 +78,7 @@
                 android:maxLength="12"
                 android:textSize="@dimen/widget_course_name_text_size"
                 android:textColor="@color/widget_schedule_text_primary"
-                tools:text="高等数学"
+                android:text="高等数学"
                 tools:ignore="SpUsage" />
 
             <TextView
@@ -98,7 +97,7 @@
                 android:textSize="@dimen/widget_date_hint_text_size"
                 android:textColor="@color/widget_schedule_accent"
                 android:background="@drawable/widget_schedule_date_hint_bg"
-                tools:text="今天"
+                android:text="今天"
                 tools:ignore="SpUsage" />
 
             <RelativeLayout
@@ -117,7 +116,7 @@
                     android:maxEms="9"
                     android:textSize="@dimen/widget_course_room_time_text_size"
                     android:textColor="@color/widget_schedule_text_secondary"
-                    tools:text="博学主楼101"
+                    android:text="博学主楼101"
                     tools:ignore="SpUsage" />
 
                 <ImageView
@@ -139,7 +138,7 @@
                     android:layout_centerVertical="true"
                     android:textSize="@dimen/widget_course_room_time_text_size"
                     android:textColor="@color/widget_schedule_text_secondary"
-                    tools:text="08:00-09:35"
+                    android:text="08:00-09:35"
                     tools:ignore="SpUsage" />
             </RelativeLayout>
 
@@ -158,8 +157,7 @@
             android:layout_height="wrap_content"
             android:layout_below="@id/course_row_1"
             android:layout_marginTop="5dp"
-            android:visibility="gone"
-            tools:visibility="visible">
+            android:visibility="visible">
 
             <TextView
                 android:id="@+id/course_2_name"
@@ -169,7 +167,7 @@
                 android:maxLength="12"
                 android:textSize="@dimen/widget_course_name_text_size"
                 android:textColor="@color/widget_schedule_text_primary"
-                tools:text="大学物理"
+                android:text="大学物理"
                 tools:ignore="SpUsage" />
 
             <TextView
@@ -188,7 +186,7 @@
                 android:textSize="@dimen/widget_date_hint_text_size"
                 android:textColor="@color/widget_schedule_accent"
                 android:background="@drawable/widget_schedule_date_hint_bg"
-                tools:text="明天"
+                android:text="明天"
                 tools:ignore="SpUsage" />
 
             <RelativeLayout
@@ -207,7 +205,7 @@
                     android:maxEms="9"
                     android:textSize="@dimen/widget_course_room_time_text_size"
                     android:textColor="@color/widget_schedule_text_secondary"
-                    tools:text="博学主楼101"
+                    android:text="博学主楼101"
                     tools:ignore="SpUsage" />
 
                 <ImageView
@@ -229,7 +227,7 @@
                     android:layout_centerVertical="true"
                     android:textSize="@dimen/widget_course_room_time_text_size"
                     android:textColor="@color/widget_schedule_text_secondary"
-                    tools:text="10:00-11:35"
+                    android:text="10:00-11:35"
                     tools:ignore="SpUsage" />
             </RelativeLayout>
 
@@ -264,8 +262,8 @@
             android:layout_marginBottom="17dp"
             android:textColor="@color/widget_schedule_text_primary"
             android:textSize="@dimen/widget_course_hint_text_size"
-            android:visibility="gone"
-            tools:text="今天还有2节课，明天还有3节课"
+            android:visibility="visible"
+            android:text="今天还有2节课，明天还有3节课"
             tools:ignore="SpUsage" />
     </RelativeLayout>
 

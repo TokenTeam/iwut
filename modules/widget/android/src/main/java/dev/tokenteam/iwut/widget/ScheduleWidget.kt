@@ -4,8 +4,10 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.appwidget.AppWidgetProviderInfo
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.view.View
 import android.widget.RemoteViews
 import java.util.Calendar
@@ -48,6 +50,22 @@ class ScheduleWidget : AppWidgetProvider() {
             appWidgetManager: AppWidgetManager,
             appWidgetId: Int,
         ) {
+            val views = buildWidgetViews(context)
+            setOnClickAction(context, views)
+            appWidgetManager.updateAppWidget(appWidgetId, views)
+        }
+
+        fun publishGeneratedPreview(context: Context) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return
+
+            AppWidgetManager.getInstance(context).setWidgetPreview(
+                android.content.ComponentName(context, ScheduleWidget::class.java),
+                AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN,
+                buildWidgetViews(context),
+            )
+        }
+
+        private fun buildWidgetViews(context: Context): RemoteViews {
             val views = RemoteViews(context.packageName, R.layout.widget_schedule)
             val data = ScheduleData.load(context)
             val ctx = ScheduleData.localizedContext(context)
@@ -56,9 +74,7 @@ class ScheduleWidget : AppWidgetProvider() {
                 views.setViewVisibility(R.id.course_group, View.GONE)
                 views.setViewVisibility(R.id.all_done_group, View.VISIBLE)
                 views.setTextViewText(R.id.tv_all_done, ctx.getString(R.string.widget_all_done))
-                setOnClickAction(context, views)
-                appWidgetManager.updateAppWidget(appWidgetId, views)
-                return
+                return views
             }
 
             val week = ScheduleData.getCurrentWeek(data.termStart)
@@ -92,8 +108,7 @@ class ScheduleWidget : AppWidgetProvider() {
                 views.setViewVisibility(R.id.course_group, View.GONE)
                 views.setViewVisibility(R.id.all_done_group, View.VISIBLE)
                 views.setTextViewText(R.id.tv_all_done, ctx.getString(R.string.widget_all_done))
-                appWidgetManager.updateAppWidget(appWidgetId, views)
-                return
+                return views
             }
 
             views.setViewVisibility(R.id.course_group, View.VISIBLE)
@@ -149,9 +164,7 @@ class ScheduleWidget : AppWidgetProvider() {
                 }
             views.setViewVisibility(R.id.tv_course_hint, View.VISIBLE)
             views.setTextViewText(R.id.tv_course_hint, hintText)
-
-            setOnClickAction(context, views)
-            appWidgetManager.updateAppWidget(appWidgetId, views)
+            return views
         }
 
         fun setOnClickAction(context: Context, views: RemoteViews) {
