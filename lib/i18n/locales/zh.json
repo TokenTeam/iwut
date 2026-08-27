@@ -225,22 +225,6 @@
   "fn": {
     "title": "功能",
     "subtitle": "校园服务，触手可及",
-    "section": {
-      "study": "学习工具",
-      "life": "生活服务",
-      "info": "校园资讯"
-    },
-    "app": {
-      "exam": "考试安排",
-      "grade": "成绩查询",
-      "classroom": "自习室查询",
-      "icSpace": "IC 空间预约",
-      "library": "图书馆管家",
-      "card": "智寻卡片",
-      "elec": "电费查询",
-      "netPay": "网络缴费",
-      "campusNews": "校园公告"
-    },
     "lanTitle": "请确认校园网环境",
     "lanDesc": "「{app}」需要在校园网环境下访问。请确认当前已连接校园网后继续打开。",
     "lanConfirm": "已连接，继续打开"

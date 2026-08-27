@@ -62,6 +62,7 @@ import { syncWidgetData } from "@/services/widget-sync";
 import { useAnnouncementStore } from "@/store/announcements";
 import { useCourseStore } from "@/store/course";
 import { useExamStore } from "@/store/exam";
+import { useFunctionAppsStore } from "@/store/function-apps";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useSettingsStore } from "@/store/settings";
 import { useThemeStore } from "@/store/theme";
@@ -113,6 +114,7 @@ function RootLayout() {
   useEffect(() => {
     useUpdateStore.getState().check();
     useAnnouncementStore.getState().fetch();
+    useFunctionAppsStore.getState().fetch();
   }, []);
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { type Href, router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -20,103 +20,11 @@ import { IS_DEV } from "@/constants/is-dev";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
-import { type TKey, useT } from "@/lib/i18n";
+import { useResolvedLang, useT } from "@/lib/i18n";
+import type { FunctionWebApp } from "@/services/function-apps";
+import { resolveLocalizedString } from "@/services/update-config";
+import { useFunctionAppsStore } from "@/store/function-apps";
 import { useScheduleStore } from "@/store/schedule";
-
-type WebApp = {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
-  labelKey: TKey;
-  color: string;
-  // 应用内页面：走 expo-router 类型安全路由（即时跳转，也是 iwut:// 深链接的目标）
-  route?: Href;
-  // 外部网页：在内置浏览器打开
-  uri?: string;
-  lan?: boolean;
-};
-
-type Section = {
-  titleKey: TKey;
-  items: WebApp[];
-};
-
-const SECTIONS: Section[] = [
-  {
-    titleKey: "fn.section.study",
-    items: [
-      {
-        icon: "bar-chart-outline",
-        labelKey: "fn.app.grade",
-        color: "#8b5cf6",
-        route: "/grade",
-      },
-      {
-        icon: "calendar-clear-outline",
-        labelKey: "fn.app.exam",
-        color: "#3b82f6",
-        route: "/exam",
-      },
-      {
-        icon: "book-outline",
-        labelKey: "fn.app.classroom",
-        color: "#0d9488",
-        uri: "https://classroom-iwut.tokenteam.net",
-        lan: false,
-      },
-      {
-        icon: "easel-outline",
-        labelKey: "fn.app.icSpace",
-        color: "#06b6d4",
-        uri: "https://zhlgd.whut.edu.cn/tpass/login?service=https%3A%2F%2Fzw.whut.edu.cn%2Frem%2Fstatic%2Fsso%2FwebOAuthRed",
-        lan: true,
-      },
-      {
-        icon: "library-outline",
-        labelKey: "fn.app.library",
-        color: "#3b82f6",
-        uri: "https://library-info-iwut.tokenteam.net",
-        lan: true,
-      },
-    ],
-  },
-  {
-    titleKey: "fn.section.life",
-    items: [
-      {
-        icon: "card-outline",
-        labelKey: "fn.app.card",
-        color: "#10b981",
-        uri: "https://cardcare-iwut.tokenteam.net",
-        lan: false,
-      },
-      {
-        icon: "flash-outline",
-        labelKey: "fn.app.elec",
-        color: "#eab308",
-        uri: "https://zhlgd.whut.edu.cn/tpass/login?service=http://nyyzf.whut.edu.cn/MobileWebOnlineHall/#/",
-        lan: false,
-      },
-      {
-        icon: "wifi-outline",
-        labelKey: "fn.app.netPay",
-        color: "#2563eb",
-        uri: "https://zhlgd.whut.edu.cn/tpass/login?service=http://cwsf.whut.edu.cn/netdetails515N023",
-        lan: false,
-      },
-    ],
-  },
-  {
-    titleKey: "fn.section.info",
-    items: [
-      {
-        icon: "newspaper-outline",
-        labelKey: "fn.app.campusNews",
-        color: "#f97316",
-        uri: "http://i.whut.edu.cn",
-        lan: true,
-      },
-    ],
-  },
-];
 
 function openWeb(uri: string) {
   router.push({ pathname: "/browser", params: { uri } });
@@ -125,6 +33,7 @@ function openWeb(uri: string) {
 export default function FunctionScreen() {
   useMarkRouteInteractive();
   const t = useT();
+  const lang = useResolvedLang();
   const haptic = useHaptics();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -133,12 +42,22 @@ export default function FunctionScreen() {
   const { height } = useWindowDimensions();
   const [showBrowser, setShowBrowser] = useState(false);
   const [uri, setUri] = useState("");
-  const [pendingLanApp, setPendingLanApp] = useState<WebApp | null>(null);
+  const [pendingLanApp, setPendingLanApp] = useState<FunctionWebApp | null>(
+    null,
+  );
 
-  const handleOpenApp = (app: WebApp) => {
+  const remoteSections = useFunctionAppsStore((s) => s.sections);
+  const fetchFunctionApps = useFunctionAppsStore((s) => s.fetch);
+  const sections = remoteSections;
+
+  useEffect(() => {
+    fetchFunctionApps();
+  }, [fetchFunctionApps]);
+
+  const handleOpenApp = (app: FunctionWebApp) => {
     haptic();
     if (app.route) {
-      router.push(app.route);
+      router.push(app.route as Href);
       return;
     }
     if (!app.uri) return;
@@ -211,17 +130,17 @@ export default function FunctionScreen() {
             }`}
           />
 
-          {SECTIONS.map((section) => (
-            <View key={section.titleKey} className="mb-5">
+          {sections.map((section) => (
+            <View key={section.id} className="mb-5">
               <Text className="mb-3 px-6 text-base font-semibold text-neutral-800 dark:text-neutral-100">
-                {t(section.titleKey)}
+                {resolveLocalizedString(section.title, lang) ?? ""}
               </Text>
               <View className="flex-row flex-wrap px-2">
                 {section.items.map((app) => (
                   <AppItem
-                    key={app.labelKey}
+                    key={app.id}
                     app={app}
-                    label={t(app.labelKey)}
+                    label={resolveLocalizedString(app.label, lang) ?? ""}
                     isDark={isDark}
                     hasBg={hasBgImage}
                     onPress={() => handleOpenApp(app)}
@@ -299,7 +218,9 @@ export default function FunctionScreen() {
           onClose={() => setPendingLanApp(null)}
           title={t("fn.lanTitle")}
           description={t("fn.lanDesc", {
-            app: pendingLanApp ? t(pendingLanApp.labelKey) : "",
+            app: pendingLanApp
+              ? (resolveLocalizedString(pendingLanApp.label, lang) ?? "")
+              : "",
           })}
           confirmText={t("fn.lanConfirm")}
           onConfirm={handleConfirmLan}
@@ -316,7 +237,7 @@ function AppItem({
   hasBg,
   onPress,
 }: {
-  app: WebApp;
+  app: FunctionWebApp;
   label: string;
   isDark: boolean;
   hasBg: boolean;
@@ -359,7 +280,11 @@ function AppItem({
             backgroundColor: isDark ? `${app.color}18` : `${app.color}12`,
           }}
         />
-        <Ionicons name={app.icon} size={20} color={app.color} />
+        <Ionicons
+          name={app.icon as React.ComponentProps<typeof Ionicons>["name"]}
+          size={20}
+          color={app.color}
+        />
       </View>
       <Text
         className={`mt-2 text-xs ${

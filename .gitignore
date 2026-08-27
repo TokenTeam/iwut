@@ -3,6 +3,9 @@
 # dependencies
 node_modules/
 
+# 项目使用 bun 作为包管理器；package-lock.json 由 npm 生成，不入库
+package-lock.json
+
 # Expo
 .expo/
 dist/
@@ -42,6 +45,9 @@ app-example
 /ios
 /android
 **/android/build/
+
+# Gradle 本地构建缓存
+.gradle/
 
 # OTA
 !assets/certificate.pem
