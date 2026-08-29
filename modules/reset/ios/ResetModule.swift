@@ -9,12 +9,17 @@ public class ResetModule: Module {
     public func definition() -> ModuleDefinition {
         Name("Reset")
 
-        AsyncFunction("resetNativeData") {
-            self.clearKeychain()
-            self.clearUserDefaults()
-            self.clearFiles()
-            await self.clearWebViewData()
-        }.runOnQueue(.main)
+        AsyncFunction("resetNativeData") { () async -> Void in
+            await self.clearNativeData()
+        }
+    }
+
+    @MainActor
+    private func clearNativeData() async {
+        clearKeychain()
+        clearUserDefaults()
+        clearFiles()
+        await clearWebViewData()
     }
 
     private func clearKeychain() {
@@ -92,6 +97,7 @@ public class ResetModule: Module {
         }
     }
 
+    @MainActor
     private func clearWebViewData() async {
         HTTPCookieStorage.shared.cookies?.forEach {
             HTTPCookieStorage.shared.deleteCookie($0)
