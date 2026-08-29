@@ -55,8 +55,16 @@ export default function CourseImportScreen() {
   const webview = useRef<WebView>(null);
   const injected = useRef(false);
   const finished = useRef(false);
+  const shouldClearSessionOnExit = useRef(!isBound);
   const injectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showImportOverlay, setShowImportOverlay] = useState(isBound);
+  const clearManualImportSession = useCallback(
+    () =>
+      CookieManager.clearAll(true).catch((error) =>
+        reportError(error, { module: "course-session-cleanup" }),
+      ),
+    [],
+  );
   const finish = useCallback(
     (success: boolean, message?: string) => {
       if (finished.current) return;
@@ -88,18 +96,14 @@ export default function CourseImportScreen() {
         }
       };
 
-      if (!isBound) {
-        CookieManager.clearAll(true)
-          .catch((error) =>
-            reportError(error, { module: "course-session-cleanup" }),
-          )
-          .finally(leaveImportScreen);
+      if (shouldClearSessionOnExit.current) {
+        clearManualImportSession().finally(leaveImportScreen);
         return;
       }
 
       leaveImportScreen();
     },
-    [isBound, t],
+    [clearManualImportSession, t],
   );
   const {
     onLoadEnd: autoLoginOnLoadEnd,
@@ -134,11 +138,15 @@ export default function CourseImportScreen() {
 
   useEffect(() => {
     const currentWebView = webview.current;
+    const clearSessionOnExit = shouldClearSessionOnExit.current;
     return () => {
       if (injectTimer.current) clearTimeout(injectTimer.current);
       currentWebView?.clearCache(true);
       if (!finished.current) {
         finished.current = true;
+        if (clearSessionOnExit) {
+          void clearManualImportSession();
+        }
         Toast.show({
           type: "error",
           text1: translate("course.importFail"),
@@ -147,7 +155,7 @@ export default function CourseImportScreen() {
         });
       }
     };
-  }, []);
+  }, [clearManualImportSession]);
 
   useEffect(() => {
     if (!isBound || sms.visible) return;
