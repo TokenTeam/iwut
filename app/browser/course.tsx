@@ -88,7 +88,7 @@ export default function CourseImportScreen() {
         }
       };
 
-      if (success && !isBound) {
+      if (!isBound) {
         CookieManager.clearAll(true)
           .catch((error) =>
             reportError(error, { module: "course-session-cleanup" }),

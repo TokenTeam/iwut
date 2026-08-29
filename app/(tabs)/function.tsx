@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { BlurTargetView } from "expo-blur";
+import { BlurView } from "expo-blur";
 import { type Href, router } from "expo-router";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -16,8 +16,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import {
+  getAndroidBlurProps,
+  useAndroidBlurTarget,
+} from "@/components/ui/app-blur-target";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
-import { OverlayBackdrop } from "@/components/ui/overlay-backdrop";
 import { IS_DEV } from "@/constants/is-dev";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -30,9 +33,7 @@ type WebApp = {
   icon: React.ComponentProps<typeof Ionicons>["name"];
   labelKey: TKey;
   color: string;
-  // 应用内页面：走 expo-router 类型安全路由（即时跳转，也是 iwut:// 深链接的目标）
   route?: Href;
-  // 外部网页：在内置浏览器打开
   uri?: string;
   lan?: boolean;
 };
@@ -125,6 +126,8 @@ function openWeb(uri: string) {
   router.push({ pathname: "/browser", params: { uri } });
 }
 
+const blockPress = () => {};
+
 export default function FunctionScreen() {
   useMarkRouteInteractive();
   const t = useT();
@@ -134,7 +137,7 @@ export default function FunctionScreen() {
   const insets = useSafeAreaInsets();
   const hasBgImage = useScheduleStore((s) => !!s.backgroundImageUri);
   const isBound = useUserBindStore((s) => s.isBound);
-  const contentBlurTarget = useRef<View | null>(null);
+  const blurTarget = useAndroidBlurTarget();
   const { height } = useWindowDimensions();
   const [showBrowser, setShowBrowser] = useState(false);
   const [uri, setUri] = useState("");
@@ -163,7 +166,7 @@ export default function FunctionScreen() {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1, paddingTop: insets.top }}>
-        <BlurTargetView ref={contentBlurTarget} style={{ flex: 1 }}>
+        <View style={{ flex: 1 }}>
           <ScrollView
             className="flex-1"
             contentContainerStyle={{ paddingBottom: 32 }}
@@ -237,7 +240,7 @@ export default function FunctionScreen() {
               </View>
             ))}
           </ScrollView>
-        </BlurTargetView>
+        </View>
 
         {!isBound && (
           <View
@@ -252,7 +255,25 @@ export default function FunctionScreen() {
               gap: 12,
             }}
           >
-            <OverlayBackdrop blurTarget={contentBlurTarget} />
+            <BlurView
+              {...getAndroidBlurProps(blurTarget)}
+              intensity={25}
+              tint={isDark ? "dark" : "default"}
+              style={StyleSheet.absoluteFill}
+              pointerEvents="none"
+            />
+            <Pressable
+              accessible={false}
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  backgroundColor: isDark
+                    ? "rgba(0,0,0,0.25)"
+                    : "rgba(255,255,255,0.16)",
+                },
+              ]}
+              onPress={blockPress}
+            />
             <View
               style={{
                 width: 56,
