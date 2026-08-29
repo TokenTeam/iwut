@@ -15,10 +15,7 @@ import {
 import Markdown from "react-native-markdown-renderer";
 import Toast from "react-native-toast-message";
 
-import {
-  getAndroidBlurProps,
-  useAndroidBlurTarget,
-} from "@/components/ui/app-blur-target";
+import { useAppBlurProps } from "@/components/ui/app-blur-target";
 import { MorphingIcon } from "@/components/ui/morphing-icon";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -71,7 +68,7 @@ export function UpdateModal() {
   const lang = getResolvedLang();
   const haptic = useHaptics();
   const isDark = useColorScheme() === "dark";
-  const blurTarget = useAndroidBlurTarget();
+  const blurProps = useAppBlurProps();
 
   // IMPORTANT: subscribe to primitive / stable-reference fields one by one.
   // Returning a freshly-allocated object from a selector causes zustand's
@@ -140,8 +137,6 @@ export function UpdateModal() {
   const hasChangelog = changelog.length > 0;
   const showEmptyHint = !hasHighlights && !hasChangelog && !reasonStr;
 
-  // Single source of truth for the red footer text — collapses two adjacent
-  // ternary blocks rendering the same <Text> styling with different copy.
   const bottomHint = hardBlock
     ? blockedByMinVersion
       ? t("update.hardBlockDesc", { v: latestVersion })
@@ -182,7 +177,7 @@ export function UpdateModal() {
     >
       <View className="flex-1 items-center justify-center px-6">
         <BlurView
-          {...getAndroidBlurProps(blurTarget)}
+          {...blurProps}
           intensity={30}
           tint="dark"
           style={StyleSheet.absoluteFill}

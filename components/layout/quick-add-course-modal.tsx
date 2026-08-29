@@ -15,10 +15,7 @@ import {
 import Toast from "react-native-toast-message";
 
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
-import {
-  getAndroidBlurProps,
-  useAndroidBlurTarget,
-} from "@/components/ui/app-blur-target";
+import { useAppBlurProps } from "@/components/ui/app-blur-target";
 import { WEEKDAY_KEYS as DAY_KEYS } from "@/constants/weekdays";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { findConflictWeeks, MAX_WEEK, weeksToRanges } from "@/lib/course-weeks";
@@ -43,7 +40,7 @@ interface Props {
 }
 
 export function QuickAddCourseModal({ slot, currentWeek, onClose }: Props) {
-  const blurTarget = useAndroidBlurTarget();
+  const blurProps = useAppBlurProps();
   const slotKey = slot
     ? `${slot.day}-${slot.sectionStart}-${slot.sectionEnd}`
     : null;
@@ -68,7 +65,7 @@ export function QuickAddCourseModal({ slot, currentWeek, onClose }: Props) {
           }}
         >
           <BlurView
-            {...getAndroidBlurProps(blurTarget)}
+            {...blurProps}
             intensity={30}
             tint="dark"
             style={StyleSheet.absoluteFill}
@@ -109,7 +106,6 @@ function QuickAddBody({ slot, currentWeek, onClose }: BodyProps) {
   const [teacher, setTeacher] = useState("");
   const [showTeacher, setShowTeacher] = useState(false);
   const [weekMode, setWeekMode] = useState<WeekMode | null>(null);
-  // 冲突确认相关：保留冲突周次的展示标签和待提交的周次集合
   const [pendingConflict, setPendingConflict] = useState<{
     label: string;
     weeks: Set<number>;

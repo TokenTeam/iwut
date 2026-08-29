@@ -19,10 +19,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import {
-  getAndroidBlurProps,
-  useAndroidBlurTarget,
-} from "@/components/ui/app-blur-target";
+import { useAppBlurProps } from "@/components/ui/app-blur-target";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useT } from "@/lib/i18n";
@@ -51,9 +48,8 @@ export function CourseDrawer({
   const isDark = scheme === "dark";
   const { width: screenWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const blurTarget = useAndroidBlurTarget();
+  const blurProps = useAppBlurProps();
 
-  // 按比例取宽并限制最大宽度，避免在平板等宽屏设备上过宽
   const drawerWidth = Math.round(Math.min(screenWidth * 0.66, 320));
   const topOffset = insets.top + COURSE_HEADER_HEIGHT;
 
@@ -150,7 +146,7 @@ export function CourseDrawer({
         ]}
       >
         <BlurView
-          {...getAndroidBlurProps(blurTarget)}
+          {...blurProps}
           intensity={25}
           tint={isDark ? "dark" : "default"}
           style={StyleSheet.absoluteFill}

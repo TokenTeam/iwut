@@ -2,10 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
-import {
-  getAndroidBlurProps,
-  useAndroidBlurTarget,
-} from "@/components/ui/app-blur-target";
+import { useAppBlurProps } from "@/components/ui/app-blur-target";
 import { getDayLabels } from "@/constants/weekdays";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useT } from "@/lib/i18n";
@@ -35,7 +32,7 @@ export function CourseDetailModal({
 }) {
   const t = useT();
   const isDark = useColorScheme() === "dark";
-  const blurTarget = useAndroidBlurTarget();
+  const blurProps = useAppBlurProps();
   const dayLabels = getDayLabels();
 
   return (
@@ -54,7 +51,7 @@ export function CourseDetailModal({
         }}
       >
         <BlurView
-          {...getAndroidBlurProps(blurTarget)}
+          {...blurProps}
           intensity={30}
           tint="dark"
           style={StyleSheet.absoluteFill}

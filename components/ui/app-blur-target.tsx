@@ -1,5 +1,11 @@
 import { BlurTargetView, type BlurViewProps } from "expo-blur";
-import { createContext, useContext, useRef, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from "react";
 import { Platform, StyleSheet, type View } from "react-native";
 
 type BlurTargetRef = React.RefObject<View | null>;
@@ -24,12 +30,12 @@ export function AppBlurTargetProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useAndroidBlurTarget() {
+function useAndroidBlurTarget() {
   const targetRef = useContext(AppBlurTargetContext);
   return Platform.OS === "android" ? targetRef : undefined;
 }
 
-export function getAndroidBlurProps(
+function getAndroidBlurProps(
   blurTarget: BlurTargetRef | undefined,
 ): Pick<BlurViewProps, "blurMethod" | "blurTarget"> {
   return Platform.OS === "android" && blurTarget
@@ -38,6 +44,20 @@ export function getAndroidBlurProps(
         blurTarget,
       }
     : {};
+}
+
+export function useAndroidBlurProps(
+  blurTarget: BlurTargetRef | undefined,
+): Pick<BlurViewProps, "blurMethod" | "blurTarget"> {
+  return useMemo(() => getAndroidBlurProps(blurTarget), [blurTarget]);
+}
+
+export function useAppBlurProps(): Pick<
+  BlurViewProps,
+  "blurMethod" | "blurTarget"
+> {
+  const blurTarget = useAndroidBlurTarget();
+  return useAndroidBlurProps(blurTarget);
 }
 
 const styles = StyleSheet.create({

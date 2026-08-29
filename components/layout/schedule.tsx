@@ -33,10 +33,7 @@ import { useT } from "@/lib/i18n";
 import type { Course } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 
-import {
-  getAndroidBlurProps,
-  useAndroidBlurTarget,
-} from "@/components/ui/app-blur-target";
+import { useAppBlurProps } from "@/components/ui/app-blur-target";
 import { CourseDetailModal } from "./course-detail-modal";
 import {
   QuickAddCourseModal,
@@ -434,19 +431,16 @@ export function Schedule({
   const { width: screenWidth } = useWindowDimensions();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const blurTarget = useAndroidBlurTarget();
+  const blurProps = useAppBlurProps();
   const [selected, setSelected] = useState<Course | null>(null);
   const [slotCourses, setSlotCourses] = useState<Course[] | null>(null);
   const [shareName, setShareName] = useState<string | null>(null);
   const [quickAddSlot, setQuickAddSlot] = useState<QuickAddSlot | null>(null);
 
-  // 周末模式下的横向滚动容器
   const scrollViewRef = useRef<ScrollView>(null);
   const didInitialScroll = useRef(false);
-  // 非周末模式：原生分页器，每页一周
   const pagerRef = useRef<FlatList<number>>(null);
   const [initialWeek] = useState(week);
-  // 标记切周来源，用户滑动触发的切周不再回弹
   const fromPagerRef = useRef(false);
   const selectedWeekRef = useLatest(week);
   const onWeekChangeRef = useLatest(onWeekChange);
@@ -835,7 +829,6 @@ export function Schedule({
 
         <View style={{ flex: 1, overflow: "hidden" }}>
           {scrollWeekend ? (
-            // 周末模式：仅横向滚动查看周末，不支持左右滑动切周
             <ScrollView
               horizontal
               ref={scrollViewRef}
@@ -849,7 +842,6 @@ export function Schedule({
               {renderPanel(week)}
             </ScrollView>
           ) : (
-            // 非周末模式：原生分页切周，每页一周
             <FlatList
               ref={pagerRef}
               data={WEEK_DATA}
@@ -918,7 +910,7 @@ export function Schedule({
           }}
         >
           <BlurView
-            {...getAndroidBlurProps(blurTarget)}
+            {...blurProps}
             intensity={30}
             tint="dark"
             style={StyleSheet.absoluteFill}
