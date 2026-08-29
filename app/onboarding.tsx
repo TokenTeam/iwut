@@ -1,7 +1,8 @@
+import CookieManager from "@preeternal/react-native-cookie-manager";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { router } from "expo-router";
-import { useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -21,6 +22,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
+import { reportError } from "@/lib/report";
 import {
   deleteAppCalendar,
   syncCoursesToCalendar,
@@ -39,14 +41,19 @@ type StepId = "account" | "setup";
 
 const appIcon = require("@/assets/images/icon.png");
 
-function getInitialStep(isBound: boolean, hasCourses: boolean): StepId {
-  if (isBound || hasCourses) return "setup";
+function getInitialStep(
+  isBound: boolean,
+  hasCourses: boolean,
+  requestedStep?: string,
+): StepId {
+  if (requestedStep === "setup" || isBound || hasCourses) return "setup";
   return "account";
 }
 
 export default function OnboardingScreen() {
   useMarkRouteInteractive();
   const t = useT();
+  const params = useLocalSearchParams<{ step?: string }>();
   const haptic = useHaptics();
   const isDark = useColorScheme() === "dark";
   const isBound = useUserBindStore((s) => s.isBound);
@@ -59,12 +66,13 @@ export default function OnboardingScreen() {
 
   const hasCourses = courseCount > 0;
   const [selectedStep] = useState<StepId>(() =>
-    getInitialStep(isBound, hasCourses),
+    getInitialStep(isBound, hasCourses, params.step),
   );
   const [acceptedLegal, setAcceptedLegal] = useState(false);
   const [notificationBusy, setNotificationBusy] = useState(false);
   const [permissionSheetVisible, setPermissionSheetVisible] = useState(false);
   const [calendarBusy, setCalendarBusy] = useState(false);
+  const finishStarted = useRef(false);
 
   const step = selectedStep === "account" && !isBound ? "account" : "setup";
 
@@ -165,9 +173,24 @@ export default function OnboardingScreen() {
   };
 
   const finish = () => {
+    if (finishStarted.current) return;
+    finishStarted.current = true;
     haptic();
-    completeOnboarding();
-    router.replace("/");
+    const complete = () => {
+      completeOnboarding();
+      router.replace("/");
+    };
+
+    if (isBound) {
+      complete();
+      return;
+    }
+
+    CookieManager.clearAll(true)
+      .catch((error) =>
+        reportError(error, { module: "onboarding-session-cleanup" }),
+      )
+      .finally(complete);
   };
 
   const handleOpenNotificationSettings = () => {

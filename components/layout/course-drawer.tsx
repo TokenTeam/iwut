@@ -34,7 +34,6 @@ export const DRAWER_EXIT_MS = 200;
 interface Props {
   visible: boolean;
   onClose: () => void;
-  isBound: boolean;
   onManage: () => void;
   onReimport: () => void;
   onOpenSettings: () => void;
@@ -43,7 +42,6 @@ interface Props {
 export function CourseDrawer({
   visible,
   onClose,
-  isBound,
   onManage,
   onReimport,
   onOpenSettings,
@@ -222,7 +220,6 @@ export function CourseDrawer({
             textColor={primaryText}
             chevronColor={chevronColor}
             isDark={isDark}
-            disabled={!isBound}
             onPress={() => dismissThen(onReimport)}
           />
           <DrawerItem
