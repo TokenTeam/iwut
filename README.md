@@ -36,15 +36,17 @@
 
 ## 开发
 
+> 您可以访问 [Expo Docs](https://docs.expo.dev/develop/) 获取更详细的开发指引。
+
 ```bash
 bun install --frozen-lockfile
 cp .env.local.example .env.local
 ```
 
-在有 [Expo Dev Client](https://docs.expo.dev/development/introduction/) 的情况下，运行以下命令启动 Metro 热重载：
+在有 Dev Client 的前提下，运行以下命令启动 Metro 热重载：
 
 ```bash
-bun start
+bun run start
 ```
 
 或在已安装 Xcode / Android Studio 的环境下，直接构建并在模拟器或已连接的真机中运行：
@@ -57,23 +59,22 @@ bun run ios --device
 bun run android
 ```
 
-提交代码前，可使用以下命令进行代码检查与格式化：
+提交代码前，可使用以下命令进行代码检查：
 
 ```bash
-bun run lint
-bun run format
+bun run check
 ```
+
+您也可以通过 [`package.json`](./package.json) 中的 `scripts` 部分找到本项目已配置的命令。
 
 > [!TIP]
 > 若对原生代码、Expo 配置插件或依赖中的原生模块进行了修改，请重新构建 Dev Client 后再启动 Metro 热重载，仅执行 `bun start` 不会让这些改动生效。
 
 ## 许可
 
-本项目基于 GNU Affero General Public License v3.0 或后续版本授权发布。
+使用、修改或再分发本项目表示您已阅读并同意[用户协议](./docs/legal/USER_AGREEMENT.zh-CN.md)与[隐私政策](./docs/legal/PRIVACY_POLICY.zh-CN.md)。
 
-如果您修改并通过网络向用户提供本项目的版本，应按 AGPLv3 的要求向这些用户提供对应源代码。
-
-详情请参阅 [LICENSE](./LICENSE)。
+本项目基于 GNU Affero General Public License v3.0 或后续版本授权发布，如果您修改并通过网络向用户提供本项目的版本，应按 AGPLv3 的要求向这些用户提供对应源代码，详情请参阅 [LICENSE](./LICENSE)。
 
 ## 活动
 
