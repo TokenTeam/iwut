@@ -35,6 +35,10 @@ class ScheduleWidget : AppWidgetProvider() {
                 android.content.ComponentName(context, ScheduleWidget::class.java)
             )
             onUpdate(context, manager, ids)
+            val smallIds = manager.getAppWidgetIds(
+                android.content.ComponentName(context, ScheduleSmallWidget::class.java)
+            )
+            ScheduleSmallWidget().onUpdate(context, manager, smallIds)
         }
     }
 

@@ -1,6 +1,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <application>
     <receiver
+      android:name="dev.tokenteam.iwut.widget.ScheduleSmallWidget"
+      android:exported="true">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/widget_schedule_small_info" />
+    </receiver>
+    <receiver
       android:name="dev.tokenteam.iwut.widget.ScheduleWidget"
       android:exported="true">
       <intent-filter>

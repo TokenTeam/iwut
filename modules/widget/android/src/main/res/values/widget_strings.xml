@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="widget_small_preview_week">第1周</string>
+    <string name="widget_small_preview_course">大学物理 A 下</string>
+    <string name="widget_small_preview_time" translatable="false">08:00 - 09:35</string>
+    <string name="widget_small_preview_room">南院-博学主楼-102</string>
+    <string name="widget_small_preview_hint">明天共3节课</string>
+    <plurals name="widget_small_today_remaining">
+        <item quantity="other">今天还有%d节课</item>
+    </plurals>
+    <plurals name="widget_small_tomorrow_total">
+        <item quantity="other">明天共%d节课</item>
+    </plurals>
     <string name="widget_all_done">没有更多课啦，放松一下吧～</string>
     <string name="widget_no_more">没有更多课啦～</string>
     <string name="widget_today">今天</string>

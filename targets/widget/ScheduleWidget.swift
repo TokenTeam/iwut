@@ -21,7 +21,7 @@ struct ScheduleWidget: Widget {
         // follow the device locale instead.
         .configurationDisplayName(LocalizedStringKey("widget.displayName"))
         .description(LocalizedStringKey("widget.description"))
-        .supportedFamilies([.systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
 

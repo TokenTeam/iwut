@@ -51,7 +51,6 @@ export async function syncWidgetLang(): Promise<void> {
 
 export async function syncWidgetData(): Promise<void> {
   const { courses, termStart } = useCourseStore.getState();
-  if (!termStart || courses.length === 0) return;
 
   // Coerce every field to a non-null primitive. The native widget decodes
   // into non-optional Swift types; a stray null/undefined here would otherwise
@@ -70,7 +69,7 @@ export async function syncWidgetData(): Promise<void> {
 
   const data: ScheduleWidgetData = {
     courses: widgetCourses,
-    termStart,
+    termStart: termStart || "",
     updatedAt: new Date().toISOString(),
   };
 
