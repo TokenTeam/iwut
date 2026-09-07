@@ -1,7 +1,7 @@
 branch:
   - buttons:
       - name: Build Android
-        event: web_trigger_job
+        event: web_trigger_build
         isDefault: true
         inputs:
           BUILD_PROFILES:

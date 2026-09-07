@@ -1,3 +1,68 @@
+.runtime: &runtime
+  docker:
+    image: docker.cnb.cool/zhxycn/env:latest
+    volumes:
+      - /root/.bun/install/cache:copy-on-write
+      - node_modules:copy-on-write
+
+.android: &android
+  runner:
+    cpus: 16
+  lock:
+    key: android-build
+    expires: 3600
+    wait: true
+    timeout: 3600
+  docker:
+    image: docker.cnb.cool/zhxycn/env:latest
+    volumes:
+      - /opt/android-sdk:copy-on-write
+      - /root/.gradle:copy-on-write
+      - /root/.bun/install/cache:copy-on-write
+      - node_modules:copy-on-write
+
+.build: &build
+  imports:
+    - https://cnb.cool/TokenTeam/secrets/-/blob/main/expo.yml
+  script: |
+    IFS=',' read -ra PROFILES <<< "$BUILD_PROFILES"
+    for profile in "${PROFILES[@]}"; do
+      echo "=== Building $profile ==="
+      bash scripts/build-android.sh "$profile"
+      for f in *.apk; do
+        [ -f "$f" ] || continue
+        [[ "$f" == iwut-* ]] && continue
+        mv "$f" "iwut-${profile}.apk"
+      done
+    done
+  timeout: 1h
+
+.attachments: &attachments
+  image: cnbcool/attachments:latest
+  settings:
+    attachments:
+      - "./iwut-*.apk"
+    ttl: 7
+
+.upload: &upload
+  imports:
+    - https://cnb.cool/TokenTeam/secrets/-/blob/main/r2.yml
+  script: |
+    export BUN_INSTALL="$HOME/.bun"
+    export PATH="$BUN_INSTALL/bin:$PATH"
+    VERSION="$(bun -p "require('./package.json').version")"
+    ENDPOINT="https://${ACCOUNT_ID}.r2.cloudflarestorage.com"
+    for f in iwut-*.apk; do
+      [ -f "$f" ] || continue
+      NAME="${f#iwut-}"
+      for target in "iwut/${VERSION}/${NAME}" "iwut/latest/${NAME}"; do
+        aws s3 cp "$f" "s3://${BUCKET}/${target}" \
+          --endpoint-url "$ENDPOINT" \
+          --content-type "application/vnd.android.package-archive" \
+          --only-show-errors
+      done
+    done
+
 $:
   vscode:
     - runner:
@@ -17,11 +82,7 @@ $:
 
 main:
   push:
-    - docker:
-        image: docker.cnb.cool/zhxycn/env:latest
-        volumes:
-          - /root/.bun/install/cache:copy-on-write
-          - node_modules:copy-on-write
+    - <<: *runtime
       stages:
         - script: |
             export BUN_INSTALL="$HOME/.bun"
@@ -29,13 +90,24 @@ main:
             bun install --frozen-lockfile
             bunx expo customize tsconfig.json
             bun run check
+        - type: cnb:trigger
+          options:
+            slug: TokenTeam/iwut
+            branch: main
+            sha: $CNB_COMMIT
+            event: api_trigger_build
+            env:
+              BUILD_PROFILES: preview
+
+  api_trigger_build:
+    - <<: *android
+      stages:
+        - *build
+        - *attachments
+        - *upload
 
   web_trigger_ota:
-    - docker:
-        image: docker.cnb.cool/zhxycn/env:latest
-        volumes:
-          - /root/.bun/install/cache:copy-on-write
-          - node_modules:copy-on-write
+    - <<: *runtime
       imports:
         - https://cnb.cool/TokenTeam/secrets/-/blob/main/expo.yml
       stages:
@@ -46,53 +118,10 @@ main:
             bash scripts/ota-update.sh --token "$OTA_TOKEN"
 
 "**":
-  web_trigger_job:
-    - runner:
-        cpus: 16
-      docker:
-        image: docker.cnb.cool/zhxycn/env:latest
-        volumes:
-          - /opt/android-sdk:copy-on-write
-          - /root/.gradle:copy-on-write
-          - /root/.bun/install/cache:copy-on-write
-          - node_modules:copy-on-write
+  web_trigger_build:
+    - <<: *android
       stages:
-        - imports:
-            - https://cnb.cool/TokenTeam/secrets/-/blob/main/expo.yml
-          script: |
-            IFS=',' read -ra PROFILES <<< "$BUILD_PROFILES"
-            for profile in "${PROFILES[@]}"; do
-              echo "=== Building $profile ==="
-              bash scripts/build-android.sh "$profile"
-              for f in *.apk; do
-                [ -f "$f" ] || continue
-                [[ "$f" == iwut-* ]] && continue
-                mv "$f" "iwut-${profile}.apk"
-              done
-            done
-          timeout: 2h
-        - image: cnbcool/attachments:latest
-          settings:
-            attachments:
-              - "./iwut-*.apk"
-            ttl: 7
-        - if: '[ "$UPLOAD" = "true" ]'
-          imports:
-            - https://cnb.cool/TokenTeam/secrets/-/blob/main/r2.yml
-          script: |
-            export BUN_INSTALL="$HOME/.bun"
-            export PATH="$BUN_INSTALL/bin:$PATH"
-            VERSION="$(bun -p "require('./package.json').version")"
-            ENDPOINT="https://${ACCOUNT_ID}.r2.cloudflarestorage.com"
-            for f in iwut-*.apk; do
-              [ -f "$f" ] || continue
-              NAME="${f#iwut-}"
-              aws s3 cp "$f" "s3://${BUCKET}/iwut/${VERSION}/${NAME}" \
-                --endpoint-url "$ENDPOINT" \
-                --content-type "application/vnd.android.package-archive" \
-                --only-show-errors
-              aws s3 cp "$f" "s3://${BUCKET}/iwut/latest/${NAME}" \
-                --endpoint-url "$ENDPOINT" \
-                --content-type "application/vnd.android.package-archive" \
-                --only-show-errors
-            done
+        - *build
+        - *attachments
+        - <<: *upload
+          if: '[ "$UPLOAD" = "true" ]'
