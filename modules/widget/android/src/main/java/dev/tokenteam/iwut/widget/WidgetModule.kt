@@ -24,15 +24,18 @@ class WidgetModule : Module() {
         AsyncFunction("reloadWidgets") {
             val context = appContext.reactContext ?: return@AsyncFunction null
             val manager = AppWidgetManager.getInstance(context)
-            val widget = ComponentName(context, ScheduleWidget::class.java)
-            val ids = manager.getAppWidgetIds(widget)
-            if (ids.isNotEmpty()) {
-                val intent = Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE)
-                intent.component = widget
-                intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
-                context.sendBroadcast(intent)
+            for (provider in listOf(ScheduleWidget::class.java, ScheduleSmallWidget::class.java)) {
+                val widget = ComponentName(context, provider)
+                val ids = manager.getAppWidgetIds(widget)
+                if (ids.isNotEmpty()) {
+                    val intent = Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE)
+                    intent.component = widget
+                    intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+                    context.sendBroadcast(intent)
+                }
             }
             ScheduleWidget.publishGeneratedPreview(context)
+            ScheduleSmallWidget.publishGeneratedPreview(context)
             ScheduleWidget.scheduleNextAlarm(context)
             null
         }
