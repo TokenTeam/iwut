@@ -9,6 +9,10 @@
 "widget.todayRemaining.other" = "%d classes left today, ";
 "widget.tomorrowRemaining.one" = "%d class tomorrow";
 "widget.tomorrowRemaining.other" = "%d classes tomorrow";
+"widget.smallTodayRemaining.one" = "%d class left today";
+"widget.smallTodayRemaining.other" = "%d classes left today";
+"widget.smallTomorrowTotal.one" = "%d class tomorrow";
+"widget.smallTomorrowTotal.other" = "%d classes tomorrow";
 "widget.weekDisplay" = "Week %d";
 "widget.vacation" = "On vacation";
 "widget.monthDay" = "%1$d/%2$d";

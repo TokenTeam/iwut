@@ -2,6 +2,8 @@ import SwiftUI
 import WidgetKit
 
 struct ScheduleWidgetEntryView: View {
+    @Environment(\.widgetFamily) private var family
+
     var entry: ScheduleTimelineProvider.Entry
 
     private var displayCourses: [(course: WidgetCourse, isToday: Bool)] {
@@ -43,6 +45,14 @@ struct ScheduleWidgetEntryView: View {
     }
 
     var body: some View {
+        if family == .systemSmall {
+            ScheduleSmallWidgetEntryView(entry: entry)
+        } else {
+            mediumView
+        }
+    }
+
+    private var mediumView: some View {
         ZStack {
             WidgetBackgroundView(isEmpty: displayCourses.isEmpty)
 

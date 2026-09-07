@@ -9,6 +9,10 @@
 "widget.todayRemaining.other" = "今天还有%d节课，";
 "widget.tomorrowRemaining.one" = "明天还有%d节课";
 "widget.tomorrowRemaining.other" = "明天还有%d节课";
+"widget.smallTodayRemaining.one" = "今天还有%d节课";
+"widget.smallTodayRemaining.other" = "今天还有%d节课";
+"widget.smallTomorrowTotal.one" = "明天共%d节课";
+"widget.smallTomorrowTotal.other" = "明天共%d节课";
 "widget.weekDisplay" = "第%d周";
 "widget.vacation" = "假期中";
 "widget.monthDay" = "%1$d月%2$d日";
