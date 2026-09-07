@@ -8,23 +8,31 @@
     android:clipToOutline="true">
 
     <ImageView
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="match_parent"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:adjustViewBounds="true"
         android:scaleType="fitEnd"
         android:src="@drawable/ic_widget_schedule_bg"
         android:contentDescription="@null" />
 
-    <RelativeLayout
+    <LinearLayout
         android:id="@+id/info_group"
-        android:layout_width="wrap_content"
+        android:layout_width="@dimen/widget_day_of_week_width"
         android:layout_height="match_parent"
-        android:layout_marginStart="@dimen/widget_padding_horizontal">
+        android:layout_marginStart="@dimen/widget_padding_horizontal"
+        android:orientation="vertical"
+        android:paddingTop="@dimen/widget_padding_vertical"
+        android:paddingBottom="@dimen/widget_padding_vertical">
 
         <TextView
             android:id="@+id/tv_week"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
             android:textSize="@dimen/widget_week_text_size"
             android:textColor="@color/widget_schedule_accent"
             android:text="第1周"
@@ -32,10 +40,17 @@
 
         <TextView
             android:id="@+id/tv_date"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/tv_week"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:layout_marginTop="5dp"
+            android:gravity="top"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:autoSizeTextType="uniform"
+            android:autoSizeMinTextSize="@dimen/widget_course_room_time_text_size"
+            android:autoSizeMaxTextSize="@dimen/widget_date_text_size"
             android:textSize="@dimen/widget_date_text_size"
             android:textColor="@color/widget_schedule_text_primary"
             android:text="12月1日"
@@ -45,76 +60,105 @@
             android:id="@+id/tv_day_of_week"
             android:layout_width="@dimen/widget_day_of_week_width"
             android:layout_height="@dimen/widget_day_of_week_height"
-            android:layout_alignParentBottom="true"
-            android:layout_marginBottom="17dp"
             android:background="@drawable/widget_schedule_day_of_week_bg"
             android:gravity="center"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
             android:textColor="@color/widget_schedule_text_on_accent"
             android:textSize="@dimen/widget_day_of_week_text_size"
             android:text="周一"
             tools:ignore="SpUsage" />
-    </RelativeLayout>
+    </LinearLayout>
 
-    <RelativeLayout
+    <LinearLayout
         android:id="@+id/course_group"
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_toEndOf="@id/info_group"
         android:layout_alignParentEnd="true"
         android:layout_marginStart="10dp"
-        android:layout_marginEnd="@dimen/widget_padding_horizontal">
+        android:layout_marginEnd="@dimen/widget_padding_horizontal"
+        android:orientation="vertical"
+        android:paddingTop="@dimen/widget_padding_vertical"
+        android:paddingBottom="@dimen/widget_padding_vertical">
 
-        <RelativeLayout
+        <LinearLayout
             android:id="@+id/course_row_1"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:visibility="visible">
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:visibility="visible"
+            android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/course_1_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="5dp"
-                android:maxLength="12"
-                android:textSize="@dimen/widget_course_name_text_size"
-                android:textColor="@color/widget_schedule_text_primary"
-                android:text="高等数学"
-                tools:ignore="SpUsage" />
-
-            <TextView
-                android:id="@+id/course_1_tag"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_toEndOf="@id/course_1_name"
-                android:layout_alignTop="@id/course_1_name"
-                android:layout_alignBottom="@id/course_1_name"
-                android:layout_marginStart="5dp"
-                android:layout_marginTop="2dp"
-                android:layout_marginBottom="2dp"
-                android:paddingStart="3dp"
-                android:paddingEnd="3dp"
-                android:gravity="center"
-                android:textSize="@dimen/widget_date_hint_text_size"
-                android:textColor="@color/widget_schedule_accent"
-                android:background="@drawable/widget_schedule_date_hint_bg"
-                android:text="今天"
-                tools:ignore="SpUsage" />
-
-            <RelativeLayout
-                android:id="@+id/course_1_detail_group"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/course_1_name"
-                android:layout_marginTop="5dp">
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:baselineAligned="false">
 
                 <TextView
-                    android:id="@+id/course_1_room"
+                    android:id="@+id/course_1_name"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginStart="5dp"
+                    android:gravity="center_vertical"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:autoSizeTextType="uniform"
+                    android:autoSizeMinTextSize="@dimen/widget_date_hint_text_size"
+                    android:autoSizeMaxTextSize="@dimen/widget_course_name_text_size"
+                    android:textSize="@dimen/widget_course_name_text_size"
+                    android:textColor="@color/widget_schedule_text_primary"
+                    android:text="高等数学"
+                    tools:ignore="SpUsage" />
+
+                <TextView
+                    android:id="@+id/course_1_tag"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
-                    android:layout_centerVertical="true"
-                    android:maxEms="9"
+                    android:paddingStart="3dp"
+                    android:paddingEnd="3dp"
+                    android:gravity="center"
+                    android:background="@drawable/widget_schedule_date_hint_bg"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:paddingTop="2dp"
+                    android:paddingBottom="2dp"
+                    android:textSize="@dimen/widget_date_hint_text_size"
+                    android:textColor="@color/widget_schedule_accent"
+                    android:text="今天"
+                    tools:ignore="SpUsage" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/course_1_detail_group"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:baselineAligned="false">
+
+                <TextView
+                    android:id="@+id/course_1_room"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginStart="5dp"
+                    android:gravity="center_vertical"
+                    android:maxLines="1"
+                    android:ellipsize="middle"
+                    android:includeFontPadding="false"
+                    android:autoSizeTextType="uniform"
+                    android:autoSizeMinTextSize="@dimen/widget_date_hint_text_size"
+                    android:autoSizeMaxTextSize="@dimen/widget_course_room_time_text_size"
                     android:textSize="@dimen/widget_course_room_time_text_size"
                     android:textColor="@color/widget_schedule_text_secondary"
                     android:text="博学主楼101"
@@ -124,10 +168,8 @@
                     android:id="@+id/course_1_sep"
                     android:layout_width="1dp"
                     android:layout_height="14dp"
-                    android:layout_toEndOf="@id/course_1_room"
                     android:layout_marginStart="10dp"
                     android:layout_marginEnd="10dp"
-                    android:layout_centerVertical="true"
                     android:src="@color/widget_schedule_text_secondary"
                     android:contentDescription="@null" />
 
@@ -135,75 +177,100 @@
                     android:id="@+id/course_1_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@id/course_1_sep"
-                    android:layout_centerVertical="true"
+                    android:fontFeatureSettings="tnum"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
                     android:textSize="@dimen/widget_course_room_time_text_size"
                     android:textColor="@color/widget_schedule_text_secondary"
                     android:text="08:00-09:35"
                     tools:ignore="SpUsage" />
-            </RelativeLayout>
+            </LinearLayout>
 
             <ImageView
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:layout_below="@id/course_1_detail_group"
-                android:layout_marginTop="5dp"
                 android:src="@color/widget_schedule_text_secondary"
                 android:contentDescription="@null" />
-        </RelativeLayout>
+        </LinearLayout>
 
-        <RelativeLayout
+        <LinearLayout
             android:id="@+id/course_row_2"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/course_row_1"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:layout_marginTop="5dp"
-            android:visibility="visible">
+            android:visibility="visible"
+            android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/course_2_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="5dp"
-                android:maxLength="12"
-                android:textSize="@dimen/widget_course_name_text_size"
-                android:textColor="@color/widget_schedule_text_primary"
-                android:text="大学物理"
-                tools:ignore="SpUsage" />
-
-            <TextView
-                android:id="@+id/course_2_tag"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_toEndOf="@id/course_2_name"
-                android:layout_alignTop="@id/course_2_name"
-                android:layout_alignBottom="@id/course_2_name"
-                android:layout_marginStart="5dp"
-                android:layout_marginTop="2dp"
-                android:layout_marginBottom="2dp"
-                android:paddingStart="3dp"
-                android:paddingEnd="3dp"
-                android:gravity="center"
-                android:textSize="@dimen/widget_date_hint_text_size"
-                android:textColor="@color/widget_schedule_accent"
-                android:background="@drawable/widget_schedule_date_hint_bg"
-                android:text="明天"
-                tools:ignore="SpUsage" />
-
-            <RelativeLayout
-                android:id="@+id/course_2_detail_group"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/course_2_name"
-                android:layout_marginTop="5dp">
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:baselineAligned="false">
 
                 <TextView
-                    android:id="@+id/course_2_room"
+                    android:id="@+id/course_2_name"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginStart="5dp"
+                    android:gravity="center_vertical"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:autoSizeTextType="uniform"
+                    android:autoSizeMinTextSize="@dimen/widget_date_hint_text_size"
+                    android:autoSizeMaxTextSize="@dimen/widget_course_name_text_size"
+                    android:textSize="@dimen/widget_course_name_text_size"
+                    android:textColor="@color/widget_schedule_text_primary"
+                    android:text="大学物理"
+                    tools:ignore="SpUsage" />
+
+                <TextView
+                    android:id="@+id/course_2_tag"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
-                    android:layout_centerVertical="true"
-                    android:maxEms="9"
+                    android:paddingStart="3dp"
+                    android:paddingEnd="3dp"
+                    android:gravity="center"
+                    android:background="@drawable/widget_schedule_date_hint_bg"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:paddingTop="2dp"
+                    android:paddingBottom="2dp"
+                    android:textSize="@dimen/widget_date_hint_text_size"
+                    android:textColor="@color/widget_schedule_accent"
+                    android:text="明天"
+                    tools:ignore="SpUsage" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/course_2_detail_group"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:baselineAligned="false">
+
+                <TextView
+                    android:id="@+id/course_2_room"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginStart="5dp"
+                    android:gravity="center_vertical"
+                    android:maxLines="1"
+                    android:ellipsize="middle"
+                    android:includeFontPadding="false"
+                    android:autoSizeTextType="uniform"
+                    android:autoSizeMinTextSize="@dimen/widget_date_hint_text_size"
+                    android:autoSizeMaxTextSize="@dimen/widget_course_room_time_text_size"
                     android:textSize="@dimen/widget_course_room_time_text_size"
                     android:textColor="@color/widget_schedule_text_secondary"
                     android:text="博学主楼101"
@@ -213,10 +280,8 @@
                     android:id="@+id/course_2_sep"
                     android:layout_width="1dp"
                     android:layout_height="14dp"
-                    android:layout_toEndOf="@id/course_2_room"
                     android:layout_marginStart="10dp"
                     android:layout_marginEnd="10dp"
-                    android:layout_centerVertical="true"
                     android:src="@color/widget_schedule_text_secondary"
                     android:contentDescription="@null" />
 
@@ -224,49 +289,55 @@
                     android:id="@+id/course_2_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_toEndOf="@id/course_2_sep"
-                    android:layout_centerVertical="true"
+                    android:fontFeatureSettings="tnum"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
                     android:textSize="@dimen/widget_course_room_time_text_size"
                     android:textColor="@color/widget_schedule_text_secondary"
                     android:text="10:00-11:35"
                     tools:ignore="SpUsage" />
-            </RelativeLayout>
+            </LinearLayout>
 
             <ImageView
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:layout_below="@id/course_2_detail_group"
-                android:layout_marginTop="5dp"
                 android:src="@color/widget_schedule_text_secondary"
                 android:contentDescription="@null" />
-        </RelativeLayout>
+        </LinearLayout>
 
         <TextView
             android:id="@+id/tv_no_more"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/course_row_1"
-            android:layout_marginTop="17dp"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="5dp"
             android:layout_marginStart="5dp"
+            android:visibility="gone"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
             android:text="@string/widget_no_more"
             android:textColor="@color/widget_schedule_text_primary"
             android:textSize="@dimen/widget_all_done_text_size"
-            android:visibility="gone"
             tools:ignore="SpUsage" />
 
         <TextView
             android:id="@+id/tv_course_hint"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:layout_alignParentBottom="true"
-            android:layout_marginBottom="17dp"
+            android:layout_marginTop="5dp"
+            android:visibility="visible"
+            android:gravity="end"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
             android:textColor="@color/widget_schedule_text_primary"
             android:textSize="@dimen/widget_course_hint_text_size"
-            android:visibility="visible"
             android:text="今天还有2节课，明天还有3节课"
             tools:ignore="SpUsage" />
-    </RelativeLayout>
+    </LinearLayout>
 
     <RelativeLayout
         android:id="@+id/all_done_group"

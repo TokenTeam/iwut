@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="widget_padding_horizontal">22dp</dimen>
+    <dimen name="widget_padding_vertical">12dp</dimen>
     <dimen name="widget_week_text_size">17dp</dimen>
     <dimen name="widget_date_text_size">22dp</dimen>
     <dimen name="widget_day_of_week_text_size">17dp</dimen>
