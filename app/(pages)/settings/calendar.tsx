@@ -1,5 +1,7 @@
+import { File, Paths } from "expo-file-system";
 import { Stack } from "expo-router";
-import { useMemo, useState } from "react";
+import * as Sharing from "expo-sharing";
+import { useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -17,7 +19,9 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { BUILTIN_PALETTE_NAME_KEYS } from "@/constants/course-palettes";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
+import { MAX_SECTION, MAX_WEEK } from "@/lib/course-weeks";
 import { useT } from "@/lib/i18n";
+import { reportError } from "@/lib/report";
 import {
   APP_LOCAL_CALENDAR_ID,
   deleteAppCalendar,
@@ -26,9 +30,88 @@ import {
   syncCoursesToCalendar,
   type CalendarInfo,
 } from "@/services/calendar-sync";
-import { useCourseStore } from "@/store/course";
+import { useCourseStore, type Course } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 import { useSettingsStore } from "@/store/settings";
+
+interface CourseData {
+  courses: Course[];
+  termStart: string;
+}
+
+function isInt(value: unknown, min: number, max: number): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= min &&
+    value <= max
+  );
+}
+
+function isTime(value: unknown): boolean {
+  return (
+    value === undefined ||
+    (typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value))
+  );
+}
+
+function isCourse(value: unknown): value is Course {
+  if (typeof value !== "object" || value === null) return false;
+  const c = value as Record<string, unknown>;
+  return (
+    typeof c.name === "string" &&
+    c.name.trim().length > 0 &&
+    typeof c.room === "string" &&
+    typeof c.teacher === "string" &&
+    isInt(c.day, 1, 7) &&
+    isInt(c.weekStart, 1, MAX_WEEK) &&
+    isInt(c.weekEnd, c.weekStart, MAX_WEEK) &&
+    isInt(c.sectionStart, 1, MAX_SECTION) &&
+    isInt(c.sectionEnd, c.sectionStart, MAX_SECTION) &&
+    (c.note === undefined || typeof c.note === "string") &&
+    (c.seat === undefined ||
+      (typeof c.seat === "number" && Number.isFinite(c.seat))) &&
+    isTime(c.startTime) &&
+    isTime(c.endTime) &&
+    (c.source === undefined ||
+      c.source === "imported" ||
+      c.source === "manual" ||
+      c.source === "lab")
+  );
+}
+
+function isTermStart(value: unknown): value is string {
+  if (value === "") return true;
+  if (typeof value !== "string") return false;
+  const match = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(value);
+  if (!match) return false;
+  const [, year, month, day] = match.map(Number);
+  const date = new Date(year, month - 1, day);
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+  );
+}
+
+function parseCourseData(text: string): CourseData | null {
+  let value: unknown;
+  try {
+    value = JSON.parse(text.replace(/^\uFEFF/, ""));
+  } catch {
+    return null;
+  }
+  if (typeof value !== "object" || value === null) return null;
+  const data = value as Record<string, unknown>;
+  if (
+    !Array.isArray(data.courses) ||
+    !data.courses.every(isCourse) ||
+    !isTermStart(data.termStart)
+  ) {
+    return null;
+  }
+  return { courses: data.courses, termStart: data.termStart };
+}
 
 export default function CalendarSettingsScreen() {
   useMarkRouteInteractive();
@@ -51,6 +134,13 @@ export default function CalendarSettingsScreen() {
   const syncedCalendarIds = useSettingsStore((s) => s.syncedCalendarIds);
 
   const [syncing, setSyncing] = useState(false);
+  const [courseDataAction, setCourseDataAction] = useState<
+    "export" | "import" | null
+  >(null);
+  const courseDataBusy = useRef(false);
+  const [pendingCourseData, setPendingCourseData] = useState<CourseData | null>(
+    null,
+  );
   const [pickerVisible, setPickerVisible] = useState(false);
   const [writableCalendars, setWritableCalendars] = useState<CalendarInfo[]>(
     [],
@@ -70,6 +160,78 @@ export default function CalendarSettingsScreen() {
     const names = new Set(courses.map((c) => c.name));
     return names.size;
   }, [courses]);
+
+  const handleExportCourses = async () => {
+    if (courseDataBusy.current || pendingCourseData) return;
+    courseDataBusy.current = true;
+    setCourseDataAction("export");
+    try {
+      const { courses, termStart } = useCourseStore.getState();
+      const file = new File(Paths.cache, `iwut_courses_${Date.now()}.json`);
+      await file.write(JSON.stringify({ courses, termStart }, null, 2));
+      await Sharing.shareAsync(file.uri, {
+        UTI: "public.json",
+        mimeType: "application/json",
+        dialogTitle: t("calendarSet.exportCourses"),
+      });
+    } catch (error) {
+      reportError(error, { module: "settings", action: "export-courses" });
+      Toast.show({
+        type: "error",
+        text1: t("calendarSet.exportCoursesFailed"),
+        position: "bottom",
+      });
+    } finally {
+      courseDataBusy.current = false;
+      setCourseDataAction(null);
+    }
+  };
+
+  const handleImportCourses = async () => {
+    if (courseDataBusy.current || pendingCourseData) return;
+    courseDataBusy.current = true;
+    setCourseDataAction("import");
+    try {
+      const picked = await File.pickFileAsync({
+        mimeTypes: ["application/json", "text/plain"],
+      });
+      if (picked.canceled) return;
+      const data = parseCourseData(await picked.result.text());
+      if (!data) {
+        Toast.show({
+          type: "error",
+          text1: t("calendarSet.invalidCourseData"),
+          position: "bottom",
+        });
+        return;
+      }
+      setPendingCourseData(data);
+    } catch (error) {
+      reportError(error, { module: "settings", action: "import-courses" });
+      Toast.show({
+        type: "error",
+        text1: t("calendarSet.importCoursesFailed"),
+        position: "bottom",
+      });
+    } finally {
+      courseDataBusy.current = false;
+      setCourseDataAction(null);
+    }
+  };
+
+  const confirmImportCourses = () => {
+    if (!pendingCourseData) return;
+    useCourseStore.setState({
+      courses: pendingCourseData.courses,
+      termStart: pendingCourseData.termStart,
+    });
+    setPendingCourseData(null);
+    Toast.show({
+      type: "success",
+      text1: t("calendarSet.coursesImported"),
+      position: "bottom",
+    });
+  };
 
   const showSyncError = (message?: string) => {
     Toast.show({
@@ -203,6 +365,30 @@ export default function CalendarSettingsScreen() {
             }
             href="/settings/course/manage"
           />
+          <MenuItem
+            icon="file-upload"
+            iconBg="#FF9500"
+            label={t("calendarSet.exportCourses")}
+            showArrow={false}
+            right={
+              courseDataAction === "export" ? (
+                <ActivityIndicator size="small" />
+              ) : undefined
+            }
+            onPress={handleExportCourses}
+          />
+          <MenuItem
+            icon="file-download"
+            iconBg="#0797B9"
+            label={t("calendarSet.importCourses")}
+            showArrow={false}
+            right={
+              courseDataAction === "import" ? (
+                <ActivityIndicator size="small" />
+              ) : undefined
+            }
+            onPress={handleImportCourses}
+          />
         </MenuGroup>
 
         <MenuGroup title={t("calendarSet.displayGroup")}>
@@ -272,6 +458,17 @@ export default function CalendarSettingsScreen() {
           />
         </MenuGroup>
       </ScrollView>
+
+      <ConfirmSheet
+        visible={pendingCourseData !== null}
+        onClose={() => setPendingCourseData(null)}
+        title={t("calendarSet.importCourses")}
+        description={t("calendarSet.importCoursesDesc", {
+          n: pendingCourseData?.courses.length ?? 0,
+        })}
+        confirmText={t("calendarSet.importCoursesConfirm")}
+        onConfirm={confirmImportCourses}
+      />
 
       <BottomSheet
         visible={pickerVisible}
