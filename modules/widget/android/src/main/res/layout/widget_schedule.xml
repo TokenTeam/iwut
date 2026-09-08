@@ -86,15 +86,13 @@
         <LinearLayout
             android:id="@+id/course_row_1"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_height="wrap_content"
             android:visibility="visible"
             android:orientation="vertical">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
+                android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:baselineAligned="false">
@@ -102,7 +100,7 @@
                 <TextView
                     android:id="@+id/course_1_name"
                     android:layout_width="0dp"
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="5dp"
                     android:gravity="center_vertical"
@@ -140,8 +138,8 @@
             <LinearLayout
                 android:id="@+id/course_1_detail_group"
                 android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:baselineAligned="false">
@@ -149,7 +147,7 @@
                 <TextView
                     android:id="@+id/course_1_room"
                     android:layout_width="0dp"
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="5dp"
                     android:gravity="center_vertical"
@@ -190,6 +188,7 @@
             <ImageView
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
+                android:layout_marginTop="4dp"
                 android:src="@color/widget_schedule_text_secondary"
                 android:contentDescription="@null" />
         </LinearLayout>
@@ -197,16 +196,14 @@
         <LinearLayout
             android:id="@+id/course_row_2"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
             android:visibility="visible"
             android:orientation="vertical">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
+                android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:baselineAligned="false">
@@ -214,7 +211,7 @@
                 <TextView
                     android:id="@+id/course_2_name"
                     android:layout_width="0dp"
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="5dp"
                     android:gravity="center_vertical"
@@ -252,8 +249,8 @@
             <LinearLayout
                 android:id="@+id/course_2_detail_group"
                 android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:baselineAligned="false">
@@ -261,7 +258,7 @@
                 <TextView
                     android:id="@+id/course_2_room"
                     android:layout_width="0dp"
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="5dp"
                     android:gravity="center_vertical"
@@ -302,6 +299,7 @@
             <ImageView
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
+                android:layout_marginTop="4dp"
                 android:src="@color/widget_schedule_text_secondary"
                 android:contentDescription="@null" />
         </LinearLayout>
@@ -309,8 +307,7 @@
         <TextView
             android:id="@+id/tv_no_more"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
             android:layout_marginStart="5dp"
             android:visibility="gone"
@@ -326,10 +323,11 @@
         <TextView
             android:id="@+id/tv_course_hint"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:layout_marginTop="5dp"
             android:visibility="visible"
-            android:gravity="end"
+            android:gravity="bottom|end"
             android:maxLines="1"
             android:ellipsize="end"
             android:includeFontPadding="false"
