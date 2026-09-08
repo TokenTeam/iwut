@@ -11,14 +11,14 @@ import React, {
 import {
   FlatList,
   Modal,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from "react-native";
 
 import { CourseShareSheet } from "@/components/share/course-share-sheet";
@@ -39,7 +39,11 @@ import {
   QuickAddCourseModal,
   type QuickAddSlot,
 } from "./quick-add-course-modal";
-import { DayColumn, type ScheduleCellTheme } from "./schedule-day-column";
+import {
+  DayColumn,
+  type CourseSectionRange,
+  type ScheduleCellTheme,
+} from "./schedule-day-column";
 
 interface SidebarLabel {
   label: string;
@@ -133,8 +137,6 @@ function pct(n: number): `${number}%` {
   return `${n}%` as `${number}%`;
 }
 
-// 把任意节次范围对齐到 section group 的边界，用于同时段加课预填。
-// 若 sectionStart 和 sectionEnd 落在不同 group，则取 [start所在group的首节, end所在group的尾节]。
 function alignToSectionGroup(
   groups: number[][],
   sectionStart: number,
@@ -286,7 +288,6 @@ interface WeekPanelProps {
   onAddSlot: (day: number, sectionStart: number, sectionEnd: number) => void;
 }
 
-// 单周课表面板，计算该周的课程分布，冲突列表仅在交互时按需生成。
 const WeekPanel = React.memo(function WeekPanel({
   week,
   courses,
@@ -319,8 +320,7 @@ const WeekPanel = React.memo(function WeekPanel({
     return buildDayCourses(courses.filter((c) => !isInWeek(c)));
   }, [courses, isInWeek, showOtherWeekCourses]);
 
-  // 非本周课程与本周课冲突的全部隐藏；非本周课互相冲突时取
-  // 上课时间最早的一门，被隐藏的仍可在冲突列表中看到。
+  // 非本周课让位于本周课，隐藏项仍保留在时段列表中
   const otherDayCoursesVisible = useMemo(() => {
     const result: Course[][] = Array.from({ length: 7 }, () => []);
     for (let d = 0; d < 7; d++) {
@@ -342,9 +342,8 @@ const WeekPanel = React.memo(function WeekPanel({
     return result;
   }, [currentDayCourses, otherDayCoursesAll]);
 
-  // 只为实际交互的课程查找同日重叠项，避免面板挂载时为所有课程做 O(n²) 计算。
   const getConflicts = useCallback(
-    (course: Course) => {
+    (course: Course, range: CourseSectionRange) => {
       const dayIdx = course.day - 1;
       const allForDay = [
         ...(currentDayCourses[dayIdx] ?? []),
@@ -352,8 +351,8 @@ const WeekPanel = React.memo(function WeekPanel({
       ];
       const conflicts = allForDay.filter(
         (other) =>
-          other.sectionStart <= course.sectionEnd &&
-          course.sectionStart <= other.sectionEnd,
+          other.sectionStart <= range.sectionEnd &&
+          range.sectionStart <= other.sectionEnd,
       );
       conflicts.sort((a, b) => {
         const aCurrent = isInWeek(a) ? 0 : 1;
@@ -372,15 +371,15 @@ const WeekPanel = React.memo(function WeekPanel({
   );
 
   const handlePress = useCallback(
-    (course: Course, isOther: boolean) => {
-      onCoursePress(course, getConflicts(course), isOther);
+    (course: Course, isOther: boolean, range: CourseSectionRange) => {
+      onCoursePress(course, getConflicts(course, range), isOther);
     },
     [getConflicts, onCoursePress],
   );
 
   const handleLongPress = useCallback(
-    (course: Course, isOther: boolean) => {
-      onCourseLongPress(course, getConflicts(course), isOther);
+    (course: Course, isOther: boolean, range: CourseSectionRange) => {
+      onCourseLongPress(course, getConflicts(course, range), isOther);
     },
     [getConflicts, onCourseLongPress],
   );
@@ -536,7 +535,6 @@ export function Schedule({
     [colorMap, paletteColors, colorPalette.overrides, courseColorOverrides],
   );
 
-  // 周末模式：首次进入若今天是周末则直接定位到末尾，方便查看周六、周日
   const handleScrollContentSizeChange = useCallback(() => {
     if (!didInitialScroll.current && today && today > 5) {
       didInitialScroll.current = true;
@@ -546,7 +544,6 @@ export function Schedule({
     }
   }, [today]);
 
-  // 周末模式下切周时把横向滚动重置回周一起点
   const prevWeekRef = useRef(week);
   useEffect(() => {
     if (prevWeekRef.current === week) return;
@@ -556,7 +553,7 @@ export function Schedule({
     }
   }, [week, scrollWeekend]);
 
-  // 非周末模式：外部改变周数时同步分页器位置，用户滑动触发的切周不回弹
+  // 手势切周不再触发程序滚动，避免分页器回弹
   useEffect(() => {
     if (scrollWeekend) {
       fromPagerRef.current = false;
@@ -610,14 +607,14 @@ export function Schedule({
   const handleCoursePress = useCallback(
     (course: Course, conflicts: Course[], isOther: boolean) => {
       haptic();
-      if (isOther) {
+      if (isOther || conflicts.filter(isInCurrentWeek).length > 1) {
         showSlotCourses(conflicts);
         return;
       }
       setSlotCourses(null);
       setSelected(course);
     },
-    [haptic, showSlotCourses],
+    [haptic, showSlotCourses, isInCurrentWeek],
   );
 
   const handleCourseLongPress = useCallback(
@@ -654,8 +651,7 @@ export function Schedule({
   };
 
   const openQuickAddForCourse = (course: Course) => {
-    // 始终用完整分组对齐，避免在 compact 模式下（layout.groups 不含 6/7/13 节）
-    // 课程 sectionStart 找不到分组导致"添加课程"按钮静默失效。
+    // 加课使用完整分组，确保紧凑模式下隐藏的节次也能匹配
     const aligned = alignToSectionGroup(
       SECTION_GROUPS_FULL,
       course.sectionStart,

@@ -3,13 +3,14 @@ import { Pressable, Text, View } from "react-native";
 
 import type { Course } from "@/store/course";
 
+export type CourseSectionRange = Pick<Course, "sectionStart" | "sectionEnd">;
+
 export interface ScheduleLayoutInfo {
   sectionTop: Record<number, number>;
   sectionPct: number;
   groups: number[][];
 }
 
-/** 课表格子的静态视觉参数，整体 memo 后作为单一 prop 传入 */
 export interface ScheduleCellTheme {
   nameFontSize: number;
   roomFontSize: number;
@@ -33,6 +34,7 @@ const CourseCell = memo(function CourseCell({
   bg,
   theme,
   stackCount = 1,
+  sectionRange,
   onPress,
   onLongPress,
 }: {
@@ -43,10 +45,19 @@ const CourseCell = memo(function CourseCell({
   bg: string;
   theme: ScheduleCellTheme;
   stackCount?: number;
-  onPress: (course: Course, isOther: boolean) => void;
-  onLongPress: (course: Course, isOther: boolean) => void;
+  sectionRange: CourseSectionRange;
+  onPress: (
+    course: Course,
+    isOther: boolean,
+    range: CourseSectionRange,
+  ) => void;
+  onLongPress: (
+    course: Course,
+    isOther: boolean,
+    range: CourseSectionRange,
+  ) => void;
 }) {
-  const span = course.sectionEnd - course.sectionStart + 1;
+  const span = sectionRange.sectionEnd - sectionRange.sectionStart + 1;
   const nameLines = 2 * span - 1;
   const nameColor = isOther ? theme.otherWeekTextColor : "#fff";
   const roomColor = isOther
@@ -62,8 +73,8 @@ const CourseCell = memo(function CourseCell({
         left: 0,
         right: 0,
       }}
-      onPress={() => onPress(course, isOther)}
-      onLongPress={() => onLongPress(course, isOther)}
+      onPress={() => onPress(course, isOther, sectionRange)}
+      onLongPress={() => onLongPress(course, isOther, sectionRange)}
     >
       <View
         style={{
@@ -171,34 +182,62 @@ export const DayColumn = memo(function DayColumn({
   currentCourses: Course[];
   otherCourses: Course[];
   cellBgFor: (courseName: string, isOther: boolean) => string;
-  onCoursePress: (course: Course, isOther: boolean) => void;
-  onCourseLongPress: (course: Course, isOther: boolean) => void;
+  onCoursePress: (
+    course: Course,
+    isOther: boolean,
+    range: CourseSectionRange,
+  ) => void;
+  onCourseLongPress: (
+    course: Course,
+    isOther: boolean,
+    range: CourseSectionRange,
+  ) => void;
   onAddSlot: (day: number, sectionStart: number, sectionEnd: number) => void;
 }) {
   const { isDark, mutedColor } = theme;
 
-  // 完全同时段的本周课程只渲染一个格子，角标提示数量，点击可在时段列表中查看全部
   const currentGroups = useMemo(() => {
-    const map = new Map<string, { course: Course; count: number }>();
-    for (const c of currentCourses) {
-      const key = `${c.sectionStart}-${c.sectionEnd}`;
-      const group = map.get(key);
-      if (group) group.count++;
-      else map.set(key, { course: c, count: 1 });
+    const visibleSections = layout.groups.flat();
+    const entries = currentCourses.flatMap((course) => {
+      const sections = visibleSections.filter(
+        (section) =>
+          section >= course.sectionStart && section <= course.sectionEnd,
+      );
+      if (sections.length === 0) return [];
+      return [
+        {
+          course,
+          count: 1,
+          sectionStart: Math.min(...sections),
+          sectionEnd: Math.max(...sections),
+        },
+      ];
+    });
+    entries.sort((a, b) => a.sectionStart - b.sectionStart);
+
+    const groups: typeof entries = [];
+    for (const entry of entries) {
+      const previous = groups[groups.length - 1];
+      if (previous && entry.sectionStart <= previous.sectionEnd) {
+        previous.sectionEnd = Math.max(previous.sectionEnd, entry.sectionEnd);
+        previous.count++;
+      } else {
+        groups.push(entry);
+      }
     }
-    return [...map.values()];
-  }, [currentCourses]);
+    return groups;
+  }, [currentCourses, layout.groups]);
 
   const renderCell = (
     course: Course,
     key: string,
     isOther: boolean,
     stackCount = 1,
+    sectionRange: CourseSectionRange = course,
   ) => {
-    // 起止节可能落在当前布局隐藏的节次上（如隐藏中课时的第 6 节），
-    // 向内收敛到可见节次；整段都不可见才不渲染
-    let start = course.sectionStart;
-    let end = course.sectionEnd;
+    // 紧凑模式隐藏 6、7、13 节，跨越这些节次的课程仍需显示可见部分。
+    let start = sectionRange.sectionStart;
+    let end = sectionRange.sectionEnd;
     while (start <= end && layout.sectionTop[start] === undefined) start++;
     while (end >= start && layout.sectionTop[end] === undefined) end--;
     if (start > end) return null;
@@ -216,6 +255,7 @@ export const DayColumn = memo(function DayColumn({
         bg={cellBgFor(course.name, isOther)}
         theme={theme}
         stackCount={stackCount}
+        sectionRange={sectionRange}
         onPress={onCoursePress}
         onLongPress={onCourseLongPress}
       />
@@ -318,12 +358,13 @@ export const DayColumn = memo(function DayColumn({
           ),
         )}
 
-        {currentGroups.map(({ course, count }, ci) =>
+        {currentGroups.map((group, ci) =>
           renderCell(
-            course,
-            `cur-${course.name}-${course.sectionStart}-${ci}`,
+            group.course,
+            `cur-${group.sectionStart}-${ci}`,
             false,
-            count,
+            group.count,
+            group,
           ),
         )}
       </View>
