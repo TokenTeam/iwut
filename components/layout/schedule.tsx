@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
 import React, {
@@ -9,14 +10,13 @@ import React, {
   useState,
 } from "react";
 import {
-  FlatList,
   Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
+  type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from "react-native";
@@ -113,6 +113,7 @@ const SIDEBAR_WIDTH = 24;
 const PEEK_WIDTH = 20;
 const WEEK_DATA = Array.from({ length: MAX_WEEK }, (_, i) => i + 1);
 const weekKeyExtractor = (item: number) => String(item);
+const PAGER_CONTENT_POSITION = { disabled: true };
 const styles = StyleSheet.create({
   fill: { flex: 1 },
 });
@@ -427,7 +428,6 @@ export function Schedule({
 }>) {
   const localT = useT();
   const router = useRouter();
-  const { width: screenWidth } = useWindowDimensions();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const blurProps = useAppBlurProps();
@@ -438,8 +438,8 @@ export function Schedule({
 
   const scrollViewRef = useRef<ScrollView>(null);
   const didInitialScroll = useRef(false);
-  const pagerRef = useRef<FlatList<number>>(null);
-  const [initialWeek] = useState(week);
+  const pagerRef = useRef<FlashListRef<number>>(null);
+  const [pagerSize, setPagerSize] = useState({ width: 0, height: 0 });
   const fromPagerRef = useRef(false);
   const selectedWeekRef = useLatest(week);
   const onWeekChangeRef = useLatest(onWeekChange);
@@ -515,7 +515,7 @@ export function Schedule({
   const headerHeight = showDates ? HEADER_HEIGHT_WITH_DATES : HEADER_HEIGHT;
 
   const visibleCols = scrollWeekend ? 5 : 7;
-  const availableWidth = screenWidth - SIDEBAR_WIDTH;
+  const availableWidth = pagerSize.width;
   const colWidth = scrollWeekend
     ? (availableWidth - PEEK_WIDTH) / visibleCols
     : availableWidth / visibleCols;
@@ -544,6 +544,22 @@ export function Schedule({
     }
   }, [today]);
 
+  const handlePagerLayout = useCallback((event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+    setPagerSize((previous) =>
+      previous.width === width && previous.height === height
+        ? previous
+        : { width, height },
+    );
+  }, []);
+
+  const syncPagerWeek = useCallback(() => {
+    void pagerRef.current?.scrollToIndex({
+      index: selectedWeekRef.current - 1,
+      animated: false,
+    });
+  }, [selectedWeekRef]);
+
   const prevWeekRef = useRef(week);
   useEffect(() => {
     if (prevWeekRef.current === week) return;
@@ -563,23 +579,14 @@ export function Schedule({
       fromPagerRef.current = false;
       return;
     }
-    pagerRef.current?.scrollToIndex({ index: week - 1, animated: false });
-  }, [week, scrollWeekend]);
-
-  const getPagerItemLayout = useCallback(
-    (_: ArrayLike<number> | null | undefined, index: number) => ({
-      length: availableWidth,
-      offset: availableWidth * index,
-      index,
-    }),
-    [availableWidth],
-  );
+    syncPagerWeek();
+  }, [week, scrollWeekend, syncPagerWeek]);
 
   const onPagerMomentumEnd = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       if (availableWidth <= 0) return;
       const idx = Math.round(e.nativeEvent.contentOffset.x / availableWidth);
-      const nextWeek = idx + 1;
+      const nextWeek = Math.max(1, Math.min(MAX_WEEK, idx + 1));
       if (nextWeek === selectedWeekRef.current) return;
       const handleWeekChange = onWeekChangeRef.current;
       if (!handleWeekChange) return;
@@ -587,16 +594,6 @@ export function Schedule({
       handleWeekChange(nextWeek);
     },
     [availableWidth, onWeekChangeRef, selectedWeekRef],
-  );
-
-  const onPagerScrollToIndexFailed = useCallback(
-    (info: { index: number; averageItemLength: number }) => {
-      pagerRef.current?.scrollToOffset({
-        offset: info.averageItemLength * info.index,
-        animated: false,
-      });
-    },
-    [],
   );
 
   const showSlotCourses = useCallback((conflicts: Course[]) => {
@@ -607,14 +604,21 @@ export function Schedule({
   const handleCoursePress = useCallback(
     (course: Course, conflicts: Course[], isOther: boolean) => {
       haptic();
-      if (isOther || conflicts.filter(isInCurrentWeek).length > 1) {
+      // 只在点击时读取所选周，避免每次切周使所有缓存页面的回调失效
+      const selectedWeek = selectedWeekRef.current;
+      if (
+        isOther ||
+        conflicts.filter(
+          (c) => c.weekStart <= selectedWeek && c.weekEnd >= selectedWeek,
+        ).length > 1
+      ) {
         showSlotCourses(conflicts);
         return;
       }
       setSlotCourses(null);
       setSelected(course);
     },
-    [haptic, showSlotCourses, isInCurrentWeek],
+    [haptic, showSlotCourses, selectedWeekRef],
   );
 
   const handleCourseLongPress = useCallback(
@@ -743,11 +747,11 @@ export function Schedule({
 
   const renderPagerItem = useCallback(
     ({ item }: { item: number }) => (
-      <View style={{ width: availableWidth, height: "100%" }}>
+      <View style={{ width: availableWidth, height: pagerSize.height }}>
         {renderPanel(item)}
       </View>
     ),
-    [availableWidth, renderPanel],
+    [availableWidth, pagerSize.height, renderPanel],
   );
 
   return (
@@ -823,8 +827,12 @@ export function Schedule({
           </View>
         </View>
 
-        <View style={{ flex: 1, overflow: "hidden" }}>
-          {scrollWeekend ? (
+        <View
+          style={{ flex: 1, overflow: "hidden" }}
+          onLayout={handlePagerLayout}
+        >
+          {pagerSize.width <= 0 ||
+          pagerSize.height <= 0 ? null : scrollWeekend ? (
             <ScrollView
               horizontal
               ref={scrollViewRef}
@@ -838,7 +846,9 @@ export function Schedule({
               {renderPanel(week)}
             </ScrollView>
           ) : (
-            <FlatList
+            <FlashList
+              // 宽度改变后重新定位，避免旋转屏幕时停在两周之间
+              key={availableWidth}
               ref={pagerRef}
               data={WEEK_DATA}
               style={styles.fill}
@@ -846,16 +856,12 @@ export function Schedule({
               pagingEnabled
               showsHorizontalScrollIndicator={false}
               keyExtractor={weekKeyExtractor}
-              getItemLayout={getPagerItemLayout}
-              initialScrollIndex={initialWeek - 1}
+              initialScrollIndex={week - 1}
               renderItem={renderPagerItem}
+              onLoad={syncPagerWeek}
               onMomentumScrollEnd={onPagerMomentumEnd}
-              onScrollToIndexFailed={onPagerScrollToIndexFailed}
-              windowSize={3}
-              initialNumToRender={1}
-              maxToRenderPerBatch={1}
-              updateCellsBatchingPeriod={16}
-              removeClippedSubviews
+              drawDistance={availableWidth}
+              maintainVisibleContentPosition={PAGER_CONTENT_POSITION}
               bounces={false}
               overScrollMode="never"
               decelerationRate="fast"

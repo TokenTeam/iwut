@@ -1,8 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
+import {
+  FlashList,
+  type FlashListRef,
+  type ListRenderItemInfo,
+} from "@shopify/flash-list";
 import { router } from "expo-router";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  FlatList,
   LayoutChangeEvent,
   Pressable,
   StyleSheet,
@@ -15,8 +19,8 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CourseDetailModal } from "@/components/layout/course-detail-modal";
-import { CourseShareSheet } from "@/components/share/course-share-sheet";
 import { HomeMenu } from "@/components/layout/home-menu";
+import { CourseShareSheet } from "@/components/share/course-share-sheet";
 import { AnnouncementBanner } from "@/components/ui/announcement-banner";
 import { getDayLabels } from "@/constants/weekdays";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -105,6 +109,18 @@ const GREETING_SLOTS: GreetingSlot[] = [
 ];
 
 const CARD_GAP = 10;
+const courseListStyles = StyleSheet.create({
+  content: { paddingHorizontal: 24, paddingBottom: 32 },
+  separator: { height: CARD_GAP },
+});
+const COURSE_CONTENT_POSITION = { disabled: true };
+const courseKeyExtractor = (course: Course, index: number) =>
+  `${course.name}-${course.sectionStart}-${course.weekStart}-${index}`;
+
+function CourseSeparator() {
+  return <View style={courseListStyles.separator} />;
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOME_EXAM_LOOKAHEAD_MS = 14 * DAY_MS;
 
@@ -178,7 +194,6 @@ export default function HomeScreen() {
     [announcements, dismissedIds],
   );
 
-  // 按分钟刷新，驱动倒计时 / 已结束状态 / 问候语随时间更新
   const nowMs = useMinuteNow();
   useEffect(() => {
     if (
@@ -358,42 +373,88 @@ export default function HomeScreen() {
     [todayCourses, nowMs],
   );
 
-  const courseScrollRef = useRef<FlatList<Course>>(null);
+  const courseScrollRef = useRef<FlashListRef<Course>>(null);
   const didAutoScroll = useRef(false);
-  const cardHeights = useRef<number[]>([]);
 
-  const handleCardLayout = useCallback(
-    (index: number, e: LayoutChangeEvent) => {
-      cardHeights.current[index] = e.nativeEvent.layout.height;
+  const handleCoursesLoaded = useCallback(() => {
+    if (didAutoScroll.current) return;
+    didAutoScroll.current = true;
+    // 虚拟化列表不会挂载所有卡片，交由 FlashList 测量并定位目标项
+    if (firstUpcomingIdx > 0) {
+      void courseScrollRef.current?.scrollToIndex({
+        index: firstUpcomingIdx,
+        animated: true,
+      });
+    }
+  }, [firstUpcomingIdx]);
 
-      if (
-        !didAutoScroll.current &&
-        cardHeights.current.filter(Boolean).length === todayCourses.length &&
-        firstUpcomingIdx > 0
-      ) {
-        didAutoScroll.current = true;
-        let scrollY = 0;
-        for (let i = 0; i < firstUpcomingIdx; i++) {
-          scrollY += (cardHeights.current[i] ?? 0) + CARD_GAP;
-        }
-        courseScrollRef.current?.scrollToOffset({
-          offset: scrollY,
-          animated: true,
-        });
-      }
-    },
-    [todayCourses.length, firstUpcomingIdx],
+  const courseColorOf = useCallback(
+    (name: string) =>
+      getCourseColor(
+        name,
+        colorMap,
+        paletteColors,
+        colorPalette.overrides,
+        courseColorOverrides,
+      ),
+    [colorMap, paletteColors, colorPalette.overrides, courseColorOverrides],
   );
 
-  function courseColorOf(name: string) {
-    return getCourseColor(
-      name,
-      colorMap,
-      paletteColors,
-      colorPalette.overrides,
-      courseColorOverrides,
-    );
-  }
+  const renderTodayCourse = useCallback(
+    ({ item: course, index }: ListRenderItemInfo<Course>) => {
+      const past = isCourseFinished(course, nowMs);
+      const countdown =
+        !past && index === firstUpcomingIdx
+          ? getCourseCountdown(course, nowMs)
+          : null;
+      return (
+        <CourseCard
+          course={course}
+          color={courseColorOf(course.name)}
+          past={past}
+          countdownKind={countdown?.kind ?? null}
+          countdownText={
+            countdown
+              ? t(
+                  countdown.kind === "start"
+                    ? "home.countdownStartIn"
+                    : "home.countdownEndIn",
+                  { n: countdown.mins },
+                )
+              : null
+          }
+          isDark={isDark}
+          hasBg={hasBgImage}
+          onPress={openCourseDetail}
+        />
+      );
+    },
+    [
+      nowMs,
+      firstUpcomingIdx,
+      courseColorOf,
+      t,
+      isDark,
+      hasBgImage,
+      openCourseDetail,
+    ],
+  );
+
+  const renderTomorrowCourse = useCallback(
+    ({ item: course }: ListRenderItemInfo<Course>) => (
+      <CourseCard
+        course={course}
+        color={courseColorOf(course.name)}
+        past={false}
+        countdownKind={null}
+        countdownText={null}
+        isDark={isDark}
+        hasBg={hasBgImage}
+        onPress={openCourseDetail}
+      />
+    ),
+    [courseColorOf, isDark, hasBgImage, openCourseDetail],
+  );
 
   const tabs = [
     { label: t("home.tabToday"), count: todayCourses.length },
@@ -608,49 +669,16 @@ export default function HomeScreen() {
               >
                 <View key="today" style={{ flex: 1 }}>
                   {hasCourses && todayCourses.length > 0 ? (
-                    <FlatList
+                    <FlashList
                       ref={courseScrollRef}
                       data={todayCourses}
-                      keyExtractor={(course, i) =>
-                        `today-${course.name}-${course.sectionStart}-${i}`
-                      }
-                      contentContainerStyle={{
-                        gap: CARD_GAP,
-                        paddingHorizontal: 24,
-                        paddingBottom: 32,
-                        flexGrow: 1,
-                      }}
+                      keyExtractor={courseKeyExtractor}
+                      contentContainerStyle={courseListStyles.content}
+                      ItemSeparatorComponent={CourseSeparator}
+                      maintainVisibleContentPosition={COURSE_CONTENT_POSITION}
                       showsVerticalScrollIndicator={false}
-                      renderItem={({ item: course, index: i }) => {
-                        const past = isCourseFinished(course, nowMs);
-                        const countdown =
-                          !past && i === firstUpcomingIdx
-                            ? getCourseCountdown(course, nowMs)
-                            : null;
-                        return (
-                          <View onLayout={(e) => handleCardLayout(i, e)}>
-                            <CourseCard
-                              course={course}
-                              color={courseColorOf(course.name)}
-                              past={past}
-                              countdownKind={countdown?.kind ?? null}
-                              countdownText={
-                                countdown
-                                  ? t(
-                                      countdown.kind === "start"
-                                        ? "home.countdownStartIn"
-                                        : "home.countdownEndIn",
-                                      { n: countdown.mins },
-                                    )
-                                  : null
-                              }
-                              isDark={isDark}
-                              hasBg={hasBgImage}
-                              onPress={() => openCourseDetail(course)}
-                            />
-                          </View>
-                        );
-                      }}
+                      onLoad={handleCoursesLoaded}
+                      renderItem={renderTodayCourse}
                     />
                   ) : (
                     <EmptyState
@@ -664,30 +692,14 @@ export default function HomeScreen() {
 
                 <View key="tomorrow" style={{ flex: 1 }}>
                   {hasCourses && tomorrowCourses.length > 0 ? (
-                    <FlatList
+                    <FlashList
                       data={tomorrowCourses}
-                      keyExtractor={(course, i) =>
-                        `tmr-${course.name}-${course.sectionStart}-${i}`
-                      }
-                      contentContainerStyle={{
-                        gap: CARD_GAP,
-                        paddingHorizontal: 24,
-                        paddingBottom: 32,
-                        flexGrow: 1,
-                      }}
+                      keyExtractor={courseKeyExtractor}
+                      contentContainerStyle={courseListStyles.content}
+                      ItemSeparatorComponent={CourseSeparator}
+                      maintainVisibleContentPosition={COURSE_CONTENT_POSITION}
                       showsVerticalScrollIndicator={false}
-                      renderItem={({ item: course }) => (
-                        <CourseCard
-                          course={course}
-                          color={courseColorOf(course.name)}
-                          past={false}
-                          countdownKind={null}
-                          countdownText={null}
-                          isDark={isDark}
-                          hasBg={hasBgImage}
-                          onPress={() => openCourseDetail(course)}
-                        />
-                      )}
+                      renderItem={renderTomorrowCourse}
                     />
                   ) : (
                     <EmptyState
@@ -739,7 +751,7 @@ const CourseCard = memo(function CourseCard({
   countdownText: string | null;
   isDark: boolean;
   hasBg: boolean;
-  onPress: () => void;
+  onPress: (course: Course) => void;
 }) {
   const barColor = past
     ? isDark
@@ -760,9 +772,6 @@ const CourseCard = memo(function CourseCard({
     : isDark
       ? "#a3a3a3"
       : "#737373";
-
-  // 有背景图时改用近实底卡片（参考主流课表 App 壁纸模式的白卡做法），
-  // 保证卡片内文字不被图片纹理干扰；细描边用于和壁纸划清边界
   const cardBg = hasBg
     ? isDark
       ? "rgba(28,28,30,0.88)"
@@ -773,7 +782,7 @@ const CourseCard = memo(function CourseCard({
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => onPress(course)}
       style={({ pressed }) => ({
         flexDirection: "row",
         borderRadius: 12,

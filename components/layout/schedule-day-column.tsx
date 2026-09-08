@@ -1,3 +1,4 @@
+import { useMappingHelper } from "@shopify/flash-list";
 import React, { memo, useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 
@@ -195,6 +196,7 @@ export const DayColumn = memo(function DayColumn({
   onAddSlot: (day: number, sectionStart: number, sectionEnd: number) => void;
 }) {
   const { isDark, mutedColor } = theme;
+  const { getMappingKey } = useMappingHelper();
 
   const currentGroups = useMemo(() => {
     const visibleSections = layout.groups.flat();
@@ -353,7 +355,7 @@ export const DayColumn = memo(function DayColumn({
         {otherCourses.map((course, ci) =>
           renderCell(
             course,
-            `other-${course.name}-${course.sectionStart}-${course.weekStart}-${ci}`,
+            `other-${getMappingKey(`${course.name}-${course.sectionStart}-${course.weekStart}-${ci}`, ci)}`,
             true,
           ),
         )}
@@ -361,7 +363,7 @@ export const DayColumn = memo(function DayColumn({
         {currentGroups.map((group, ci) =>
           renderCell(
             group.course,
-            `cur-${group.sectionStart}-${ci}`,
+            `cur-${getMappingKey(group.sectionStart, ci)}`,
             false,
             group.count,
             group,
