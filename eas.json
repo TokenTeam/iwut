@@ -6,6 +6,7 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "bun": "1.4.2",
       "env": {
         "EAS_BUILD_PROFILE": "development",
         "EXPO_PUBLIC_DEBUG": "1",
@@ -15,6 +16,7 @@
     "preview": {
       "channel": "preview",
       "distribution": "internal",
+      "bun": "1.4.2",
       "env": {
         "EAS_BUILD_PROFILE": "preview",
         "EXPO_PUBLIC_DEBUG": "1",
@@ -24,6 +26,7 @@
     "production": {
       "channel": "production",
       "autoIncrement": true,
+      "bun": "1.4.2",
       "env": {
         "EAS_BUILD_PROFILE": "production",
         "EXPO_PUBLIC_DEBUG": "0",
