@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  type TextInputInstance,
   View,
 } from "react-native";
 import Toast from "react-native-toast-message";
@@ -111,8 +112,8 @@ function QuickAddBody({ slot, currentWeek, onClose }: BodyProps) {
     weeks: Set<number>;
   } | null>(null);
 
-  const nameInputRef = useRef<TextInput | null>(null);
-  const teacherInputRef = useRef<TextInput | null>(null);
+  const nameInputRef = useRef<TextInputInstance>(null);
+  const teacherInputRef = useRef<TextInputInstance>(null);
 
   const subtitle = useMemo(() => {
     const weekday = t(DAY_KEYS[slot.day - 1]);

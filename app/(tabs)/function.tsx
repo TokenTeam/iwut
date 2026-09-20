@@ -13,6 +13,7 @@ import {
   TextInput,
   useWindowDimensions,
   View,
+  type ViewInstance,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -134,7 +135,7 @@ export default function FunctionScreen() {
   const insets = useSafeAreaInsets();
   const hasBgImage = useScheduleStore((s) => !!s.backgroundImageUri);
   const isBound = useUserBindStore((s) => s.isBound);
-  const blurTarget = useRef<View | null>(null);
+  const blurTarget = useRef<ViewInstance | null>(null);
   const blurProps = useAndroidBlurProps(blurTarget);
   const { height } = useWindowDimensions();
   const [showBrowser, setShowBrowser] = useState(false);

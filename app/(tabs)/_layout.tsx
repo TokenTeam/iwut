@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs, router } from "expo-router";
 import { type ComponentProps, useEffect } from "react";
-import { type ColorValue } from "react-native";
 
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -26,7 +25,7 @@ function TabIcon({
   activeColor,
 }: {
   focused: boolean;
-  color: ColorValue;
+  color: NonNullable<ComponentProps<typeof Ionicons>["color"]>;
   icon: ComponentProps<typeof Ionicons>["name"];
   iconOutline: ComponentProps<typeof Ionicons>["name"];
   activeColor: string;
@@ -76,7 +75,11 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
               focused={focused}
-              color={color}
+              color={
+                typeof color === "number"
+                  ? theme.tabIconDefault
+                  : (color ?? theme.tabIconDefault)
+              }
               icon="home"
               iconOutline="home-outline"
               activeColor={TAB_COLORS.home}
@@ -92,7 +95,11 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
               focused={focused}
-              color={color}
+              color={
+                typeof color === "number"
+                  ? theme.tabIconDefault
+                  : (color ?? theme.tabIconDefault)
+              }
               icon="calendar"
               iconOutline="calendar-outline"
               activeColor={TAB_COLORS.course}
@@ -108,7 +115,11 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
               focused={focused}
-              color={color}
+              color={
+                typeof color === "number"
+                  ? theme.tabIconDefault
+                  : (color ?? theme.tabIconDefault)
+              }
               icon="grid"
               iconOutline="grid-outline"
               activeColor={TAB_COLORS.function}
@@ -124,7 +135,11 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
               focused={focused}
-              color={color}
+              color={
+                typeof color === "number"
+                  ? theme.tabIconDefault
+                  : (color ?? theme.tabIconDefault)
+              }
               icon="person"
               iconOutline="person-outline"
               activeColor={TAB_COLORS.user}
