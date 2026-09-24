@@ -83,7 +83,10 @@ export const unstable_settings = {
 Observe.configure({
   environment: Updates.channel ?? "development",
   dispatchingEnabled: !__DEV__,
-  integrations: { "expo-router": true },
+  integrations: {
+    "expo-router": true,
+    "expo-image": true,
+  },
 });
 
 void SplashScreen.preventAutoHideAsync().catch(() => {
