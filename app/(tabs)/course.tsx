@@ -1,15 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Menu, X } from "lucide";
 import {
   startTransition,
+  type ReactNode,
   useCallback,
   useEffect,
   useRef,
   useState,
 } from "react";
-import { Modal, Pressable, Text, View } from "react-native";
+import { Modal, Platform, Pressable, Text, View } from "react-native";
 import Animated, {
   Easing,
   interpolate,
@@ -17,6 +18,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import { SafeAreaView } from "react-native-screens/experimental";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
@@ -47,6 +49,18 @@ import { type ImportType, useCourseStore } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 import { useUserBindStore } from "@/store/user-bind";
 
+function TabContent({ children }: { children: ReactNode }) {
+  if (Platform.OS === "ios") {
+    return (
+      <SafeAreaView edges={{ bottom: true }} style={{ flex: 1 }}>
+        {children}
+      </SafeAreaView>
+    );
+  }
+
+  return <View style={{ flex: 1 }}>{children}</View>;
+}
+
 export default function CourseScreen() {
   useMarkRouteInteractive();
   const t = useT();
@@ -71,6 +85,12 @@ export default function CourseScreen() {
   const insets = useSafeAreaInsets();
 
   const importerRef = useRef<GetCourseHandle>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => setShowDrawer(false);
+    }, []),
+  );
 
   const [prevTermStart, setPrevTermStart] = useState(termStart);
   if (termStart !== prevTermStart) {
@@ -193,7 +213,7 @@ export default function CourseScreen() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <TabContent>
       {hasBgImage && (
         <Animated.View
           pointerEvents="none"
@@ -474,6 +494,6 @@ export default function CourseScreen() {
         onReimport={handleReimport}
         onOpenSettings={() => router.push("/(pages)/settings/calendar")}
       />
-    </View>
+    </TabContent>
   );
 }

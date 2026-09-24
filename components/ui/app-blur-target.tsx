@@ -6,16 +6,16 @@ import {
   useRef,
   type ReactNode,
 } from "react";
-import { Platform, StyleSheet, type View } from "react-native";
+import { Platform, StyleSheet, type ViewInstance } from "react-native";
 
-type BlurTargetRef = React.RefObject<View | null>;
+type BlurTargetRef = React.RefObject<ViewInstance | null>;
 
 const AppBlurTargetContext = createContext<BlurTargetRef | undefined>(
   undefined,
 );
 
 export function AppBlurTargetProvider({ children }: { children: ReactNode }) {
-  const targetRef = useRef<View | null>(null);
+  const targetRef = useRef<ViewInstance | null>(null);
 
   return (
     <AppBlurTargetContext.Provider value={targetRef}>

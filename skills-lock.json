@@ -163,6 +163,12 @@
       "skillPath": "skills/improve-animations/SKILL.md",
       "computedHash": "524ea241e41d58bbdd8e288700fe24f5725e2a2f3ae7186ad7cebf9055058356"
     },
+    "migrate-to-strict-api": {
+      "source": "react-native-community/skills",
+      "sourceType": "github",
+      "skillPath": "migrate-to-strict-api/SKILL.md",
+      "computedHash": "95e3b1965990968c3eaa8d7cdcfd1d18779130a8d47fad2bb74b8af907eb0bfe"
+    },
     "pick-ui-library": {
       "source": "emilkowalski/skills",
       "sourceType": "github",

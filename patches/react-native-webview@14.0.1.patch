@@ -1,0 +1,12 @@
+diff --git a/index.d.ts b/index.d.ts
+--- a/index.d.ts
++++ b/index.d.ts
+@@ -5,7 +5,7 @@ export { FileDownload, WebViewMessageEvent, WebViewNavigation } from './lib/WebVi
+ 
+ export type WebViewProps = IOSWebViewProps & AndroidWebViewProps & WindowsWebViewProps;
+ 
+-declare class WebView<P = undefined> extends Component<WebViewProps & P> {
++declare class WebView<P = {}> extends Component<WebViewProps & P> {
+   /**
+    * Go back one page in the webview's history.
+    */

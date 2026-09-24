@@ -1,5 +1,5 @@
-import { useFocusEffect, useNavigation } from "expo-router";
-import { useCallback, useEffect, useRef, type RefObject } from "react";
+import { useFocusEffect, usePreventRemove } from "expo-router";
+import { useCallback, type RefObject } from "react";
 import { BackHandler, Platform } from "react-native";
 import type { WebView } from "react-native-webview";
 
@@ -14,28 +14,17 @@ export function useWebViewBackHandler(
   ref: RefObject<WebView | null>,
   canGoBack: boolean,
 ) {
-  const navigation = useNavigation();
-  const canGoBackRef = useRef(canGoBack);
-  canGoBackRef.current = canGoBack;
-
   useFocusEffect(
     useCallback(() => {
       if (Platform.OS !== "android") return;
       const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-        if (!canGoBackRef.current) return false;
+        if (!canGoBack) return false;
         ref.current?.goBack();
         return true;
       });
       return () => sub.remove();
-    }, [ref]),
+    }, [canGoBack, ref]),
   );
 
-  useEffect(() => {
-    const unsub = navigation.addListener("beforeRemove", (e) => {
-      if (!canGoBackRef.current) return;
-      e.preventDefault();
-      ref.current?.goBack();
-    });
-    return unsub;
-  }, [navigation, ref]);
+  usePreventRemove(canGoBack, () => ref.current?.goBack());
 }
