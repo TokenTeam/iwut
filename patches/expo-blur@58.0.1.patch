@@ -1,5 +1,4 @@
 diff --git a/android/build.gradle b/android/build.gradle
-index d6ccc18aab7927e69794f69af38844cfe04371e4..01f3a07f48d73dc3bebcc1efbabcb4ff78f532bd 100644
 --- a/android/build.gradle
 +++ b/android/build.gradle
 @@ -15,5 +15,5 @@ android {
@@ -19,15 +18,20 @@ diff --git a/build/BlurView.types.d.ts b/build/BlurView.types.d.ts
  /**
   * Blur method to use on Android.
   *
-@@ -24,4 +24,4 @@ export type BlurViewProps = {
+@@ -24,7 +24,7 @@ export type BlurViewProps = {
       *
       * @platform android
       */
 -    blurTarget?: RefObject<View | null>;
 +    blurTarget?: RefObject<ViewInstance | null>;
-@@ -69,4 +69,4 @@ export type BlurViewProps = {
+     /**
+      * A tint mode which will be applied to the view.
+      *
+@@ -68,6 +68,6 @@ export type BlurViewProps = {
+     blurMethod?: BlurMethod;
  } & ViewProps;
  export type BlurTargetViewProps = {
 -    ref?: RefObject<View | null>;
 +    ref?: RefObject<ViewInstance | null>;
  } & ViewProps;
+ export type BlurTint = 'light' | 'dark' | 'default' | 'extraLight' | 'regular' | 'prominent' | 'systemUltraThinMaterial' | 'systemThinMaterial' | 'systemMaterial' | 'systemThickMaterial' | 'systemChromeMaterial' | 'systemUltraThinMaterialLight' | 'systemThinMaterialLight' | 'systemMaterialLight' | 'systemThickMaterialLight' | 'systemChromeMaterialLight' | 'systemUltraThinMaterialDark' | 'systemThinMaterialDark' | 'systemMaterialDark' | 'systemThickMaterialDark' | 'systemChromeMaterialDark';
