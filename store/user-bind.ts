@@ -59,7 +59,7 @@ export const useUserBindStore = create<UserBindStore>()(
 
       unbind: async () => {
         await SecureStore.deleteItemAsync("zhlgd_password");
-        await CookieManager.clearAll(true);
+        await CookieManager.clearAll({ iosCookieStore: "webKit" });
         set({
           isBound: false,
           studentId: "",

@@ -22,7 +22,7 @@ export function usePagerPosition(initialPage = 0) {
       position.value = event.position + event.offset;
     },
   };
-  const { doDependenciesDiffer } = useHandler(handlers, []);
+  const { doDependenciesDiffer } = useHandler(handlers);
   const handler = useEvent<PagerViewOnPageScrollEventData>(
     (event) => {
       "worklet";

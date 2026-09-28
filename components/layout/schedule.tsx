@@ -13,6 +13,7 @@ import {
   Modal,
   Pressable,
   ScrollView,
+  type ScrollViewInstance,
   StyleSheet,
   Text,
   View,
@@ -436,7 +437,7 @@ export function Schedule({
   const [shareName, setShareName] = useState<string | null>(null);
   const [quickAddSlot, setQuickAddSlot] = useState<QuickAddSlot | null>(null);
 
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<ScrollViewInstance>(null);
   const didInitialScroll = useRef(false);
   const pagerRef = useRef<FlashListRef<number>>(null);
   const [pagerSize, setPagerSize] = useState({ width: 0, height: 0 });

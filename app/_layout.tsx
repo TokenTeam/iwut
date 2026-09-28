@@ -4,7 +4,6 @@ import { FileLogger } from "react-native-file-logger";
 
 import { SENTRY_DSN } from "@/constants/api";
 
-// 日志记录需要提前初始化，便于捕获后续 import 中可能出现的错误
 Sentry.init({
   dsn: SENTRY_DSN,
   enableAutoSessionTracking: false,
@@ -27,8 +26,7 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useFonts } from "expo-font";
 import { Observe, ObserveRoot } from "expo-observe";
-import { Stack, router, useSegments } from "expo-router";
-import { ThemeProvider } from "expo-router/react-navigation";
+import { Stack, ThemeProvider, router, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as Updates from "expo-updates";
@@ -41,8 +39,8 @@ import {
 } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
-import { AppBlurTargetProvider } from "@/components/ui/app-blur-target";
 import { TabBackground } from "@/components/layout/tab-background";
+import { AppBlurTargetProvider } from "@/components/ui/app-blur-target";
 import { UpdateModal } from "@/components/ui/update-modal";
 import { Colors, Themes } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -78,7 +76,10 @@ export const unstable_settings = {
 Observe.configure({
   environment: Updates.channel ?? "development",
   dispatchingEnabled: !__DEV__,
-  integrations: { "expo-router": true },
+  integrations: {
+    "expo-router": true,
+    "expo-image": true,
+  },
 });
 
 void SplashScreen.preventAutoHideAsync().catch(() => {
@@ -235,6 +236,7 @@ function RootLayout() {
           >
             <TabBackground />
             <Stack
+              activityEnabled
               screenOptions={{
                 headerBackButtonDisplayMode: "minimal",
               }}
@@ -261,4 +263,6 @@ function RootLayout() {
   );
 }
 
-export default Sentry.wrap(ObserveRoot.wrap(RootLayout));
+const ObservedRootLayout = ObserveRoot.wrap(RootLayout);
+
+export default __DEV__ ? ObservedRootLayout : Sentry.wrap(ObservedRootLayout);

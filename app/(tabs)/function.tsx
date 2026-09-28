@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { BlurTargetView, BlurView } from "expo-blur";
 import { type Href, router } from "expo-router";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -16,7 +15,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useAndroidBlurProps } from "@/components/ui/app-blur-target";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { IS_DEV } from "@/constants/is-dev";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -134,8 +132,6 @@ export default function FunctionScreen() {
   const insets = useSafeAreaInsets();
   const hasBgImage = useScheduleStore((s) => !!s.backgroundImageUri);
   const isBound = useUserBindStore((s) => s.isBound);
-  const blurTarget = useRef<View | null>(null);
-  const blurProps = useAndroidBlurProps(blurTarget);
   const { height } = useWindowDimensions();
   const [showBrowser, setShowBrowser] = useState(false);
   const [uri, setUri] = useState("");
@@ -164,7 +160,7 @@ export default function FunctionScreen() {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1, paddingTop: insets.top }}>
-        <BlurTargetView ref={blurTarget} style={{ flex: 1 }}>
+        <View style={{ flex: 1 }}>
           <ScrollView
             className="flex-1"
             contentContainerStyle={{ paddingBottom: 32 }}
@@ -238,7 +234,7 @@ export default function FunctionScreen() {
               </View>
             ))}
           </ScrollView>
-        </BlurTargetView>
+        </View>
 
         {!isBound && (
           <View
@@ -253,21 +249,14 @@ export default function FunctionScreen() {
               gap: 12,
             }}
           >
-            <BlurView
-              {...blurProps}
-              intensity={25}
-              tint={isDark ? "dark" : "default"}
-              style={StyleSheet.absoluteFill}
-              pointerEvents="none"
-            />
             <Pressable
               accessible={false}
               style={[
                 StyleSheet.absoluteFill,
                 {
                   backgroundColor: isDark
-                    ? "rgba(0,0,0,0.25)"
-                    : "rgba(255,255,255,0.16)",
+                    ? "rgba(18,18,20,0.9)"
+                    : "rgba(255,255,255,0.9)",
                 },
               ]}
               onPress={blockPress}

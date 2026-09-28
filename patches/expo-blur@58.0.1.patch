@@ -1,0 +1,37 @@
+diff --git a/android/build.gradle b/android/build.gradle
+--- a/android/build.gradle
++++ b/android/build.gradle
+@@ -15,5 +15,5 @@ android {
+ }
+ 
+ dependencies {
+-  implementation 'com.github.Dimezis:BlurView:version-3.1.0'
++  implementation 'com.github.Dimezis:BlurView:3.2.0'
+ }
+diff --git a/build/BlurView.types.d.ts b/build/BlurView.types.d.ts
+--- a/build/BlurView.types.d.ts
++++ b/build/BlurView.types.d.ts
+@@ -1,5 +1,5 @@
+ import type { RefObject } from 'react';
+-import type { ViewProps, View } from 'react-native';
++import type { ViewInstance, ViewProps } from 'react-native';
+ /**
+  * Blur method to use on Android.
+  *
+@@ -24,7 +24,7 @@ export type BlurViewProps = {
+      *
+      * @platform android
+      */
+-    blurTarget?: RefObject<View | null>;
++    blurTarget?: RefObject<ViewInstance | null>;
+     /**
+      * A tint mode which will be applied to the view.
+      *
+@@ -68,6 +68,6 @@ export type BlurViewProps = {
+     blurMethod?: BlurMethod;
+ } & ViewProps;
+ export type BlurTargetViewProps = {
+-    ref?: RefObject<View | null>;
++    ref?: RefObject<ViewInstance | null>;
+ } & ViewProps;
+ export type BlurTint = 'light' | 'dark' | 'default' | 'extraLight' | 'regular' | 'prominent' | 'systemUltraThinMaterial' | 'systemThinMaterial' | 'systemMaterial' | 'systemThickMaterial' | 'systemChromeMaterial' | 'systemUltraThinMaterialLight' | 'systemThinMaterialLight' | 'systemMaterialLight' | 'systemThickMaterialLight' | 'systemChromeMaterialLight' | 'systemUltraThinMaterialDark' | 'systemThinMaterialDark' | 'systemMaterialDark' | 'systemThickMaterialDark' | 'systemChromeMaterialDark';

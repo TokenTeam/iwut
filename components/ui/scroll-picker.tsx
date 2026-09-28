@@ -2,6 +2,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useRef } from "react";
 import {
   FlatList,
+  type FlatListInstance,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Text,
@@ -24,7 +25,7 @@ export function ScrollPicker({
   visibleCount?: number;
 }>) {
   const padding = Math.floor(visibleCount / 2);
-  const listRef = useRef<FlatList>(null);
+  const listRef = useRef<FlatListInstance>(null);
   const lastSnapIndex = useRef(selectedIndex);
   const haptic = useHaptics();
 
