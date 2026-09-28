@@ -173,7 +173,7 @@ export default function BindScreen() {
     return () => {
       currentWebView?.clearCache(true);
       if (!preserveSession.current) {
-        CookieManager.clearAll(true).catch(() => {});
+        CookieManager.clearAll({ iosCookieStore: "webKit" }).catch(() => {});
       }
     };
   }, []);

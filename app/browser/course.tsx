@@ -60,7 +60,7 @@ export default function CourseImportScreen() {
   const [showImportOverlay, setShowImportOverlay] = useState(isBound);
   const clearManualImportSession = useCallback(
     () =>
-      CookieManager.clearAll(true).catch((error) =>
+      CookieManager.clearAll({ iosCookieStore: "webKit" }).catch((error) =>
         reportError(error, { module: "course-session-cleanup" }),
       ),
     [],
