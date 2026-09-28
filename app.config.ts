@@ -146,9 +146,6 @@ const config: ExpoConfig = {
   experiments: {
     typedRoutes: true,
     reactCompiler: true,
-    noxcturnalTransformWorker: true,
-  } as NonNullable<ExpoConfig["experiments"]> & {
-    noxcturnalTransformWorker: boolean;
   },
   extra: {
     router: {},
