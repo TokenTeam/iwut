@@ -1,24 +1,17 @@
+import * as Sentry from "@sentry/react-native";
 import Constants from "expo-constants";
 import { FileLogger } from "react-native-file-logger";
 
 import { SENTRY_DSN } from "@/constants/api";
 
-if (!__DEV__) {
-  void import("@sentry/react-native")
-    .then((Sentry) => {
-      Sentry.init({
-        dsn: SENTRY_DSN,
-        enableAutoSessionTracking: false,
-        tracesSampleRate: 0,
-        dist:
-          (Constants.expoConfig?.extra?.commit as string | undefined) ??
-          "unknown",
-      });
-    })
-    .catch(() => {
-      // Monitoring must never block the app from starting.
-    });
-}
+Sentry.init({
+  dsn: SENTRY_DSN,
+  enableAutoSessionTracking: false,
+  tracesSampleRate: 0,
+  enabled: !__DEV__,
+  dist:
+    (Constants.expoConfig?.extra?.commit as string | undefined) ?? "unknown",
+});
 
 FileLogger.configure({
   dailyRolling: true,
@@ -270,4 +263,6 @@ function RootLayout() {
   );
 }
 
-export default ObserveRoot.wrap(RootLayout);
+const ObservedRootLayout = ObserveRoot.wrap(RootLayout);
+
+export default __DEV__ ? ObservedRootLayout : Sentry.wrap(ObservedRootLayout);
