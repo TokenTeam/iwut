@@ -106,23 +106,49 @@ export function useZhlgdAutoLogin(
 ) {
   const creds = useRef<{ username: string; password: string } | null>(null);
   const lastFilledUrl = useRef("");
+  const currentLoginUrl = useRef("");
   const [sms, setSms] = useState<SmsState>(INITIAL_SMS);
   const [code, setCode] = useState("");
   const onCancel = options?.onCancel;
 
+  const injectAutoLogin = useCallback(
+    (url: string) => {
+      if (!useUserBindStore.getState().isBound) {
+        creds.current = null;
+        return;
+      }
+      if (!creds.current || lastFilledUrl.current === url) return;
+      lastFilledUrl.current = url;
+      webviewRef.current?.injectJavaScript(
+        buildAgentScript(creds.current.username, creds.current.password),
+      );
+    },
+    [webviewRef],
+  );
+
   useEffect(() => {
+    let active = true;
     const userBind = useUserBindStore.getState();
     if (!userBind.isBound) return;
 
-    userBind.getCredentials().then((c) => {
-      creds.current = c;
+    userBind.getCredentials().then((credentials) => {
+      if (!active) return;
+      creds.current = credentials;
+      if (credentials && currentLoginUrl.current) {
+        injectAutoLogin(currentLoginUrl.current);
+      }
     });
-  }, []);
+
+    return () => {
+      active = false;
+    };
+  }, [injectAutoLogin]);
 
   const onLoadEnd = useCallback(
     (e: { nativeEvent: { url: string } }) => {
       const url = e.nativeEvent.url;
       if (!url.includes(LOGIN_URL_PATTERN)) {
+        currentLoginUrl.current = "";
         lastFilledUrl.current = "";
         setSms((s) => (s.visible ? INITIAL_SMS : s));
         setCode("");
@@ -133,18 +159,10 @@ export function useZhlgdAutoLogin(
         return;
       }
 
-      if (!useUserBindStore.getState().isBound) {
-        creds.current = null;
-        return;
-      }
-      if (!creds.current || lastFilledUrl.current === url) return;
-      lastFilledUrl.current = url;
-
-      webviewRef.current?.injectJavaScript(
-        buildAgentScript(creds.current.username, creds.current.password),
-      );
+      currentLoginUrl.current = url;
+      injectAutoLogin(url);
     },
-    [webviewRef],
+    [injectAutoLogin, webviewRef],
   );
 
   const onMessage = useCallback((e: WebViewMessageEvent): boolean => {

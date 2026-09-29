@@ -6,7 +6,7 @@ import { useOnboardingStore } from "@/store/onboarding";
 import { useUserBindStore } from "@/store/user-bind";
 import CookieManager from "@preeternal/react-native-cookie-manager";
 import { router, Stack } from "expo-router";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { View } from "react-native";
 import Toast from "react-native-toast-message";
 import { WebView } from "react-native-webview";
@@ -62,6 +62,8 @@ const INJECTED_JS = `(function(){
         }));
       }
     }
+    u.addEventListener('input',send);
+    p.addEventListener('input',send);
     var btn=document.querySelector('#index_login_btn');
     if(btn)btn.addEventListener('click',send);
     document.addEventListener('submit',send,true);
@@ -85,7 +87,7 @@ const INJECTED_JS = `(function(){
     window.__talentTries=(window.__talentTries||0)+1;
     var giveUp=window.__talentTries>=8;
     function retry(){
-      if(giveUp)return false;
+      if(giveUp){profileUnavailable();return false;}
       setTimeout(fetchTalentInfo,1000);
       return true;
     }
@@ -167,6 +169,10 @@ export default function BindScreen() {
   } | null>(null);
   const flowFinished = useRef(false);
   const preserveSession = useRef(false);
+
+  const handleLoadEnd = useCallback(() => {
+    webview.current?.injectJavaScript(INJECTED_JS);
+  }, []);
 
   useEffect(() => {
     const currentWebView = webview.current;
@@ -273,7 +279,7 @@ export default function BindScreen() {
         cacheEnabled={false}
         originWhitelist={["*"]}
         webviewDebuggingEnabled={IS_DEV}
-        injectedJavaScript={INJECTED_JS}
+        onLoadEnd={handleLoadEnd}
         onMessage={onMessage}
         onError={onError}
         onHttpError={onHttpError}

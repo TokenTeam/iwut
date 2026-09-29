@@ -13,8 +13,8 @@ import Animated, {
 import Toast from "react-native-toast-message";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
 
-import { IS_DEV } from "@/constants/is-dev";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { IS_DEV } from "@/constants/is-dev";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useZhlgdAutoLogin } from "@/hooks/use-zhlgd-autologin";
 import { t as translate, useT } from "@/lib/i18n";
@@ -57,6 +57,7 @@ export default function CourseImportScreen() {
   const finished = useRef(false);
   const shouldClearSessionOnExit = useRef(!isBound);
   const injectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingInjectionUrl = useRef("");
   const [showImportOverlay, setShowImportOverlay] = useState(isBound);
   const clearManualImportSession = useCallback(
     () =>
@@ -188,28 +189,44 @@ export default function CourseImportScreen() {
       if (injected.current) return;
 
       const url = e.nativeEvent.url;
+      if (pendingInjectionUrl.current && pendingInjectionUrl.current !== url) {
+        if (injectTimer.current) clearTimeout(injectTimer.current);
+        injectTimer.current = null;
+        pendingInjectionUrl.current = "";
+      }
+
+      const scheduleInjection = (script: string) => {
+        pendingInjectionUrl.current = url;
+        if (injectTimer.current) clearTimeout(injectTimer.current);
+        injectTimer.current = setTimeout(() => {
+          injectTimer.current = null;
+          if (
+            finished.current ||
+            injected.current ||
+            pendingInjectionUrl.current !== url
+          ) {
+            return;
+          }
+          injected.current = true;
+          webview.current?.injectJavaScript(script);
+        }, 1500);
+      };
 
       if (importType === "bachelor" && url.startsWith(BACHELOR_HOME_PREFIX)) {
         setShowImportOverlay(true);
-        injected.current = true;
         const script = buildBachelorFetchScript({
           fetchUserFailed: t("course.fetchUserFailed"),
           noTermData: t("course.noTermData"),
         });
-        injectTimer.current = setTimeout(() => {
-          if (!finished.current) webview.current?.injectJavaScript(script);
-        }, 1500);
+        scheduleInjection(script);
       }
 
       if (importType === "master" && url.startsWith(MASTER_MAIN_PREFIX)) {
         setShowImportOverlay(true);
-        injected.current = true;
         const script = buildMasterFetchScript({
           fetchUserFailed: t("course.fetchUserFailed"),
         });
-        injectTimer.current = setTimeout(() => {
-          if (!finished.current) webview.current?.injectJavaScript(script);
-        }, 1500);
+        scheduleInjection(script);
       }
     },
     [autoLoginOnLoadEnd, importType, t],
