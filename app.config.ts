@@ -98,7 +98,7 @@ const config: ExpoConfig = {
     [
       "expo-camera",
       {
-        cameraPermission: "允许 $(PRODUCT_NAME) 访问你的相机",
+        cameraPermission: "用于扫一扫功能扫描二维码，识别并导入分享内容",
       },
     ],
     "expo-secure-store",

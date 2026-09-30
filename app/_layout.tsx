@@ -13,7 +13,29 @@ Sentry.init({
   enableNativeCrashHandling: !__DEV__,
   enableNdk: !__DEV__,
   environment: Updates.channel ?? "development",
-  integrations: [Sentry.feedbackIntegration()],
+  integrations: [
+    Sentry.feedbackIntegration({
+      showBranding: true,
+      showName: false,
+      showEmail: true,
+      isEmailRequired: false,
+      shouldValidateEmail: true,
+      enableScreenshot: false,
+      formTitle: t("feedback.formTitle"),
+      emailLabel: t("feedback.emailLabel"),
+      emailPlaceholder: t("feedback.emailPlaceholder"),
+      messageLabel: t("feedback.messageLabel"),
+      messagePlaceholder: t("feedback.messagePlaceholder"),
+      isRequiredLabel: t("feedback.required"),
+      submitButtonLabel: t("feedback.submit"),
+      cancelButtonLabel: t("common.cancel"),
+      successMessageText: t("feedback.success"),
+      errorTitle: t("feedback.errorTitle"),
+      formError: t("feedback.formError"),
+      emailError: t("feedback.emailError"),
+      genericError: t("feedback.genericError"),
+    }),
+  ],
   beforeSend(event, hint) {
     if (isNetworkError(hint.originalException)) return null;
 
@@ -56,7 +78,7 @@ import { AppBlurTargetProvider } from "@/components/ui/app-blur-target";
 import { UpdateModal } from "@/components/ui/update-modal";
 import { Colors, Themes } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { refreshSystemLocale } from "@/lib/i18n";
+import { refreshSystemLocale, t } from "@/lib/i18n";
 import {
   clearSyncedCalendarData,
   syncCoursesToCalendar,

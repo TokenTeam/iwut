@@ -1,10 +1,6 @@
 {
   "ios": {
-    "CFBundleDisplayName": "iWUT",
     "NSLocationWhenInUseUsageDescription": "Used to read current Wi-Fi info while you are on campus so the app can sign you in to the campus network.",
-    "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera"
-  },
-  "android": {
-    "app_name": "iWUT"
+    "NSCameraUsageDescription": "Use the Scan feature to scan QR codes, recognize shared content, and import it into the app."
   }
 }

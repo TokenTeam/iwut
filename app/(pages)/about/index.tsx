@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/react-native";
 import * as Application from "expo-application";
 import * as Clipboard from "expo-clipboard";
 import Constants from "expo-constants";
@@ -66,6 +67,19 @@ export default function AboutScreen() {
       });
     }
   }, [check, openUpdateModal, t]);
+
+  const handleFeedback = useCallback(() => {
+    if (__DEV__ || !Sentry.getClient()) {
+      Toast.show({
+        type: "info",
+        text1: t("about.feedbackUnavailable"),
+        position: "bottom",
+      });
+      return;
+    }
+
+    Sentry.showFeedbackForm();
+  }, [t]);
 
   return (
     <>
@@ -136,6 +150,30 @@ export default function AboutScreen() {
             onPress={() => Linking.openURL("https://github.com/tokenteam/iwut")}
           />
         </MenuGroup>
+
+        <MenuGroup title={t("about.feedbackGroup")}>
+          <MenuItem
+            icon="bug-report"
+            iconBg="#24292F"
+            label={t("about.githubIssues")}
+            value={t("about.recommended")}
+            onPress={() =>
+              Linking.openURL(
+                "https://github.com/tokenteam/iwut/issues/new/choose",
+              )
+            }
+          />
+          <MenuItem
+            icon="feedback"
+            iconBg="#6C5FC7"
+            label={t("about.inAppFeedback")}
+            onPress={handleFeedback}
+          />
+        </MenuGroup>
+
+        <Text className="-mt-2 mb-4 px-4 text-xs leading-5 text-neutral-400 dark:text-neutral-500">
+          {t("about.feedbackHint")}
+        </Text>
 
         <View className="mt-auto items-center pt-6">
           <Image
