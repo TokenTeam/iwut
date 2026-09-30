@@ -1,16 +1,28 @@
 import * as Sentry from "@sentry/react-native";
-import Constants from "expo-constants";
 import { FileLogger } from "react-native-file-logger";
 
 import { SENTRY_DSN } from "@/constants/api";
+import { isNetworkError } from "@/lib/network-error";
 
 Sentry.init({
   dsn: SENTRY_DSN,
   enableAutoSessionTracking: false,
   tracesSampleRate: 0,
   enabled: !__DEV__,
-  dist:
-    (Constants.expoConfig?.extra?.commit as string | undefined) ?? "unknown",
+  enableNative: !__DEV__,
+  enableNativeCrashHandling: !__DEV__,
+  enableNdk: !__DEV__,
+  environment: Updates.channel ?? "development",
+  integrations: [Sentry.feedbackIntegration()],
+  beforeSend(event, hint) {
+    if (isNetworkError(hint.originalException)) return null;
+
+    const isNetworkException = event.exception?.values?.some((exception) =>
+      isNetworkError({ name: exception.type, message: exception.value }),
+    );
+
+    return isNetworkException ? null : event;
+  },
 });
 
 FileLogger.configure({

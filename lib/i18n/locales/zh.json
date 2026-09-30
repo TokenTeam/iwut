@@ -296,12 +296,11 @@
   },
   "developer": {
     "title": "开发人员选项",
-    "dataSection": "数据",
-    "reset": "恢复出厂设置",
-    "resetTitle": "恢复出厂设置",
-    "resetDesc": "将清除全部本地数据并重启 App，此操作不可恢复。",
-    "resetConfirm": "确认",
-    "resetFailed": "执行失败"
+    "sentrySection": "Sentry",
+    "sentryTest": "发送测试事件",
+    "sentryTestSent": "测试事件已发送",
+    "sentryTestFailed": "测试事件发送失败",
+    "sentryUnavailable": "Dev Client 中未启用 Sentry"
   },
   "appearance": {
     "title": "外观设置",

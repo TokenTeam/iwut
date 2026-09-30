@@ -1,38 +1,57 @@
+import * as Sentry from "@sentry/react-native";
 import { Redirect, Stack } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, ScrollView, View } from "react-native";
 import Toast from "react-native-toast-message";
 
-import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { IS_DEV } from "@/constants/is-dev";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
-import { reportError } from "@/lib/report";
-import { resetDataAndReload } from "@/lib/reset";
 
 export default function DeveloperSettingsScreen() {
   useMarkRouteInteractive();
   const t = useT();
-  const [resetVisible, setResetVisible] = useState(false);
-  const [resetting, setResetting] = useState(false);
+  const [sendingSentryTest, setSendingSentryTest] = useState(false);
 
   if (!IS_DEV) return <Redirect href="/" />;
 
-  const handleReset = async () => {
-    setResetVisible(false);
-    setResetting(true);
-
-    try {
-      await resetDataAndReload();
-    } catch (error) {
-      reportError(error, { module: "developer-settings", action: "reset" });
-      setResetting(false);
+  const handleSentryTest = async () => {
+    if (__DEV__) {
       Toast.show({
-        type: "error",
-        text1: t("developer.resetFailed"),
+        type: "info",
+        text1: t("developer.sentryUnavailable"),
         position: "bottom",
       });
+      return;
+    }
+
+    setSendingSentryTest(true);
+    try {
+      Sentry.captureException(new Error("This is a test event"), {
+        tags: {
+          source: "developer",
+          test_event: "true",
+        },
+      });
+
+      const flushed = await Sentry.flush();
+      Toast.show({
+        type: flushed ? "success" : "error",
+        text1: t(
+          flushed ? "developer.sentryTestSent" : "developer.sentryTestFailed",
+        ),
+        position: "bottom",
+      });
+    } catch (error) {
+      console.error("Failed to send Sentry test event", error);
+      Toast.show({
+        type: "error",
+        text1: t("developer.sentryTestFailed"),
+        position: "bottom",
+      });
+    } finally {
+      setSendingSentryTest(false);
     }
   };
 
@@ -44,27 +63,19 @@ export default function DeveloperSettingsScreen() {
         contentInsetAdjustmentBehavior="automatic"
         contentContainerClassName="px-4 pt-4"
       >
-        <MenuGroup title={t("developer.dataSection")}>
+        <MenuGroup title={t("developer.sentrySection")}>
           <MenuItem
-            icon="restart-alt"
-            iconBg="#FF3B30"
-            label={t("developer.reset")}
+            icon="bug-report"
+            iconBg="#6C5FC7"
+            label={t("developer.sentryTest")}
             showArrow={false}
-            right={resetting ? <ActivityIndicator size="small" /> : undefined}
-            onPress={resetting ? undefined : () => setResetVisible(true)}
+            right={
+              sendingSentryTest ? <ActivityIndicator size="small" /> : undefined
+            }
+            onPress={sendingSentryTest ? undefined : handleSentryTest}
           />
         </MenuGroup>
       </ScrollView>
-
-      <ConfirmSheet
-        visible={resetVisible}
-        onClose={() => setResetVisible(false)}
-        title={t("developer.resetTitle")}
-        description={t("developer.resetDesc")}
-        confirmText={t("developer.resetConfirm")}
-        destructive
-        onConfirm={handleReset}
-      />
     </View>
   );
 }

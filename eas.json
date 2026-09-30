@@ -4,6 +4,7 @@
   },
   "build": {
     "development": {
+      "environment": "development",
       "developmentClient": true,
       "distribution": "internal",
       "bun": "1.4.2",
@@ -14,23 +15,23 @@
       }
     },
     "preview": {
+      "environment": "preview",
       "channel": "preview",
       "distribution": "internal",
       "bun": "1.4.2",
       "env": {
         "EAS_BUILD_PROFILE": "preview",
-        "EXPO_PUBLIC_DEBUG": "1",
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+        "EXPO_PUBLIC_DEBUG": "1"
       }
     },
     "production": {
+      "environment": "production",
       "channel": "production",
       "autoIncrement": true,
       "bun": "1.4.2",
       "env": {
         "EAS_BUILD_PROFILE": "production",
-        "EXPO_PUBLIC_DEBUG": "0",
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+        "EXPO_PUBLIC_DEBUG": "0"
       },
       "android": {
         "buildType": "apk"

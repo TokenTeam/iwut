@@ -43,7 +43,9 @@ export function buildExamFetchScript(messages: {
           return;
         }
         if (Date.now() - started > timeout) {
-          reject(new Error(${jsString(messages.fetchUserFailed)}));
+          var error = new Error(${jsString(messages.fetchUserFailed)});
+          error.code = 'PAGE_READY_TIMEOUT';
+          reject(error);
           return;
         }
         setTimeout(tick, 200);
@@ -63,11 +65,17 @@ export function buildExamFetchScript(messages: {
         },
         error: function(err) {
           done = true;
-          reject(err instanceof Error ? err : new Error('Request failed'));
+          var error = err instanceof Error ? err : new Error('Request failed');
+          if (!error.code) error.code = 'REQUEST_FAILED';
+          reject(error);
         }
       });
       setTimeout(function() {
-        if (!done) reject(new Error(${jsString(messages.importTimeout)}));
+        if (!done) {
+          var error = new Error(${jsString(messages.importTimeout)});
+          error.code = 'NETWORK_TIMEOUT';
+          reject(error);
+        }
       }, 15000);
     });
   }
@@ -76,7 +84,7 @@ export function buildExamFetchScript(messages: {
     var term = CACHE_DQXNXQ && CACHE_DQXNXQ.XNXQDM;
     log('exam term=' + term);
     if (!term) {
-      post({type:'error', message:${jsString(messages.fetchUserFailed)}});
+      post({type:'error', code:'PAGE_DATA_MISSING', message:${jsString(messages.fetchUserFailed)}});
       return;
     }
     var resp = await queryExams($, term);
@@ -90,6 +98,7 @@ export function buildExamFetchScript(messages: {
   } catch(e) {
     post({
       type:'error',
+      code: (e && e.code) ? String(e.code) : 'SCRIPT_FAILURE',
       message: (e && e.message) ? String(e.message) : '',
       name: (e && e.name) ? String(e.name) : '',
       stack: (e && e.stack) ? String(e.stack).substring(0, 1000) : '',

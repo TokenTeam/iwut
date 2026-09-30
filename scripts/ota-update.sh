@@ -15,12 +15,15 @@ cd "$(dirname "$0")/.."
 VERSION=$(bun -p "require('./package.json').version")
 
 rm -rf dist
-bun expo export --platform ios --platform android --output-dir dist
+bun expo export --platform ios --platform android --output-dir dist --source-maps
 bun expo config --type public --json > dist/expoConfig.json
+bunx sentry-expo-upload-sourcemaps dist
 
 cd dist
 FILES=()
-while IFS= read -r f; do FILES+=(-F "$f=@$f"); done < <(find _expo assets -type f)
+while IFS= read -r f; do FILES+=(-F "$f=@$f"); done < <(
+  find _expo assets -type f ! -name '*.map'
+)
 
 curl --fail-with-body -X POST \
   "https://expo.tokenteam.net/api/updates/019da0ce-9cda-76dc-b440-0c6a45d38292/publish" \

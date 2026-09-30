@@ -65,12 +65,18 @@ export function buildGradeFetchScript(messages: {
         body: body.toString(),
         signal: controller.signal
       });
-      if (!response.ok) throw new Error('HTTP ' + response.status);
+      if (!response.ok) {
+        var httpError = new Error('HTTP ' + response.status);
+        httpError.code = 'HTTP_' + response.status;
+        throw httpError;
+      }
       var json = await response.json();
       var page = json && json.datas && json.datas.xscjcx;
       if (!page || !Array.isArray(page.rows)) {
         var reason = json && (json.msg || json.message);
-        throw new Error(reason ? String(reason) : ${jsString(messages.fetchFailed)});
+        var responseError = new Error(reason ? String(reason) : ${jsString(messages.fetchFailed)});
+        responseError.code = 'INVALID_RESPONSE';
+        throw responseError;
       }
       return page;
     } finally {
@@ -101,8 +107,12 @@ export function buildGradeFetchScript(messages: {
     post({ type: 'gradeRows', rows: rows.map(approvedFields) });
   } catch (error) {
     var isTimeout = error && error.name === 'AbortError';
+    var isNetworkFailure = error && error.name === 'TypeError' && error.message === 'Failed to fetch';
     post({
       type: 'error',
+      code: isTimeout
+        ? 'NETWORK_TIMEOUT'
+        : (isNetworkFailure ? 'NETWORK_FAILURE' : ((error && error.code) ? String(error.code) : 'SCRIPT_FAILURE')),
       message: isTimeout
         ? ${jsString(messages.queryTimeout)}
         : ((error && error.message) ? String(error.message) : ${jsString(messages.fetchFailed)}),

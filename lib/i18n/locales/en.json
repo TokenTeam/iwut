@@ -296,12 +296,11 @@
   },
   "developer": {
     "title": "Developer options",
-    "dataSection": "Data",
-    "reset": "Factory reset",
-    "resetTitle": "Factory reset",
-    "resetDesc": "This clears all local data and restarts the app. This cannot be undone.",
-    "resetConfirm": "Confirm",
-    "resetFailed": "Operation failed"
+    "sentrySection": "Sentry",
+    "sentryTest": "Send test event",
+    "sentryTestSent": "Test event sent",
+    "sentryTestFailed": "Failed to send test event",
+    "sentryUnavailable": "Sentry is disabled in the dev client"
   },
   "appearance": {
     "title": "Appearance",

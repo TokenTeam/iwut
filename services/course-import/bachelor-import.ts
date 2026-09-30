@@ -42,7 +42,7 @@ export function buildBachelorFetchScript(messages: {
     var term = (ud.welcomeInfo && ud.welcomeInfo.xnxqdm) || '';
     log('user=' + xh + ' term=' + term);
     if (!xh || !term) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({type:'error', message:${jsString(messages.fetchUserFailed)}}));
+      window.ReactNativeWebView.postMessage(JSON.stringify({type:'error', code:'PAGE_DATA_MISSING', message:${jsString(messages.fetchUserFailed)}}));
       return;
     }
     var resp = await fetch('/jwapp/sys/kcbcxby/modules/xskcb/cxxskcb.do', {
@@ -59,7 +59,7 @@ export function buildBachelorFetchScript(messages: {
     var data = JSON.parse(text);
     var rows = data.datas && data.datas.cxxskcb && data.datas.cxxskcb.rows;
     if (!rows || !rows.length) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({type:'error', message:${jsString(messages.noTermData)}.replace('{term}', term)}));
+      window.ReactNativeWebView.postMessage(JSON.stringify({type:'error', code:'NO_TERM_DATA', message:${jsString(messages.noTermData)}.replace('{term}', term)}));
       return;
     }
     var courses = [];
@@ -89,8 +89,10 @@ export function buildBachelorFetchScript(messages: {
     log('parsed ' + courses.length + ' courses');
     window.ReactNativeWebView.postMessage(JSON.stringify({type:'courses', data: courses, termStart: termStart}));
   } catch(e) {
+    var networkFailure = e && e.name === 'TypeError' && e.message === 'Failed to fetch';
     window.ReactNativeWebView.postMessage(JSON.stringify({
       type:'error',
+      code: networkFailure ? 'NETWORK_FAILURE' : 'SCRIPT_FAILURE',
       message: (e && e.message) ? String(e.message) : '',
       name: (e && e.name) ? String(e.name) : '',
       stack: (e && e.stack) ? String(e.stack).substring(0, 1000) : '',

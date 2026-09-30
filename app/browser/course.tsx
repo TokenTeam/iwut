@@ -12,6 +12,10 @@ import Animated, {
 } from "react-native-reanimated";
 import Toast from "react-native-toast-message";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
+import type {
+  WebViewErrorEvent,
+  WebViewHttpErrorEvent,
+} from "react-native-webview/lib/WebViewTypes";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { IS_DEV } from "@/constants/is-dev";
@@ -19,6 +23,11 @@ import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useZhlgdAutoLogin } from "@/hooks/use-zhlgd-autologin";
 import { t as translate, useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
+import {
+  createWebViewScriptError,
+  WebViewHttpStatusError,
+  WebViewLoadError,
+} from "@/lib/webview-error";
 import {
   BACHELOR_HOME_PREFIX,
   BACHELOR_LOGIN_URL,
@@ -169,15 +178,32 @@ export default function CourseImportScreen() {
   }, [isBound, sms.visible, finish, t]);
 
   const handleError = useCallback(
-    (syntheticEvent: {
-      nativeEvent: { description: string; url?: string; code?: number };
-    }) => {
-      const { description, url, code } = syntheticEvent.nativeEvent;
-      reportError(new Error(description), {
+    (event: WebViewErrorEvent) => {
+      const { code, description, domain, url } = event.nativeEvent;
+      reportError(new WebViewLoadError({ code, description, domain, url }), {
         module: `course-${importType}`,
+        webviewErrorDomain: domain,
         webviewUrl: url,
         webviewCode: code,
       });
+      finish(false, t("course.importFailSub"));
+    },
+    [importType, finish, t],
+  );
+
+  const handleHttpError = useCallback(
+    (event: WebViewHttpErrorEvent) => {
+      const { description, statusCode, url } = event.nativeEvent;
+      if (statusCode >= 500) {
+        reportError(
+          new WebViewHttpStatusError({ description, statusCode, url }),
+          {
+            module: `course-${importType}`,
+            webviewUrl: url,
+            webviewStatusCode: statusCode,
+          },
+        );
+      }
       finish(false, t("course.importFailSub"));
     },
     [importType, finish, t],
@@ -249,11 +275,10 @@ export default function CourseImportScreen() {
       }
 
       if (msg?.type === "error") {
-        const err = new Error(msg.message || "Load failed");
-        if (msg.name) err.name = String(msg.name);
-        if (msg.stack) err.stack = String(msg.stack);
+        const err = createWebViewScriptError(msg);
         reportError(err, {
           module: `course-${importType}`,
+          webviewErrorCode: msg.code,
           webviewErrorName: msg.name,
           webviewErrorMessage: msg.message,
           webviewErrorStack: msg.stack,
@@ -320,7 +345,7 @@ export default function CourseImportScreen() {
         webviewDebuggingEnabled={IS_DEV}
         onLoadEnd={handleLoadEnd}
         onError={handleError}
-        onHttpError={handleError}
+        onHttpError={handleHttpError}
         onMessage={handleMessage}
         ref={webview}
       />

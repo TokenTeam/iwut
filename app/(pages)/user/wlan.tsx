@@ -140,21 +140,26 @@ export default function WlanScreen() {
         openSheet();
         return;
       }
-      if (result.status === "authentication-failed") {
-        throw new Error(result.message ?? t("wlan.connectFail"));
-      }
       if (
+        result.status === "authentication-failed" ||
         result.status === "not-on-wifi" ||
         result.status === "network-unavailable"
       ) {
-        throw new Error(
-          result.message ??
+        Toast.show({
+          type: "error",
+          text1: t("wlan.connectFail"),
+          text2:
+            result.message ??
             t(
               result.status === "not-on-wifi"
                 ? "wlan.errNotCampus"
-                : "wlan.errNetwork",
+                : result.status === "network-unavailable"
+                  ? "wlan.errNetwork"
+                  : "wlan.connectFail",
             ),
-        );
+          position: "bottom",
+        });
+        return;
       }
       Toast.show({
         type: "success",
@@ -167,23 +172,14 @@ export default function WlanScreen() {
           ),
         position: "bottom",
       });
-    } catch (e: any) {
-      if (e.message) {
-        Toast.show({
-          type: "error",
-          text1: t("wlan.connectFail"),
-          text2: e.message,
-          position: "bottom",
-        });
-      } else {
-        reportError(e, { module: "wlan" });
-        Toast.show({
-          type: "error",
-          text1: t("wlan.connectFail"),
-          text2: e.toString(),
-          position: "bottom",
-        });
-      }
+    } catch (error) {
+      reportError(error, { module: "wlan" });
+      Toast.show({
+        type: "error",
+        text1: t("wlan.connectFail"),
+        text2: error instanceof Error ? error.message : String(error),
+        position: "bottom",
+      });
     } finally {
       setConnecting(false);
     }

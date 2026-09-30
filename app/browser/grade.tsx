@@ -11,6 +11,10 @@ import Animated, {
 } from "react-native-reanimated";
 import Toast from "react-native-toast-message";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
+import type {
+  WebViewErrorEvent,
+  WebViewHttpErrorEvent,
+} from "react-native-webview/lib/WebViewTypes";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { IS_DEV } from "@/constants/is-dev";
@@ -18,6 +22,11 @@ import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useZhlgdAutoLogin } from "@/hooks/use-zhlgd-autologin";
 import { t as translate, useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
+import {
+  createWebViewScriptError,
+  WebViewHttpStatusError,
+  WebViewLoadError,
+} from "@/lib/webview-error";
 import {
   buildGradeFetchScript,
   GRADE_APP_PREFIX,
@@ -132,15 +141,32 @@ export default function GradeSyncScreen() {
   }, [finish, sms.visible, t]);
 
   const handleError = useCallback(
-    (syntheticEvent: {
-      nativeEvent: { description: string; url?: string; code?: number };
-    }) => {
-      const { description, url, code } = syntheticEvent.nativeEvent;
-      reportError(new Error(description), {
+    (event: WebViewErrorEvent) => {
+      const { code, description, domain, url } = event.nativeEvent;
+      reportError(new WebViewLoadError({ code, description, domain, url }), {
         module: "grade-query",
+        webviewErrorDomain: domain,
         webviewUrl: url,
         webviewCode: code,
       });
+      finish(false, t("grade.queryFailSub"));
+    },
+    [finish, t],
+  );
+
+  const handleHttpError = useCallback(
+    (event: WebViewHttpErrorEvent) => {
+      const { description, statusCode, url } = event.nativeEvent;
+      if (statusCode >= 500) {
+        reportError(
+          new WebViewHttpStatusError({ description, statusCode, url }),
+          {
+            module: "grade-query",
+            webviewUrl: url,
+            webviewStatusCode: statusCode,
+          },
+        );
+      }
       finish(false, t("grade.queryFailSub"));
     },
     [finish, t],
@@ -183,15 +209,15 @@ export default function GradeSyncScreen() {
         message.type === "error"
       ) {
         const details = message as {
+          code?: unknown;
           message?: unknown;
           name?: unknown;
+          stack?: unknown;
         };
-        const error = new Error(
-          details.message ? String(details.message) : "Load failed",
-        );
-        if (details.name) error.name = String(details.name);
+        const error = createWebViewScriptError(details);
         reportError(error, {
           module: "grade-query",
+          webviewErrorCode: details.code,
           webviewErrorName: details.name,
           webviewErrorMessage: details.message,
         });
@@ -223,7 +249,7 @@ export default function GradeSyncScreen() {
         webviewDebuggingEnabled={IS_DEV}
         onLoadEnd={handleLoadEnd}
         onError={handleError}
-        onHttpError={handleError}
+        onHttpError={handleHttpError}
         onMessage={handleMessage}
         ref={webview}
       />

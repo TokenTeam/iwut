@@ -9,8 +9,9 @@ $version = (Get-Content "$root\package.json" -Raw | ConvertFrom-Json).version
 
 if (Test-Path $dist) { Remove-Item $dist -Recurse -Force }
 
-bun expo export --platform ios --platform android --output-dir dist
+bun expo export --platform ios --platform android --output-dir dist --source-maps
 bun expo config --type public --json | Set-Content dist\expoConfig.json
+bunx sentry-expo-upload-sourcemaps dist
 
 Push-Location $dist
 try {
@@ -21,10 +22,12 @@ try {
     '-F','metadata.json=@metadata.json',
     '-F','expoConfig.json=@expoConfig.json'
   )
-  Get-ChildItem -Recurse -File _expo, assets | ForEach-Object {
+  Get-ChildItem -Recurse -File _expo, assets |
+    Where-Object { $_.Extension -ne '.map' } |
+    ForEach-Object {
     $rel = (Resolve-Path -Relative $_.FullName).TrimStart('.\').Replace('\','/')
     $cargs += '-F'; $cargs += "$rel=@$rel"
-  }
+    }
   & curl.exe @cargs
 } finally {
   Pop-Location

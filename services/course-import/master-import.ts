@@ -45,7 +45,9 @@ export function buildMasterFetchScript(messages: {
           return;
         }
         if (Date.now() - started > timeout) {
-          reject(new Error(${jsString(messages.fetchUserFailed)}));
+          var error = new Error(${jsString(messages.fetchUserFailed)});
+          error.code = 'PAGE_READY_TIMEOUT';
+          reject(error);
           return;
         }
         setTimeout(tick, 200);
@@ -73,7 +75,11 @@ export function buildMasterFetchScript(messages: {
         resolve(data);
       });
       setTimeout(function() {
-        if (!done) reject(new Error('Request timed out'));
+        if (!done) {
+          var error = new Error('Request timed out');
+          error.code = 'NETWORK_TIMEOUT';
+          reject(error);
+        }
       }, 15000);
     });
   }
@@ -84,7 +90,7 @@ export function buildMasterFetchScript(messages: {
     var term = Global.UniversityInfo && Global.UniversityInfo.CurrentTerm;
     log('master user=' + xh + ' term=' + year + '-' + term);
     if (!xh || !year || !term) {
-      post({type:'error', message:${jsString(messages.fetchUserFailed)}});
+      post({type:'error', code:'PAGE_DATA_MISSING', message:${jsString(messages.fetchUserFailed)}});
       return;
     }
     var rows = await fetchRows(xh, year, term);
@@ -97,6 +103,7 @@ export function buildMasterFetchScript(messages: {
   } catch(e) {
     post({
       type:'error',
+      code: (e && e.code) ? String(e.code) : 'SCRIPT_FAILURE',
       message: (e && e.message) ? String(e.message) : '',
       name: (e && e.name) ? String(e.name) : '',
       stack: (e && e.stack) ? String(e.stack).substring(0, 1000) : '',
