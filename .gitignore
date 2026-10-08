@@ -45,3 +45,6 @@ app-example
 
 # OTA
 !assets/certificate.pem
+
+# local config
+sentry.options.json
