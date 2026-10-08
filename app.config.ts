@@ -130,9 +130,6 @@ const config: ExpoConfig = {
           enableMinifyInReleaseBuilds: true,
           enableShrinkResourcesInReleaseBuilds: true,
           usesCleartextTraffic: ALLOW_UNRESTRICTED_HTTP,
-          extraMavenRepos: [
-            "https://maven.cnb.cool/TokenTeam/android-deps/-/packages/",
-          ],
         },
       },
     ],
@@ -165,6 +162,7 @@ const config: ExpoConfig = {
       },
     ],
     "@bacons/apple-targets",
+    "./plugins/with-blurview-repo.js",
     "./plugins/with-gradle-props.js",
     ...(ALLOW_UNRESTRICTED_HTTP
       ? []
