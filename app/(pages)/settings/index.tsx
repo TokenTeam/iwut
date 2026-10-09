@@ -12,7 +12,6 @@ import {
   Switch,
   Text,
   TextInput,
-  type TextInputInstance,
   View,
 } from "react-native";
 import { FileLogger } from "react-native-file-logger";
@@ -63,7 +62,7 @@ export default function SettingsScreen() {
   const [reminderSheetVisible, setReminderSheetVisible] = useState(false);
   const [permissionSheetVisible, setPermissionSheetVisible] = useState(false);
   const [customMinutes, setCustomMinutes] = useState("");
-  const customInputRef = useRef<TextInputInstance>(null);
+  const customInputRef = useRef<TextInput>(null);
 
   // 临时挂载隐藏 WebView 调 ref.clearCache(true)
   const [cacheWebViewMounted, setCacheWebViewMounted] = useState(false);

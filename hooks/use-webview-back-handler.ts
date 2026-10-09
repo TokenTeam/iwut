@@ -1,4 +1,5 @@
-import { useFocusEffect, usePreventRemove } from "expo-router";
+import { useFocusEffect } from "expo-router";
+import { usePreventRemove } from "expo-router/react-navigation";
 import { useCallback, type RefObject } from "react";
 import { BackHandler, Platform } from "react-native";
 import type { WebView } from "react-native-webview";

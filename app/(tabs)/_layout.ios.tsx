@@ -1,4 +1,4 @@
-import { NativeTabs } from "expo-router/native-tabs";
+import { NativeTabs } from "expo-router/unstable-native-tabs";
 import { router } from "expo-router";
 import { useEffect } from "react";
 
@@ -32,7 +32,6 @@ export default function IosTabLayout() {
 
   return (
     <NativeTabs
-      activityEnabled
       minimizeBehavior="never"
       screenListeners={{
         tabPress: () => haptic(),
@@ -49,7 +48,6 @@ export default function IosTabLayout() {
       </NativeTabs.Trigger>
       <NativeTabs.Trigger
         name="course"
-        activityEnabled={false}
         contentStyle={sceneStyle}
         disableAutomaticContentInsets
       >

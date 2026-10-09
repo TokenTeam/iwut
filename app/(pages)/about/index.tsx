@@ -78,7 +78,7 @@ export default function AboutScreen() {
       return;
     }
 
-    Sentry.showFeedbackForm();
+    Sentry.showFeedbackWidget();
   }, [t]);
 
   return (

@@ -2,14 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Stack } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  type TextInputInstance,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import Animated, {
   cancelAnimation,
   Easing,
@@ -61,7 +54,7 @@ export default function WlanScreen() {
 
   const [inputUser, setInputUser] = useState("");
   const [inputPass, setInputPass] = useState("");
-  const passwordRef = useRef<TextInputInstance>(null);
+  const passwordRef = useRef<TextInput>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {

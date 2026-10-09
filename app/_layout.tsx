@@ -60,7 +60,8 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useFonts } from "expo-font";
 import { Observe, ObserveRoot } from "expo-observe";
-import { Stack, ThemeProvider, router, useSegments } from "expo-router";
+import { Stack, router, useSegments } from "expo-router";
+import { ThemeProvider } from "expo-router/react-navigation";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as Updates from "expo-updates";
@@ -112,7 +113,6 @@ Observe.configure({
   dispatchingEnabled: !__DEV__,
   integrations: {
     "expo-router": true,
-    "expo-image": true,
   },
 });
 
@@ -270,7 +270,6 @@ function RootLayout() {
           >
             <TabBackground />
             <Stack
-              activityEnabled
               screenOptions={{
                 headerBackButtonDisplayMode: "minimal",
               }}

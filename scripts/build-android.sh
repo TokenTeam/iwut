@@ -62,8 +62,8 @@ if [ ! -d "$ANDROID_HOME/platforms/android-36" ]; then
   sdkmanager \
     "platform-tools" \
     "platforms;android-36" \
-    "build-tools;37.0.0" \
-    "ndk;29.0.14206865"
+    "build-tools;36.0.0" \
+    "ndk;27.1.12297006"
 fi
 
 if ! command -v eas &> /dev/null; then

@@ -186,7 +186,7 @@ export default function OnboardingScreen() {
       return;
     }
 
-    CookieManager.clearAll({ iosCookieStore: "webKit" })
+    CookieManager.clearAll(true)
       .catch((error) =>
         reportError(error, { module: "onboarding-session-cleanup" }),
       )

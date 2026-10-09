@@ -10,7 +10,6 @@ import {
   Text,
   useWindowDimensions,
   View,
-  type ViewInstance,
 } from "react-native";
 
 import { useHaptics } from "@/hooks/use-haptics";
@@ -35,7 +34,7 @@ export function HomeMenu({ isDark }: Readonly<{ isDark: boolean }>) {
   const openUpdateModal = useUpdateStore((s) => s.openModal);
 
   const { width: screenWidth } = useWindowDimensions();
-  const triggerRef = useRef<ViewInstance>(null);
+  const triggerRef = useRef<View>(null);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const pendingAction = useRef<(() => void) | null>(null);
   const isOpen = anchor !== null;

@@ -56,7 +56,6 @@ export default function TabLayout() {
 
   return (
     <Tabs
-      activityEnabled
       backBehavior="none"
       screenListeners={{
         tabPress: () => haptic(),
