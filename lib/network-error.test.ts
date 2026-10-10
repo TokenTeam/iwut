@@ -27,9 +27,28 @@ describe("isNetworkError", () => {
   });
 
   test.each([
+    "fetch failed: FetchRequestCanceledException: Fetch request has been canceled (at Expo/NativeResponse.swift:63)",
+    "fetch failed: UnexpectedException: 似乎已断开与互联网的连接。 (at ExpoModulesCore/Promise.swift:56)",
+  ])("recognizes Expo native fetch failures: %s", (message) => {
+    expect(isNetworkError(new Error(message))).toBe(true);
+    expect(isNetworkError(message)).toBe(true);
+    expect(isNetworkError({ name: "Error", message })).toBe(true);
+    expect(isNetworkError({ cause: new Error(message) })).toBe(true);
+  });
+
+  test("recognizes the native Expo cancellation exception by name", () => {
+    expect(isNetworkError({ name: "FetchRequestCanceledException" })).toBe(
+      true,
+    );
+  });
+
+  test.each([
     new TypeError("Cannot read properties of undefined"),
     new Error("Invalid HTTP response: missing status line"),
     new Error("Course data parsing failed"),
+    new Error("fetch failed: UnexpectedException: Invalid response data"),
+    new Error("fetch failed: UnexpectedException: SSL handshake failed"),
+    new Error("fetch failed"),
     new WebViewLoadError({ code: -11, description: "SSL handshake failed" }),
     new WebViewLoadError({
       code: -1202,

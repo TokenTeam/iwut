@@ -4,5 +4,13 @@
     "source.fixAll.eslint": "explicit",
     "source.organizeImports": "explicit",
     "source.sortMembers": "explicit"
+  },
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "*.ts": "${capture}.test.ts, ${capture}.test.tsx, ${capture}.spec.ts, ${capture}.spec.tsx",
+    "*.tsx": "${capture}.test.ts, ${capture}.test.tsx, ${capture}.spec.ts, ${capture}.spec.tsx",
+    "*.js": "${capture}.test.js, ${capture}.test.jsx, ${capture}.spec.js, ${capture}.spec.jsx",
+    "*.jsx": "${capture}.test.js, ${capture}.test.jsx, ${capture}.spec.js, ${capture}.spec.jsx"
   }
 }

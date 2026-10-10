@@ -33,6 +33,8 @@ const IOS_WEBVIEW_NETWORK_ERROR_CODES = new Set([
 ]);
 
 const NETWORK_ERROR_MESSAGES = [
+  /\bFetchRequestCanceledException\b/,
+  /似乎已断开与互联网的连接/,
   /network request failed/i,
   /failed to fetch/i,
   /internet connection appears to be offline/i,
@@ -71,7 +73,12 @@ function isNetworkErrorAtDepth(error: unknown, depth: number): boolean {
   if (typeof error !== "object") return false;
 
   const candidate = error as ErrorLike;
-  if (candidate.name === "AbortError") return true;
+  if (
+    candidate.name === "AbortError" ||
+    candidate.name === "FetchRequestCanceledException"
+  ) {
+    return true;
+  }
 
   if (
     candidate.name === "WebViewLoadError" &&
