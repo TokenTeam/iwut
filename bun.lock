@@ -88,6 +88,7 @@
   "patchedDependencies": {
     "@bsky.app/expo-image-crop-tool@0.5.1": "patches/@bsky.app%2Fexpo-image-crop-tool@0.5.1.patch",
     "expo-blur@57.0.3": "patches/expo-blur@57.0.3.patch",
+    "expo-calendar@57.0.5": "patches/expo-calendar@57.0.5.patch",
   },
   "overrides": {
     "lightningcss": "1.30.1",

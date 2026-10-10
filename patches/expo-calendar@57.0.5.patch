@@ -1,0 +1,23 @@
+diff --git a/android/src/main/java/expo/modules/calendar/next/domain/repositories/calendar/CalendarCursorExtensions.kt b/android/src/main/java/expo/modules/calendar/next/domain/repositories/calendar/CalendarCursorExtensions.kt
+--- a/android/src/main/java/expo/modules/calendar/next/domain/repositories/calendar/CalendarCursorExtensions.kt
++++ b/android/src/main/java/expo/modules/calendar/next/domain/repositories/calendar/CalendarCursorExtensions.kt
+@@ -35,9 +35,18 @@
+   calendarColor = getOptionalInt(CalendarContract.Calendars.CALENDAR_COLOR),
+   calendarDisplayName = getOptionalString(CalendarContract.Calendars.CALENDAR_DISPLAY_NAME),
+   calendarTimeZone = getOptionalString(CalendarContract.Calendars.CALENDAR_TIME_ZONE),
+-  isPrimary = getOptionalInt(CalendarContract.Calendars.IS_PRIMARY) == 1,
++  isPrimary = getIsPrimary(),
+   name = getOptionalString(CalendarContract.Calendars.NAME),
+   ownerAccount = getOptionalString(CalendarContract.Calendars.OWNER_ACCOUNT),
+   syncEvents = getOptionalInt(CalendarContract.Calendars.SYNC_EVENTS) == 1,
+   visible = getOptionalInt(CalendarContract.Calendars.VISIBLE) == 1
+ )
++
++private fun Cursor.getIsPrimary(): Boolean {
++  // Some providers return the computed expression without the isPrimary alias.
++  val index = getColumnIndex(CalendarContract.Calendars.IS_PRIMARY).takeIf { it >= 0 }
++    ?: getColumnIndex(
++      "COALESCE(${CalendarContract.Calendars.IS_PRIMARY}, ${CalendarContract.Calendars.OWNER_ACCOUNT} = ${CalendarContract.Calendars.ACCOUNT_NAME})"
++    )
++  return index >= 0 && !isNull(index) && getInt(index) == 1
++}
