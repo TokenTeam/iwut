@@ -6,7 +6,9 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -20,6 +22,26 @@ class NotificationModule : Module() {
 
     override fun definition() = ModuleDefinition {
         Name("Notification")
+
+        AsyncFunction("getCourseDndStatus") {
+            val context = requireNotNull(appContext.reactContext)
+            CourseDndScheduler.status(context)
+        }
+
+        AsyncFunction("updateCourseDnd") { enabled: Boolean, intervalsJson: String, name: String ->
+            val context = requireNotNull(appContext.reactContext)
+            CourseDndScheduler.update(context, enabled, intervalsJson, name)
+        }
+
+        AsyncFunction("openCourseDndSettings") { exactAlarm: Boolean ->
+            val context = requireNotNull(appContext.reactContext)
+            val intent = if (exactAlarm && Build.VERSION.SDK_INT >= 31) {
+                Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:${context.packageName}"))
+            } else {
+                Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+            }
+            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
 
         AsyncFunction("createChannel") { id: String, name: String, description: String ->
             val manager = notificationManager ?: return@AsyncFunction null

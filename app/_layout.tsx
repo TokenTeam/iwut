@@ -80,6 +80,8 @@ import { UpdateModal } from "@/components/ui/update-modal";
 import { Colors, Themes } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { refreshSystemLocale, t } from "@/lib/i18n";
+import { reportError } from "@/lib/report";
+import { syncCourseDnd } from "@/services/course-dnd";
 import {
   clearSyncedCalendarData,
   syncCoursesToCalendar,
@@ -186,6 +188,40 @@ function RootLayout() {
       unregisterBackgroundRefresh().catch(() => {});
     }
     showUpcomingLiveActivity().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    const sync = () => {
+      void syncCourseDnd().catch((error) =>
+        reportError(error, { module: "course-dnd", action: "sync" }),
+      );
+    };
+    sync();
+    const unsubscribeCourse = useCourseStore.subscribe((state, previous) => {
+      if (
+        state.courses !== previous.courses ||
+        state.termStart !== previous.termStart
+      )
+        sync();
+    });
+    const unsubscribeSettings = useSettingsStore.subscribe(
+      (state, previous) => {
+        if (
+          state.courseDnd !== previous.courseDnd ||
+          state.language !== previous.language
+        )
+          sync();
+      },
+    );
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") sync();
+    });
+    return () => {
+      unsubscribeCourse();
+      unsubscribeSettings();
+      subscription.remove();
+    };
   }, []);
 
   useEffect(() => {

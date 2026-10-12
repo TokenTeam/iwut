@@ -7,6 +7,7 @@ import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   Switch,
@@ -23,15 +24,22 @@ import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
+import { buildCourseDndIntervals } from "@/lib/course-dnd";
 import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
 import { collectDiagnostics, formatDiagnostics } from "@/modules/diagnostics";
+import {
+  getCourseDndStatus,
+  openCourseDndSettings,
+} from "@/modules/notification";
+import { setCourseDndEnabled } from "@/services/course-dnd";
 import {
   ensureCourseNotificationPermission,
   registerBackgroundRefresh,
   scheduleWeeklyReminders,
   unregisterBackgroundRefresh,
 } from "@/services/course-notification";
+import { useCourseStore } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 import { useSettingsStore } from "@/store/settings";
 
@@ -49,6 +57,7 @@ export default function SettingsScreen() {
   const setOpenCourseOnLaunch = useSettingsStore(
     (s) => s.setOpenCourseOnLaunch,
   );
+  const courseDnd = useSettingsStore((s) => s.courseDnd);
   const courseReminder = useSettingsStore((s) => s.courseReminder);
   const setCourseReminder = useSettingsStore((s) => s.setCourseReminder);
   const examReminder = useSettingsStore((s) => s.examReminder);
@@ -56,6 +65,10 @@ export default function SettingsScreen() {
   const reminderMinutes = useSettingsStore((s) => s.reminderMinutes);
   const setReminderMinutes = useSettingsStore((s) => s.setReminderMinutes);
 
+  const courseDndBusyRef = useRef(false);
+  const [courseDndSheet, setCourseDndSheet] = useState<
+    "policy" | "alarm" | "empty" | null
+  >(null);
   const [clearVisible, setClearVisible] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -63,6 +76,53 @@ export default function SettingsScreen() {
   const [permissionSheetVisible, setPermissionSheetVisible] = useState(false);
   const [customMinutes, setCustomMinutes] = useState("");
   const customInputRef = useRef<TextInput>(null);
+
+  const handleCourseDndChange = async (value: boolean) => {
+    if (courseDndBusyRef.current) return;
+    courseDndBusyRef.current = true;
+    try {
+      if (value) {
+        const status = await getCourseDndStatus();
+        if (!status.policyAccess) {
+          setCourseDndSheet("policy");
+          return;
+        }
+        if (!status.exactAlarmAccess) {
+          setCourseDndSheet("alarm");
+          return;
+        }
+        const { courses, termStart } = useCourseStore.getState();
+        if (!buildCourseDndIntervals(courses, termStart).length) {
+          setCourseDndSheet("empty");
+          return;
+        }
+      }
+      await setCourseDndEnabled(value);
+    } catch (error) {
+      reportError(error, { module: "course-dnd", action: "toggle" });
+      Toast.show({
+        type: "error",
+        text1: t("settings.courseDndFailed"),
+        position: "bottom",
+      });
+    } finally {
+      courseDndBusyRef.current = false;
+    }
+  };
+
+  const handleCourseDndSettings = async (exactAlarm: boolean) => {
+    setCourseDndSheet(null);
+    try {
+      await openCourseDndSettings(exactAlarm);
+    } catch (error) {
+      reportError(error, { module: "course-dnd", action: "open-settings" });
+      Toast.show({
+        type: "error",
+        text1: t("settings.courseDndFailed"),
+        position: "bottom",
+      });
+    }
+  };
 
   // 临时挂载隐藏 WebView 调 ref.clearCache(true)
   const [cacheWebViewMounted, setCacheWebViewMounted] = useState(false);
@@ -328,6 +388,20 @@ export default function SettingsScreen() {
               />
             }
           />
+          {Platform.OS === "android" && (
+            <MenuItem
+              icon="do-not-disturb-on"
+              iconBg="#5856D6"
+              label={t("settings.courseDnd")}
+              showArrow={false}
+              right={
+                <Switch
+                  value={courseDnd}
+                  onValueChange={handleCourseDndChange}
+                />
+              }
+            />
+          )}
         </MenuGroup>
 
         <MenuGroup title={t("settings.storage")}>
@@ -349,6 +423,31 @@ export default function SettingsScreen() {
           />
         </MenuGroup>
       </ScrollView>
+
+      {Platform.OS === "android" && (
+        <ConfirmSheet
+          visible={courseDndSheet !== null}
+          onClose={() => setCourseDndSheet(null)}
+          title={t("settings.courseDnd")}
+          description={
+            courseDndSheet === "policy"
+              ? t("settings.courseDndPolicyDesc")
+              : courseDndSheet === "alarm"
+                ? t("settings.courseDndAlarmDesc")
+                : t("settings.courseDndEmptyDesc")
+          }
+          confirmText={
+            courseDndSheet === "empty"
+              ? t("common.confirm")
+              : t("settings.courseDndOpenSettings")
+          }
+          onConfirm={() => {
+            if (courseDndSheet === "policy" || courseDndSheet === "alarm")
+              void handleCourseDndSettings(courseDndSheet === "alarm");
+            else setCourseDndSheet(null);
+          }}
+        />
+      )}
 
       <ConfirmSheet
         visible={clearVisible}

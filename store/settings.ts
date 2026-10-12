@@ -11,6 +11,7 @@ interface SettingsStore {
   hapticFeedback: boolean;
   openCourseOnLaunch: boolean;
   courseReminder: boolean;
+  courseDnd: boolean;
   examReminder: boolean;
   reminderMinutes: number;
   calendarSync: boolean;
@@ -20,6 +21,7 @@ interface SettingsStore {
   setHapticFeedback: (value: boolean) => void;
   setOpenCourseOnLaunch: (value: boolean) => void;
   setCourseReminder: (value: boolean) => void;
+  setCourseDnd: (value: boolean) => void;
   setExamReminder: (value: boolean) => void;
   setReminderMinutes: (value: number) => void;
   setCalendarSync: (value: boolean) => void;
@@ -33,6 +35,7 @@ export const useSettingsStore = create<SettingsStore>()(
       hapticFeedback: true,
       openCourseOnLaunch: false,
       courseReminder: false,
+      courseDnd: false,
       examReminder: false,
       reminderMinutes: 30,
       calendarSync: false,
@@ -42,6 +45,7 @@ export const useSettingsStore = create<SettingsStore>()(
       setOpenCourseOnLaunch: (value: boolean) =>
         set({ openCourseOnLaunch: value }),
       setCourseReminder: (value: boolean) => set({ courseReminder: value }),
+      setCourseDnd: (value: boolean) => set({ courseDnd: value }),
       setExamReminder: (value: boolean) => set({ examReminder: value }),
       setReminderMinutes: (value: number) => set({ reminderMinutes: value }),
       setCalendarSync: (value: boolean) => set({ calendarSync: value }),

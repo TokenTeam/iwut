@@ -1,6 +1,13 @@
 import { requireNativeModule } from "expo-modules-core";
 
 interface NotificationNativeModule {
+  getCourseDndStatus: () => Promise<CourseDndStatus>;
+  updateCourseDnd: (
+    enabled: boolean,
+    intervalsJson: string,
+    name: string,
+  ) => Promise<void>;
+  openCourseDndSettings: (exactAlarm: boolean) => Promise<void>;
   requestAuthorization?: () => Promise<boolean>;
 
   createChannel(id: string, name: string, description: string): Promise<void>;
@@ -51,3 +58,13 @@ export const scheduleNotification =
   NativeModule.scheduleNotification ?? (async () => {});
 export const cancel = NativeModule.cancel;
 export const cancelAll = NativeModule.cancelAll;
+
+export interface CourseDndStatus {
+  policyAccess: boolean;
+  exactAlarmAccess: boolean;
+  ruleEnabled: boolean;
+}
+
+export const getCourseDndStatus = NativeModule.getCourseDndStatus;
+export const updateCourseDnd = NativeModule.updateCourseDnd;
+export const openCourseDndSettings = NativeModule.openCourseDndSettings;
