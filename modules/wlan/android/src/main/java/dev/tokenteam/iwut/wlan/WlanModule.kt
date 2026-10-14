@@ -49,6 +49,7 @@ class WlanModule : Module() {
 
             val intent = Intent(context, WlanShortcutActivity::class.java)
                 .setAction(Intent.ACTION_VIEW)
+                .addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
             val shortcut = ShortcutInfoCompat.Builder(context, "wlan_login")
                 .setShortLabel(context.getString(R.string.wlan_shortcut_label))
                 .setIcon(IconCompat.createWithResource(context, R.drawable.ic_wlan_shortcut))
