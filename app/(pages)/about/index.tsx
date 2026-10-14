@@ -86,9 +86,17 @@ export default function AboutScreen() {
   };
 
   const handleCheckUpdate = useCallback(async () => {
-    await check({ force: true });
-    const { hasUpdate: updated } = useUpdateStore.getState();
-    if (updated) {
+    const result = await check({ force: true });
+    if (result.status === "failed") {
+      Toast.show({
+        type: "error",
+        text1: t("about.updateCheckFailed"),
+        position: "bottom",
+      });
+      return;
+    }
+    if (result.status !== "success") return;
+    if (result.hasUpdate) {
       openUpdateModal();
     } else {
       Toast.show({
@@ -171,7 +179,7 @@ export default function AboutScreen() {
             badge={hasUpdate}
             showArrow={false}
             right={checking ? <ActivityIndicator size="small" /> : undefined}
-            onPress={handleCheckUpdate}
+            onPress={checking ? undefined : handleCheckUpdate}
           />
         </MenuGroup>
 

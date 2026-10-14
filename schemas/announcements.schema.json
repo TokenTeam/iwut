@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://raw.githubusercontent.com/TokenTeam/iwut/main/schemas/announcements.schema.json",
-  "title": "iwut Announcements",
-  "description": "iwut 主页公告位的远程配置文件结构。内容仓库见 https://cnb.cool/TokenTeam/iwut-config",
+  "title": "Announcements",
+  "description": "主页公告使用的远程配置，包含公告内容、展示条件和跳转信息。配置仓库位于 https://cnb.cool/TokenTeam/iwut-config",
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "announcements"],
@@ -13,17 +13,17 @@
     },
     "version": {
       "type": "integer",
-      "description": "协议版本号；字段语义发生不兼容变化时 +1。老客户端遇到不认识的 version 应放弃解析",
+      "description": "公告配置的协议版本号。只有发生不兼容的协议变更时才递增，客户端不会解析不支持的协议版本。",
       "const": 1
     },
     "updatedAt": {
       "type": "string",
       "format": "date-time",
-      "description": "文件最后更新时间（ISO 8601 / UTC），便于排查 CDN 缓存。客户端不依赖此字段做业务判断"
+      "description": "配置文件的最后更新时间，使用 ISO 8601 格式和 UTC 时区。此字段用于排查 CDN 缓存，不参与公告展示判断。"
     },
     "announcements": {
       "type": "array",
-      "description": "公告列表，允许空数组（表示当前无公告）",
+      "description": "需要展示的公告列表。空数组表示当前没有公告。",
       "items": { "$ref": "#/definitions/announcement" }
     }
   },
@@ -35,66 +35,66 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "稳定且唯一的 ID（kebab-case），用作客户端「已关闭公告」持久化 key。一旦发布请勿修改",
+          "description": "公告的唯一标识，只能使用小写字母、数字和连字符。客户端用它保存用户关闭公告的记录，发布后请勿修改。",
           "pattern": "^[a-z0-9][a-z0-9-]*$",
           "minLength": 1,
           "maxLength": 64
         },
         "type": {
           "type": "string",
-          "description": "公告类型，驱动客户端图标与强调色",
+          "description": "公告的类型，决定客户端展示的图标和强调色。",
           "enum": ["info", "warning", "event", "maintenance"]
         },
         "title": {
           "type": "string",
-          "description": "主标题，建议 ≤ 20 个汉字以避免在窄屏被截断",
+          "description": "公告的主标题。建议不超过 20 个汉字，避免在窄屏上被截断。",
           "minLength": 1,
           "maxLength": 40
         },
         "body": {
           "type": ["string", "null"],
-          "description": "正文 / 详细描述，可省略。客户端默认折叠为单行，点击卡片展开查看全文",
+          "description": "公告的正文或详细说明，可以省略。客户端默认显示单行摘要，用户点击公告卡片后可展开阅读全文。",
           "maxLength": 200
         },
         "link": {
-          "description": "点击公告时的跳转目标；省略或为 null 表示不可点击",
+          "description": "公告关联的跳转目标。省略或设为 null 时不提供跳转入口。",
           "oneOf": [{ "type": "null" }, { "$ref": "#/definitions/link" }]
         },
         "startAt": {
           "type": ["string", "null"],
           "format": "date-time",
-          "description": "生效起始时间（ISO 8601）；null 或省略表示不限起始"
+          "description": "公告开始展示的时间，使用 ISO 8601 格式。省略或设为 null 表示不限制开始时间。"
         },
         "endAt": {
           "type": ["string", "null"],
           "format": "date-time",
-          "description": "生效截止时间（ISO 8601）；null 或省略表示不限截止"
+          "description": "公告停止展示的时间，使用 ISO 8601 格式。省略或设为 null 表示不限制结束时间。"
         },
         "priority": {
           "type": "integer",
-          "description": "优先级，越大越靠前；默认 0。多条同时生效时客户端按此降序排序",
+          "description": "公告的展示优先级，默认为 0。多条公告同时生效时，数值越大的公告越靠前。",
           "minimum": 0,
           "maximum": 100,
           "default": 0
         },
         "dismissible": {
           "type": "boolean",
-          "description": "用户能否手动关闭；默认 true。重大维护通告建议设为 false",
+          "description": "是否允许用户手动关闭公告，默认为 true。重大维护公告建议设为 false。",
           "default": true
         },
         "minVersion": {
           "type": ["string", "null"],
-          "description": "最低 app 版本（含），如 \"1.2.0\"；null 或省略表示不限",
+          "description": "展示公告所需的最低应用版本，包含指定版本，例如 1.2.0。省略或设为 null 表示不限制最低版本。",
           "pattern": "^\\d+(\\.\\d+){0,2}$"
         },
         "maxVersion": {
           "type": ["string", "null"],
-          "description": "最高 app 版本（含），如 \"2.0.0\"；null 或省略表示不限",
+          "description": "允许展示公告的最高应用版本，包含指定版本，例如 2.0.0。省略或设为 null 表示不限制最高版本。",
           "pattern": "^\\d+(\\.\\d+){0,2}$"
         },
         "platforms": {
           "type": "array",
-          "description": "限定生效平台；省略或为空表示全平台",
+          "description": "允许展示公告的平台。省略或填写空数组时，公告适用于所有平台。",
           "uniqueItems": true,
           "items": {
             "type": "string",
@@ -105,7 +105,7 @@
     },
     "link": {
       "type": "object",
-      "description": "跳转目标。internal = 应用内路由（router.push），external = 外部链接（Linking.openURL）",
+      "description": "公告关联的跳转信息。internal 表示通过 router.push 打开应用内页面，external 表示通过 Linking.openURL 打开外部链接。",
       "oneOf": [
         {
           "additionalProperties": false,
@@ -114,7 +114,7 @@
             "kind": { "const": "internal" },
             "url": {
               "type": "string",
-              "description": "应用内路由路径，必须以 / 开头，如 \"/about\" 或 \"/wlan\"",
+              "description": "应用内页面的路由路径，必须以 / 开头，例如 /about 或 /wlan。",
               "pattern": "^/"
             }
           }
@@ -126,7 +126,7 @@
             "kind": { "const": "external" },
             "url": {
               "type": "string",
-              "description": "外部 URL，必须为 http:// 或 https://",
+              "description": "外部链接地址，必须使用 HTTP 或 HTTPS 协议。",
               "format": "uri",
               "pattern": "^https?://"
             }

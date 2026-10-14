@@ -236,6 +236,7 @@ function RootLayout() {
         refreshSystemLocale();
       }
       useAnnouncementStore.getState().fetch();
+      useUpdateStore.getState().check();
     });
     return () => sub.remove();
   }, []);

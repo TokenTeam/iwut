@@ -19,6 +19,7 @@ export interface ReleaseDownloadUrl {
 
 export interface Release {
   version: string;
+  departed: boolean;
   level: UpdateLevel;
   reason: LocalizedString | null;
   releasedAt: string | null;
@@ -47,6 +48,7 @@ interface UpdateSummary {
   latestVersion: string | null;
   applicableReleases: Release[];
   blockedByMinVersion: boolean;
+  blockedByDeparted: boolean;
   reason: LocalizedString | null;
   downloadUrl: ReleaseDownloadUrl | null;
 }
@@ -136,21 +138,26 @@ function parseRelease(raw: unknown): Release | null {
   }
 
   const reason = parseLocalizedString(raw.reason);
-  // Required releases must carry a reason. Skip malformed entries to avoid
-  // surfacing a force-update modal that can't even explain itself.
+  // 强制更新缺少原因时拒绝配置，保留已有有效状态
   if (level === "required" && reason === null) return null;
 
   let platforms: UpdatePlatform[] | null = null;
-  if (Array.isArray(raw.platforms)) {
-    const filtered = raw.platforms.filter(
-      (p): p is UpdatePlatform =>
-        typeof p === "string" && VALID_PLATFORMS.has(p as UpdatePlatform),
-    );
-    platforms = filtered.length > 0 ? Array.from(new Set(filtered)) : null;
+  if (raw.platforms !== undefined && raw.platforms !== null) {
+    if (!Array.isArray(raw.platforms)) return null;
+    if (
+      !raw.platforms.every(
+        (p): p is UpdatePlatform =>
+          typeof p === "string" && VALID_PLATFORMS.has(p as UpdatePlatform),
+      )
+    ) {
+      return null;
+    }
+    platforms = Array.from(new Set<UpdatePlatform>(raw.platforms));
   }
 
   return {
     version,
+    departed: raw.departed === true,
     level: level as UpdateLevel,
     reason,
     releasedAt: typeof raw.releasedAt === "string" ? raw.releasedAt : null,
@@ -179,15 +186,15 @@ function parseChannel(raw: unknown): ChannelManifest | null {
       ? raw.minSupportedVersion
       : null;
 
+  if (!Array.isArray(raw.releases)) return null;
   const releases: Release[] = [];
-  if (Array.isArray(raw.releases)) {
-    const seen = new Set<string>();
-    for (const item of raw.releases) {
-      const r = parseRelease(item);
-      if (!r || seen.has(r.version)) continue;
-      seen.add(r.version);
-      releases.push(r);
-    }
+  const seen = new Set<string>();
+  for (const item of raw.releases) {
+    const r = parseRelease(item);
+    if (!r) return null;
+    if (seen.has(r.version)) continue;
+    seen.add(r.version);
+    releases.push(r);
   }
 
   return { latestVersion, minSupportedVersion, releases };
@@ -201,7 +208,8 @@ function parseManifest(raw: unknown): UpdateManifest | null {
   const channels: Record<string, ChannelManifest> = {};
   for (const [name, value] of Object.entries(raw.channels)) {
     const c = parseChannel(value);
-    if (c) channels[name] = c;
+    if (!c) return null;
+    channels[name] = c;
   }
   if (Object.keys(channels).length === 0) return null;
 
@@ -224,10 +232,7 @@ export async function fetchUpdateManifest(): Promise<UpdateManifest | null> {
     const res = await fetch(`${CONFIG_REPO_CDN}/update.json`, {
       signal: controller.signal,
     });
-    // CDN fallback (e.g. jsdmirror 404 page) returns HTML with status 200 in
-    // some edge cases — guard by status first, then JSON parse defensively so
-    // missing manifests degrade silently to "no update" rather than throwing
-    // into Sentry.
+    // 返回 null 表示检查失败，调用方应保留上次有效状态
     if (!res.ok) return null;
     let data: unknown;
     try {
@@ -261,17 +266,10 @@ function mergeLevels(releases: Release[]): UpdateLevel {
   return max;
 }
 
-// Prefer a `required`-level reason; fall back to any other non-null reason.
-// (Both `find`s are short-circuited so the second only runs when no required
-// release carried one — which shouldn't happen, since parseRelease drops
-// required entries missing a reason.)
 const pickReason = (releases: Release[]): LocalizedString | null =>
   releases.find((r) => r.level === "required" && r.reason)?.reason ??
   releases.find((r) => r.reason)?.reason ??
   null;
-
-const pickDownloadUrl = (releases: Release[]): ReleaseDownloadUrl | null =>
-  releases.find((r) => r.downloadUrl)?.downloadUrl ?? null;
 
 const emptySummary = (latestVersion: string | null = null): UpdateSummary => ({
   hasUpdate: false,
@@ -279,6 +277,7 @@ const emptySummary = (latestVersion: string | null = null): UpdateSummary => ({
   latestVersion,
   applicableReleases: [],
   blockedByMinVersion: false,
+  blockedByDeparted: false,
   reason: null,
   downloadUrl: null,
 });
@@ -295,13 +294,16 @@ export function summarizeUpdate(
 
   const { latestVersion, minSupportedVersion, releases } = ch;
 
-  if (compareVersions(currentVersion, latestVersion) >= 0) {
-    return emptySummary(latestVersion);
-  }
-
   const blockedByMinVersion =
     minSupportedVersion !== null &&
     compareVersions(currentVersion, minSupportedVersion) < 0;
+  const departedRelease = releases.find(
+    (r) =>
+      r.departed &&
+      compareVersions(r.version, currentVersion) === 0 &&
+      isReleaseApplicable(r),
+  );
+  const blockedByDeparted = departedRelease !== undefined;
 
   const applicable = releases
     .filter(
@@ -312,14 +314,34 @@ export function summarizeUpdate(
     )
     .sort((a, b) => compareVersions(b.version, a.version));
 
+  const target = applicable.find(
+    (r) =>
+      !r.departed &&
+      (!blockedByMinVersion ||
+        (minSupportedVersion !== null &&
+          compareVersions(r.version, minSupportedVersion) >= 0)),
+  );
+  if (!target) {
+    return emptySummary();
+  }
+  const includedReleases = applicable.filter(
+    (r) => compareVersions(r.version, target.version) <= 0,
+  );
+
   return {
     hasUpdate: true,
-    level: blockedByMinVersion ? "required" : mergeLevels(applicable),
-    latestVersion,
-    applicableReleases: applicable,
+    level:
+      blockedByMinVersion || blockedByDeparted
+        ? "required"
+        : mergeLevels(includedReleases.filter((r) => !r.departed)),
+    latestVersion: target.version,
+    applicableReleases: includedReleases,
     blockedByMinVersion,
-    reason: pickReason(applicable),
-    downloadUrl: pickDownloadUrl(applicable),
+    blockedByDeparted,
+    reason:
+      departedRelease?.reason ??
+      pickReason(includedReleases.filter((r) => !r.departed)),
+    downloadUrl: target.downloadUrl,
   };
 }
 

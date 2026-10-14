@@ -70,10 +70,7 @@ export function UpdateModal() {
   const isDark = useColorScheme() === "dark";
   const blurProps = useAppBlurProps();
 
-  // IMPORTANT: subscribe to primitive / stable-reference fields one by one.
-  // Returning a freshly-allocated object from a selector causes zustand's
-  // default `Object.is` equality check to always miss → React's getSnapshot
-  // warning → infinite re-render loop. Derive composites locally instead.
+  // 分别订阅稳定字段，避免选择器创建新对象导致重复渲染
   const modalOpen = useUpdateStore((s) => s.modalOpen);
   const hasUpdate = useUpdateStore((s) => s.hasUpdate);
   const level = useUpdateStore((s) => s.level);
@@ -82,6 +79,7 @@ export function UpdateModal() {
   const reason = useUpdateStore((s) => s.reason);
   const downloadUrl = useUpdateStore((s) => s.downloadUrl);
   const blockedByMinVersion = useUpdateStore((s) => s.blockedByMinVersion);
+  const blockedByDeparted = useUpdateStore((s) => s.blockedByDeparted);
   const requiredDismissVersion = useUpdateStore(
     (s) => s.requiredDismiss?.version ?? null,
   );
@@ -91,11 +89,6 @@ export function UpdateModal() {
   const closeModal = useUpdateStore((s) => s.closeModal);
 
   const [showChangelog, setShowChangelog] = useState(false);
-  // Collapse the changelog when the targeted release changes — a user who
-  // expanded v1.4.0's log shouldn't see v1.5.0 auto-expanded after a refresh.
-  // This "adjust state during render" pattern is React's recommended
-  // alternative to a setState-in-effect (which triggers cascading renders):
-  // https://react.dev/reference/react/useState#storing-information-from-previous-renders
   const [prevLatestVersion, setPrevLatestVersion] = useState(latestVersion);
   if (prevLatestVersion !== latestVersion) {
     setPrevLatestVersion(latestVersion);
@@ -119,8 +112,6 @@ export function UpdateModal() {
   const releasedAt = formatReleasedAt(primaryRelease?.releasedAt ?? null, lang);
   const reasonStr = resolveLocalizedString(reason, lang);
 
-  // Aggregate highlights & changelog from every applicable release so users
-  // skipping multiple versions still see the cumulative What's New list.
   const showVersionHeading = applicableReleases.length > 1;
   const highlights = applicableReleases.flatMap((r) =>
     resolveLocalizedStringArray(r.highlights, lang),
@@ -138,7 +129,7 @@ export function UpdateModal() {
   const showEmptyHint = !hasHighlights && !hasChangelog && !reasonStr;
 
   const bottomHint = hardBlock
-    ? blockedByMinVersion
+    ? blockedByMinVersion || blockedByDeparted
       ? t("update.hardBlockDesc", { v: latestVersion })
       : t("update.requiredExhausted")
     : isRequired
@@ -374,10 +365,6 @@ function ChangelogBlock({
   );
 }
 
-// Compact mobile-friendly markdown theme. Sizing aligns with the surrounding
-// modal copy (text-sm = 14, leading-5 = 20). Headings are only +1px so the
-// changelog reads like body text with light emphasis rather than a fully
-// nested document.
 function buildMarkdownStyles(isDark: boolean) {
   const fg = isDark ? "#e5e5e5" : "#404040";
   const mutedFg = isDark ? "#a3a3a3" : "#737373";
@@ -387,19 +374,12 @@ function buildMarkdownStyles(isDark: boolean) {
   const linkFg = isDark ? "#60a5fa" : "#2563eb";
   const ruleColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
 
-  // Body / headings use a *single-step* type scale: same 12.5px size, only
-  // weight separates levels. Keeps the changelog visually flat and
-  // proportional to the surrounding 14px modal copy, which the user reads
-  // first. Avoids the "huge heading dwarfs the bullet next to it" effect.
   const body = { fontSize: 12.5, lineHeight: 16, color: fg };
   const heading = { ...body, color: headingFg, fontWeight: "600" as const };
 
   return {
     body,
-    // `text` is the lib's catch-all key for INLINE text inside any block.
-    // Without this, body.fontSize only affects the wrapping View and inline
-    // <Text> falls back to RN's ~14px default — making body look bigger than
-    // headings whose fontSize we set explicitly.
+    // 行内文字需单独设置样式，避免回退到默认字号
     text: body,
     paragraph: { marginTop: 0, marginBottom: 0 },
     heading1: { ...heading, fontSize: 13, marginTop: 0, marginBottom: 0 },
@@ -481,7 +461,5 @@ function buildMarkdownStyles(isDark: boolean) {
   };
 }
 
-// Pre-build both themes once at module load — the styles never depend on
-// runtime state, so re-deriving them per render is pure waste.
 const LIGHT_MARKDOWN_STYLES = buildMarkdownStyles(false);
 const DARK_MARKDOWN_STYLES = buildMarkdownStyles(true);

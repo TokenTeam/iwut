@@ -548,6 +548,7 @@
     "newVersionAvailable": "新版本 {v}",
     "newVersionFound": "发现新版本",
     "upToDate": "当前已是最新版本",
+    "updateCheckFailed": "更新检查失败，请稍后重试",
     "linksGroup": "链接",
     "website": "官方网站",
     "github": "GitHub",

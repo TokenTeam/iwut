@@ -548,6 +548,7 @@
     "newVersionAvailable": "New version {v}",
     "newVersionFound": "New version available",
     "upToDate": "You're on the latest version",
+    "updateCheckFailed": "Could not check for updates. Please try again.",
     "linksGroup": "Links",
     "website": "Website",
     "github": "GitHub",

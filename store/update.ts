@@ -18,6 +18,13 @@ import {
 const MIN_CHECK_INTERVAL_MS = 5 * 60 * 1000;
 export const REQUIRED_MAX_DISMISS = 3;
 
+type UpdateCheckResult =
+  | { status: "success"; hasUpdate: boolean }
+  | { status: "failed" }
+  | { status: "skipped" };
+
+let pendingCheck: Promise<UpdateCheckResult> | null = null;
+
 interface RequiredDismissState {
   version: string;
   count: number;
@@ -31,6 +38,7 @@ interface UpdateStore {
   reason: LocalizedString | null;
   downloadUrl: ReleaseDownloadUrl | null;
   blockedByMinVersion: boolean;
+  blockedByDeparted: boolean;
 
   dismissedRecommendedVersion: string | null;
   requiredDismiss: RequiredDismissState | null;
@@ -40,7 +48,7 @@ interface UpdateStore {
 
   modalOpen: boolean;
 
-  check: (options?: { force?: boolean }) => Promise<void>;
+  check: (options?: { force?: boolean }) => Promise<UpdateCheckResult>;
   openModal: () => void;
   closeModal: () => void;
 }
@@ -55,6 +63,7 @@ export const useUpdateStore = create<UpdateStore>()(
       reason: null,
       downloadUrl: null,
       blockedByMinVersion: false,
+      blockedByDeparted: false,
 
       dismissedRecommendedVersion: null,
       requiredDismiss: null,
@@ -96,78 +105,79 @@ export const useUpdateStore = create<UpdateStore>()(
         set({ modalOpen: false });
       },
 
-      check: async (options) => {
-        if (get().checking) return;
+      check: (options) => {
+        if (pendingCheck) return pendingCheck;
         const checkedAt = get().checkedAt;
         if (
           !options?.force &&
           checkedAt !== null &&
           Date.now() - checkedAt < MIN_CHECK_INTERVAL_MS
         ) {
-          return;
+          return Promise.resolve({ status: "skipped" });
         }
         set({ checking: true });
-        try {
-          const manifest = await fetchUpdateManifest();
-          const summary = summarizeUpdate(
-            manifest,
-            getCurrentChannel(),
-            getCurrentAppVersion(),
-          );
+        pendingCheck = (async (): Promise<UpdateCheckResult> => {
+          try {
+            const manifest = await fetchUpdateManifest();
+            if (!manifest) return { status: "failed" };
+            const summary = summarizeUpdate(
+              manifest,
+              getCurrentChannel(),
+              getCurrentAppVersion(),
+            );
 
-          const prev = get();
-          // Reset dismiss state when the targeted version changes; otherwise
-          // a "稍后再说" tap on v1.4.0 would silence v1.5.0 too.
-          const dismissedRecommendedVersion =
-            summary.latestVersion &&
-            prev.dismissedRecommendedVersion === summary.latestVersion
-              ? prev.dismissedRecommendedVersion
-              : null;
-          const requiredDismiss =
-            summary.latestVersion &&
-            prev.requiredDismiss?.version === summary.latestVersion
-              ? prev.requiredDismiss
-              : null;
+            const prev = get();
+            const dismissedRecommendedVersion =
+              summary.latestVersion &&
+              prev.dismissedRecommendedVersion === summary.latestVersion
+                ? prev.dismissedRecommendedVersion
+                : null;
+            const requiredDismiss =
+              summary.latestVersion &&
+              prev.requiredDismiss?.version === summary.latestVersion
+                ? prev.requiredDismiss
+                : null;
 
-          // Auto-open the modal for recommended/required, except when the
-          // user has already dismissed *this* recommended version. required
-          // always reopens (each launch counts as a chance until exhausted).
-          const autoOpen =
-            summary.hasUpdate &&
-            (summary.level === "required" ||
-              (summary.level === "recommended" &&
-                dismissedRecommendedVersion !== summary.latestVersion));
+            const autoOpen =
+              summary.hasUpdate &&
+              (summary.level === "required" ||
+                (summary.level === "recommended" &&
+                  dismissedRecommendedVersion !== summary.latestVersion));
 
-          set({
-            hasUpdate: summary.hasUpdate,
-            level: summary.level,
-            latestVersion: summary.latestVersion,
-            applicableReleases: summary.applicableReleases,
-            reason: summary.reason,
-            downloadUrl: summary.downloadUrl,
-            blockedByMinVersion: summary.blockedByMinVersion,
-            dismissedRecommendedVersion,
-            requiredDismiss,
-            checkedAt: Date.now(),
-            modalOpen: autoOpen || prev.modalOpen,
-          });
-        } catch (e) {
-          if (!isNetworkError(e)) {
-            reportError(e, { module: "update" });
+            set({
+              hasUpdate: summary.hasUpdate,
+              level: summary.level,
+              latestVersion: summary.latestVersion,
+              applicableReleases: summary.applicableReleases,
+              reason: summary.reason,
+              downloadUrl: summary.downloadUrl,
+              blockedByMinVersion: summary.blockedByMinVersion,
+              blockedByDeparted: summary.blockedByDeparted,
+              dismissedRecommendedVersion,
+              requiredDismiss,
+              checkedAt: Date.now(),
+              modalOpen: summary.hasUpdate && (autoOpen || prev.modalOpen),
+            });
+            return { status: "success", hasUpdate: summary.hasUpdate };
+          } catch (e) {
+            if (!isNetworkError(e)) {
+              reportError(e, { module: "update" });
+            }
+            return { status: "failed" };
+          } finally {
+            set({ checking: false });
           }
-        } finally {
-          set({ checking: false });
-        }
+        })().finally(() => {
+          pendingCheck = null;
+        });
+        return pendingCheck;
       },
     }),
     {
       name: "update",
       storage: zustandStorage,
       partialize: (s) => ({
-        // NOTE: checkedAt is intentionally *not* persisted. It's an in-process
-        // throttle for foreground/background loops; persisting it would mean a
-        // cold start within 5 min of any previous check (even a 404) silently
-        // skips the fetch and leaves the user staring at stale state.
+        // 检查时间不持久化，确保每次冷启动都能检查更新
         hasUpdate: s.hasUpdate,
         level: s.level,
         latestVersion: s.latestVersion,
@@ -175,6 +185,7 @@ export const useUpdateStore = create<UpdateStore>()(
         reason: s.reason,
         downloadUrl: s.downloadUrl,
         blockedByMinVersion: s.blockedByMinVersion,
+        blockedByDeparted: s.blockedByDeparted,
         dismissedRecommendedVersion: s.dismissedRecommendedVersion,
         requiredDismiss: s.requiredDismiss,
       }),

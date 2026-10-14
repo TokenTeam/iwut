@@ -27,6 +27,9 @@ describe("isNetworkError", () => {
   });
 
   test.each([
+    "fetch failed: java.net.ConnectException: Failed to connect to cdn.jsdmirror.com/119.36.225.186:443",
+    "fetch failed: Fetch request has been canceled",
+    "fetch failed: Fetch request has been cancelled",
     "fetch failed: FetchRequestCanceledException: Fetch request has been canceled (at Expo/NativeResponse.swift:63)",
     "fetch failed: UnexpectedException: 似乎已断开与互联网的连接。 (at ExpoModulesCore/Promise.swift:56)",
   ])("recognizes Expo native fetch failures: %s", (message) => {
@@ -48,6 +51,7 @@ describe("isNetworkError", () => {
     new Error("Course data parsing failed"),
     new Error("fetch failed: UnexpectedException: Invalid response data"),
     new Error("fetch failed: UnexpectedException: SSL handshake failed"),
+    new Error("fetch failed: java.net.ConnectException: SSL handshake failed"),
     new Error("fetch failed"),
     new WebViewLoadError({ code: -11, description: "SSL handshake failed" }),
     new WebViewLoadError({

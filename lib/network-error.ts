@@ -34,6 +34,8 @@ const IOS_WEBVIEW_NETWORK_ERROR_CODES = new Set([
 
 const NETWORK_ERROR_MESSAGES = [
   /\bFetchRequestCanceledException\b/,
+  /\bfetch request has been cancel(?:ed|led)\b/i,
+  /\bjava\.net\.ConnectException:\s*Failed to connect to\b/i,
   /似乎已断开与互联网的连接/,
   /network request failed/i,
   /failed to fetch/i,

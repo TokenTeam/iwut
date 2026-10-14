@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://raw.githubusercontent.com/TokenTeam/iwut/main/schemas/update.schema.json",
-  "title": "iwut Update Manifest",
-  "description": "iwut 客户端的远程版本更新清单。内容仓库见 https://cnb.cool/TokenTeam/iwut-config",
+  "title": "Update Manifest",
+  "description": "客户端使用的远程更新配置，包含各发布通道的版本信息和更新规则。配置仓库位于 https://cnb.cool/TokenTeam/iwut-config",
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "channels"],
@@ -13,17 +13,17 @@
     },
     "version": {
       "type": "integer",
-      "description": "协议版本号；字段语义发生不兼容变化时 +1。老客户端遇到不认识的 version 应放弃解析",
+      "description": "更新配置的协议版本号。只有发生不兼容的协议变更时才递增，客户端不会解析不支持的协议版本。",
       "const": 1
     },
     "updatedAt": {
       "type": "string",
       "format": "date-time",
-      "description": "文件最后更新时间（ISO 8601 / UTC），便于排查 CDN 缓存。客户端不依赖此字段做业务判断"
+      "description": "配置文件的最后更新时间，使用 ISO 8601 格式和 UTC 时区。此字段用于排查 CDN 缓存，不参与更新判断。"
     },
     "channels": {
       "type": "object",
-      "description": "按发布通道组织（与 EAS Updates / APK 下载链接里的 channel 概念一致）。客户端默认读取 \"production\"，可由 expo-updates 的 channel 决定",
+      "description": "按发布通道组织版本信息，通道名称与 EAS Updates 和 APK 下载地址保持一致。客户端读取 expo-updates 指定的通道，未指定或对应配置不存在时使用 production。",
       "minProperties": 1,
       "additionalProperties": { "$ref": "#/definitions/channel" }
     }
@@ -36,17 +36,17 @@
       "properties": {
         "latestVersion": {
           "type": "string",
-          "description": "当前通道的最新版本号；客户端低于此版本即视为有更新",
+          "description": "当前通道允许升级到的最高版本。客户端在此范围内选择适用于当前平台、已发布且未弃用的最新版本作为升级目标。",
           "pattern": "^\\d+(\\.\\d+){0,2}$"
         },
         "minSupportedVersion": {
           "type": ["string", "null"],
-          "description": "硬下限。低于此版本的客户端会被强制阻断（无法忽略），需立即升级。null 或省略表示无下限",
+          "description": "当前通道的最低支持版本。低于此版本的用户会被要求强制更新，但必须先有适用于当前平台且达到最低支持版本的升级目标。用户最多可延期 3 次，省略或设为 null 表示不限制最低版本。",
           "pattern": "^\\d+(\\.\\d+){0,2}$"
         },
         "releases": {
           "type": "array",
-          "description": "版本发布列表。客户端会取 (本地版本, latestVersion] 区间内全部条目，合并展示 changelog，并以最高强度作为生效 level",
+          "description": "当前通道的版本发布记录。客户端根据平台和发布时间选择升级目标，合并当前版本之后至目标版本的更新日志，并采用其中未弃用版本的最高更新强度。需要弃用旧版本时，应保留该版本的记录并设置 departed。",
           "items": { "$ref": "#/definitions/release" }
         }
       }
@@ -58,16 +58,21 @@
       "properties": {
         "version": {
           "type": "string",
-          "description": "该条 release 对应的版本号",
+          "description": "这条发布记录对应的应用版本号。",
           "pattern": "^\\d+(\\.\\d+){0,2}$"
+        },
+        "departed": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否弃用该版本。设为 true 后，只有安装了该版本且符合平台和发布时间条件的用户会被要求强制更新，并且必须先有可用的升级目标。用户最多可延期 3 次，已弃用版本不会成为升级目标。省略时默认为 false，不支持此字段的旧客户端会忽略它。"
         },
         "level": {
           "type": "string",
-          "description": "更新强度。silent = 首页红点（被动）；recommended = 启动弹窗，可\"稍后再说\"；required = 启动弹窗，最多可忽略 3 次，第 4 次起强制升级",
+          "description": "该版本的更新提醒方式。silent 只显示红点，recommended 自动弹窗且允许稍后再说，required 自动弹窗且最多允许延期 3 次，延期额度用完后无法关闭弹窗。",
           "enum": ["silent", "recommended", "required"]
         },
         "reason": {
-          "description": "level=required 时必填：向用户解释\"为什么必须升级\"。允许多语言",
+          "description": "向用户说明为什么必须升级，支持多语言。level 为 required 时必须填写。当前版本被弃用时优先显示该版本的原因，未填写则使用适用新版本提供的原因。",
           "oneOf": [
             { "type": "null" },
             { "$ref": "#/definitions/localizedString" }
@@ -76,11 +81,11 @@
         "releasedAt": {
           "type": ["string", "null"],
           "format": "date-time",
-          "description": "发布时间（ISO 8601 / UTC），用于灰度起始判断；null 或省略表示立即生效"
+          "description": "该版本开始生效的时间，使用 ISO 8601 格式和 UTC 时区。客户端在此时间之前忽略这条记录，省略或设为 null 表示立即生效。"
         },
         "platforms": {
-          "type": "array",
-          "description": "限定生效平台；省略或为空数组表示全平台",
+          "type": ["array", "null"],
+          "description": "这条记录适用的平台。省略或设为 null 表示适用于所有平台，空数组表示不适用于任何平台。填写不支持的值会导致配置检查失败。",
           "uniqueItems": true,
           "items": {
             "type": "string",
@@ -88,28 +93,28 @@
           }
         },
         "title": {
-          "description": "弹窗主标题；省略时客户端用默认文案 \"新版本 vX.Y.Z\"",
+          "description": "更新弹窗的主标题，支持多语言。省略或设为 null 时使用默认标题，例如“新版本 vX.Y.Z”。",
           "oneOf": [
             { "type": "null" },
             { "$ref": "#/definitions/localizedString" }
           ]
         },
         "highlights": {
-          "description": "高亮列表，建议 3–5 条短文案，用于弹窗主体",
+          "description": "更新弹窗中展示的主要变化，支持多语言。建议提供 3 到 5 条简短文案。",
           "oneOf": [
             { "type": "null" },
             { "$ref": "#/definitions/localizedStringArray" }
           ]
         },
         "changelog": {
-          "description": "完整 changelog，markdown 文本，可在弹窗内\"查看完整更新日志\"展开",
+          "description": "完整更新日志，使用 Markdown 格式并支持多语言。用户可在弹窗中点击“查看完整更新日志”展开阅读。",
           "oneOf": [
             { "type": "null" },
             { "$ref": "#/definitions/localizedString" }
           ]
         },
         "downloadUrl": {
-          "description": "覆盖默认下载地址。客户端按平台选择 ios / android 字段；省略时使用客户端内置 fallback",
+          "description": "该版本在各平台的下载地址。客户端只读取升级目标版本中对应平台的链接，不使用其他版本的链接。对应链接缺失或设为 null 时使用升级目标版本的默认下载地址。",
           "oneOf": [
             { "type": "null" },
             {
@@ -117,13 +122,13 @@
               "additionalProperties": false,
               "properties": {
                 "ios": {
-                  "type": "string",
-                  "description": "iOS 下载入口，通常是 itms-apps:// 或 https://apps.apple.com/...",
+                  "type": ["string", "null"],
+                  "description": "iOS 的下载入口，通常填写使用 itms-apps 或 HTTPS 协议的 App Store 链接。",
                   "minLength": 1
                 },
                 "android": {
-                  "type": "string",
-                  "description": "Android APK 直链或落地页",
+                  "type": ["string", "null"],
+                  "description": "Android APK 的直接下载地址或下载页面，必须使用 HTTP 或 HTTPS 协议。",
                   "format": "uri",
                   "pattern": "^https?://"
                 }
@@ -148,7 +153,7 @@
       ]
     },
     "localizedString": {
-      "description": "本地化字符串。可以是单一字符串（所有语言相同），或按语言代码（zh / en / ...）分别提供。客户端按用户当前 i18n 语言选择，缺失时回退到 zh",
+      "description": "支持多语言的文本。直接填写字符串时，所有语言使用相同内容。也可以填写以语言代码为键的对象，其中 zh 为必填项。客户端优先使用当前语言的内容，缺失时使用 zh。",
       "oneOf": [
         { "type": "string", "minLength": 1 },
         {
@@ -163,7 +168,7 @@
       ]
     },
     "localizedStringArray": {
-      "description": "本地化字符串数组。可以是字符串数组（所有语言相同），或按语言代码分别提供",
+      "description": "支持多语言的文本列表。直接填写字符串数组时，所有语言使用相同内容。也可以填写以语言代码为键、以字符串数组为值的对象，其中 zh 为必填项。客户端优先使用当前语言的列表，缺失时使用 zh。",
       "oneOf": [
         {
           "type": "array",
