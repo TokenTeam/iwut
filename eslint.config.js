@@ -5,7 +5,7 @@ const eslintPluginPrettierRecommended = require("eslint-plugin-prettier/recommen
 const globals = require("globals");
 
 module.exports = defineConfig([
-  globalIgnores(["dist/*"]),
+  globalIgnores(["dist/*", ".agents/**"]),
   expoConfig,
   eslintPluginPrettierRecommended,
   {

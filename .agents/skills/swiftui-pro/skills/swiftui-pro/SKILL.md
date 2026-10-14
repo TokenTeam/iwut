@@ -5,10 +5,12 @@ license: MIT
 argument-hint: "[focus area]"
 metadata:
   author: Paul Hudson
-  version: "1.0"
+  version: "2.0.0"
 ---
 
-Review Swift and SwiftUI code for correctness, modern API usage, and adherence to project conventions. Report only genuine problems - do not nitpick or invent issues.
+Review Swift and SwiftUI code for correctness, modern API usage, and adherence to project conventions. Report only genuine problems – do not nitpick or invent issues.
+
+Include deprecated API in review findings. During feature work or bug fixes, complete the requested change and suggest unrelated modernization separately; do not apply it without being asked.
 
 Review process:
 
@@ -17,18 +19,25 @@ Review process:
 1. Validate that data flow is configured correctly using `${CLAUDE_SKILL_DIR}/references/data.md`.
 1. Ensure navigation is updated and performant using `${CLAUDE_SKILL_DIR}/references/navigation.md`.
 1. Ensure the code uses designs that are accessible and compliant with Apple's Human Interface Guidelines using `${CLAUDE_SKILL_DIR}/references/design.md`.
+1. Review layout behavior as windows resize, including iPad multitasking and folding iPhone Duo, using `${CLAUDE_SKILL_DIR}/references/resizability.md`.
 1. Validate accessibility compliance including Dynamic Type, VoiceOver, and Reduce Motion using `${CLAUDE_SKILL_DIR}/references/accessibility.md`.
+1. Check localized text, formatting, and resource handling using `${CLAUDE_SKILL_DIR}/references/localization.md`.
 1. Ensure the code is able to run efficiently using `${CLAUDE_SKILL_DIR}/references/performance.md`.
 1. Quick validation of Swift code using `${CLAUDE_SKILL_DIR}/references/swift.md`.
 1. Final code hygiene check using `${CLAUDE_SKILL_DIR}/references/hygiene.md`.
 
 If doing a partial review, load only the relevant reference files.
 
+Keep `${CLAUDE_SKILL_DIR}/references/performance-plus.md` out of routine reviews. Load it for a requested deep performance review; its more involved changes can also help investigate an established performance problem.
+
 
 ## Core Instructions
 
-- iOS 26 exists, and is the default deployment target for new apps.
-- Target Swift 6.2 or later, using modern Swift concurrency.
+- iOS 27 exists, and is the default deployment target for new apps.
+- Xcode 27.1 and the corresponding 27.1 platform releases are available. Do not dismiss their APIs as speculative.
+- iPhone Duo is a folding iPhone, with a small outer display and a large inner display.
+- Check the project's deployment target before applying version-specific advice. Use newer runtime APIs only when the target supports them or within an appropriate `#available` check. Keep the existing target unchanged. Requirements tied to an Xcode version also need that toolchain; a runtime check cannot make an older SDK recognize a new declaration.
+- Target Swift 6.4 or later, using modern Swift concurrency.
 - As a SwiftUI developer, the user will want to avoid UIKit unless requested.
 - Do not introduce third-party frameworks without asking first.
 - Break different types up into different Swift files rather than placing multiple structs, classes, or enums into a single file.
@@ -59,7 +68,7 @@ Text("Hello").foregroundColor(.red)
 Text("Hello").foregroundStyle(.red)
 ```
 
-**Line 24: Icon-only button is bad for VoiceOver - add a text label.**
+**Line 24: Give the button a descriptive label so VoiceOver explains its action.**
 
 ```swift
 // Before
@@ -71,7 +80,7 @@ Button(action: addUser) {
 Button("Add User", systemImage: "plus", action: addUser)
 ```
 
-**Line 31: Avoid `Binding(get:set:)` in view body - use `@State` with `onChange()` instead.**
+**Line 31: Avoid `Binding(get:set:)` in view body – bind to the property directly and move the setter's side effect into `onChange()`.**
 
 ```swift
 // Before
@@ -87,9 +96,11 @@ TextField("Username", text: $model.username)
     }
 ```
 
+Use `onChange()` when saving should follow changes to the username, including programmatic changes. Equal-value assignments will not trigger a save.
+
 ### Summary
 
-1. **Accessibility (high):** The add button on line 24 is invisible to VoiceOver.
+1. **Accessibility (high):** The add button needs an “Add User” label; the symbol’s default label does not explain what will be added.
 2. **Deprecated API (medium):** `foregroundColor()` on line 12 should be `foregroundStyle()`.
 3. **Data flow (medium):** The manual binding on line 31 is fragile and harder to maintain.
 
@@ -99,11 +110,14 @@ End of example.
 ## References
 
 - `${CLAUDE_SKILL_DIR}/references/accessibility.md` - Dynamic Type, VoiceOver, Reduce Motion, and other accessibility requirements.
-- `${CLAUDE_SKILL_DIR}/references/api.md` - updating code for modern API, and the deprecated code it replaces.
+- `${CLAUDE_SKILL_DIR}/references/api.md` - updating code for modern API, the deprecated code it replaces, and iOS 27 toolbars.
 - `${CLAUDE_SKILL_DIR}/references/design.md` - guidance for building accessible apps that meet Apple's Human Interface Guidelines.
 - `${CLAUDE_SKILL_DIR}/references/hygiene.md` - making code compile cleanly and be maintainable in the long term.
+- `${CLAUDE_SKILL_DIR}/references/localization.md` - localizable text, resource bundles, and locale-aware presentation.
 - `${CLAUDE_SKILL_DIR}/references/navigation.md` - navigation using `NavigationStack`/`NavigationSplitView`, plus alerts, confirmation dialogs, and sheets.
 - `${CLAUDE_SKILL_DIR}/references/performance.md` - optimizing SwiftUI code for maximum performance.
+- `${CLAUDE_SKILL_DIR}/references/performance-plus.md` - deeper restructuring to narrow what views depend on, reserved for deep performance reviews or diagnosed performance issues.
+- `${CLAUDE_SKILL_DIR}/references/resizability.md` - changing window sizes, adaptive bars, safe areas, and iPhone Duo layouts.
 - `${CLAUDE_SKILL_DIR}/references/data.md` - data flow, shared state, and property wrappers.
 - `${CLAUDE_SKILL_DIR}/references/swift.md` - tips on writing modern Swift code, including using Swift Concurrency effectively.
-- `${CLAUDE_SKILL_DIR}/references/views.md` - view structure, composition, and animation.
+- `${CLAUDE_SKILL_DIR}/references/views.md` - view structure, composition, animation, reordering, and swipe actions.
