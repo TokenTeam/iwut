@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
+import { useIsFocused } from "expo-router/react-navigation";
 import React, {
   startTransition,
   useCallback,
@@ -421,6 +422,7 @@ export function Schedule({
   today,
   termStart,
   onWeekChange,
+  onReady,
 }: Readonly<{
   courses: Course[];
   week: number;
@@ -428,7 +430,9 @@ export function Schedule({
   today?: number;
   termStart?: string;
   onWeekChange?: (week: number) => void;
+  onReady?: () => void;
 }>) {
+  const isFocused = useIsFocused();
   const localT = useT();
   const router = useRouter();
   const colorScheme = useColorScheme();
@@ -454,15 +458,16 @@ export function Schedule({
   const fromPagerRef = useRef(false);
   const selectedWeekRef = useLatest(week);
   const onWeekChangeRef = useLatest(onWeekChange);
+  const onReadyRef = useLatest(onReady);
 
   useLayoutEffect(() => {
     commitTimeRef.current = Date.now();
   }, []);
 
   useEffect(() => {
-    if (!pagerReady) return;
+    if (!pagerReady || !isFocused) return;
     startTransition(() => setPreloadWeeks(true));
-  }, [pagerReady]);
+  }, [pagerReady, isFocused]);
 
   const haptic = useHaptics();
   const scrollWeekend = useScheduleStore((s) => s.scrollWeekend);
@@ -556,13 +561,14 @@ export function Schedule({
   );
 
   const handleScrollContentSizeChange = useCallback(() => {
+    onReadyRef.current?.();
     if (!didInitialScroll.current && today && today > 5) {
       didInitialScroll.current = true;
       requestAnimationFrame(() => {
         scrollViewRef.current?.scrollToEnd({ animated: false });
       });
     }
-  }, [today]);
+  }, [today, onReadyRef]);
 
   const handlePagerLayout = useCallback((event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
@@ -647,7 +653,8 @@ export function Schedule({
       });
     }
     setPagerReady(true);
-  }, [selectedWeekRef]);
+    onReadyRef.current?.();
+  }, [selectedWeekRef, onReadyRef]);
 
   const handlePagerScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {

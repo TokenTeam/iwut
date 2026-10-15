@@ -47,24 +47,41 @@ import { MAX_WEEK } from "@/lib/course-weeks";
 import { getCurrentDayOfWeek, getCurrentWeek, isVacation } from "@/lib/date";
 import { useT } from "@/lib/i18n";
 import { type ImportType, useCourseStore } from "@/store/course";
+import { getWarmupBottomInset, useStartupStore } from "@/store/startup";
 import { useScheduleStore } from "@/store/schedule";
 import { useUserBindStore } from "@/store/user-bind";
 
 function TabContent({
   children,
   bottomBackdrop,
+  enabled,
 }: {
   children: ReactNode;
   bottomBackdrop: ReactNode;
+  enabled: boolean;
 }) {
   const [layout, setLayout] = useState({
+    width: 0,
     height: 0,
     contentHeight: 0,
     ready: false,
   });
+  const viewport = useStartupStore((state) => state.viewport);
+  const measuredBottomInset = Math.max(layout.height - layout.contentHeight, 0);
+  const warmupBottomInset = getWarmupBottomInset(
+    viewport,
+    layout.width,
+    layout.height,
+  );
+  // 隐藏页没有安全区时，复用同尺寸可见页的测量结果
+  const bottomInset =
+    layout.contentHeight > 0 && measuredBottomInset > 0
+      ? measuredBottomInset
+      : (warmupBottomInset ?? 0);
+  const contentReady = layout.ready || warmupBottomInset !== null;
 
   const updateLayout = useCallback(
-    (key: "height" | "contentHeight", value: number) => {
+    (key: "width" | "height" | "contentHeight", value: number) => {
       setLayout((previous) => {
         if (previous[key] === value) return previous;
         const next = { ...previous, [key]: value };
@@ -86,20 +103,34 @@ function TabContent({
     return (
       <View
         style={{ flex: 1 }}
-        onLayout={(event) =>
-          updateLayout("height", event.nativeEvent.layout.height)
-        }
+        onLayout={(event) => {
+          updateLayout("width", event.nativeEvent.layout.width);
+          updateLayout("height", event.nativeEvent.layout.height);
+        }}
       >
-        <SafeAreaView edges={{ bottom: true }} style={{ flex: 1 }}>
+        <SafeAreaView
+          pointerEvents="none"
+          edges={{ bottom: true }}
+          style={{ position: "absolute", inset: 0 }}
+        >
           <View
             style={{ flex: 1 }}
             onLayout={(event) =>
               updateLayout("contentHeight", event.nativeEvent.layout.height)
             }
-          >
-            {layout.ready ? children : null}
-          </View>
+          />
         </SafeAreaView>
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: bottomInset,
+          }}
+        >
+          {contentReady && enabled ? children : null}
+        </View>
         <View
           pointerEvents="none"
           style={{
@@ -107,10 +138,7 @@ function TabContent({
             left: 0,
             right: 0,
             bottom: 0,
-            height:
-              layout.height > 0 && layout.contentHeight > 0
-                ? Math.max(layout.height - layout.contentHeight, 0)
-                : 0,
+            height: bottomInset,
           }}
         >
           {bottomBackdrop}
@@ -119,12 +147,24 @@ function TabContent({
     );
   }
 
-  return <View style={{ flex: 1 }}>{children}</View>;
+  return <View style={{ flex: 1 }}>{enabled ? children : null}</View>;
 }
 
 export default function CourseScreen() {
-  useMarkRouteInteractive();
+  const [scheduleReady, setScheduleReady] = useState(false);
+  const handleScheduleReady = useCallback(() => {
+    setScheduleReady(true);
+    useStartupStore.getState().markCourseReady();
+  }, []);
+  useMarkRouteInteractive(scheduleReady);
   const isFocused = useIsFocused();
+  const warmupRequested = useStartupStore((state) => state.tabsRequested);
+  const [hasOpened, setHasOpened] = useState(isFocused);
+  useFocusEffect(
+    useCallback(() => {
+      setHasOpened(true);
+    }, []),
+  );
   const t = useT();
   const courses = useCourseStore((store) => store.courses);
   const termStart = useCourseStore((store) => store.termStart);
@@ -274,6 +314,7 @@ export default function CourseScreen() {
 
   return (
     <TabContent
+      enabled={isFocused || hasOpened || warmupRequested}
       bottomBackdrop={
         courses.length === 0 && (
           <Animated.View
@@ -387,6 +428,7 @@ export default function CourseScreen() {
           today={!isVacation(termStart) ? today : undefined}
           termStart={termStart}
           onWeekChange={goToWeek}
+          onReady={handleScheduleReady}
         />
 
         {courses.length === 0 && (

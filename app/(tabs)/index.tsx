@@ -20,6 +20,7 @@ import { CourseShareSheet } from "@/components/share/course-share-sheet";
 import { AnnouncementBanner } from "@/components/ui/announcement-banner";
 import { getDayLabels } from "@/constants/weekdays";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTabViewport } from "@/hooks/use-tab-viewport";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useMinuteNow } from "@/hooks/use-minute-now";
@@ -51,6 +52,7 @@ import { useCourseStore } from "@/store/course";
 import type { Exam } from "@/store/exam";
 import { useExamStore } from "@/store/exam";
 import { useScheduleStore } from "@/store/schedule";
+import { useStartupStore } from "@/store/startup";
 
 type GreetingSlot = {
   start: number;
@@ -168,7 +170,6 @@ function getGreetingSlot(nowMs: number): GreetingSlot {
 }
 
 export default function HomeScreen() {
-  useMarkRouteInteractive();
   const t = useT();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -379,6 +380,36 @@ export default function HomeScreen() {
   );
 
   const [initialCourseIndex] = useState(() => Math.max(firstUpcomingIdx, 0));
+  const [loadedDays, setLoadedDays] = useState({
+    today: false,
+    tomorrow: false,
+  });
+  const [homeLaidOut, setHomeLaidOut] = useState(false);
+  const handleHomeLayout = useCallback((event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+    if (width > 0 && height > 0) setHomeLaidOut(true);
+  }, []);
+  const handleTodayLoaded = useCallback(() => {
+    setLoadedDays((previous) => ({ ...previous, today: true }));
+  }, []);
+  const handleTomorrowLoaded = useCallback(() => {
+    setLoadedDays((previous) => ({ ...previous, tomorrow: true }));
+  }, []);
+  const homeReady =
+    vacation ||
+    (activeTab === 0
+      ? todayCourses.length === 0 || loadedDays.today
+      : tomorrowCourses.length === 0 || loadedDays.tomorrow);
+  useTabViewport();
+  useMarkRouteInteractive(homeLaidOut && homeReady);
+  const homeListsReady =
+    homeLaidOut &&
+    (vacation ||
+      ((todayCourses.length === 0 || loadedDays.today) &&
+        (tomorrowCourses.length === 0 || loadedDays.tomorrow)));
+  useEffect(() => {
+    if (homeListsReady) useStartupStore.getState().markHomeReady();
+  }, [homeListsReady]);
 
   const courseColorOf = useCallback(
     (name: string) =>
@@ -454,7 +485,7 @@ export default function HomeScreen() {
   ];
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1 }} onLayout={handleHomeLayout}>
       <View style={{ flex: 1, paddingTop: insets.top }}>
         <View className="flex-1">
           <View className="px-6 pb-2 pt-8">
@@ -673,6 +704,7 @@ export default function HomeScreen() {
                         todayCourses.length - 1,
                       )}
                       renderItem={renderTodayCourse}
+                      onLoad={handleTodayLoaded}
                       drawDistance={600}
                       showsVerticalScrollIndicator={false}
                     />
@@ -696,6 +728,7 @@ export default function HomeScreen() {
                       ItemSeparatorComponent={CourseSeparator}
                       maintainVisibleContentPosition={COURSE_CONTENT_POSITION}
                       renderItem={renderTomorrowCourse}
+                      onLoad={handleTomorrowLoaded}
                       drawDistance={600}
                       showsVerticalScrollIndicator={false}
                     />
