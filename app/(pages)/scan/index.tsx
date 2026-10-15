@@ -11,7 +11,8 @@ import {
   useFocusEffect,
   useLocalSearchParams,
 } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useIsFocused } from "expo-router/react-navigation";
+import { useCallback, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -42,8 +43,8 @@ function ScanScreen() {
   const insets = useSafeAreaInsets();
   const haptic = useHaptics();
   const [permission, requestPermission] = useCameraPermissions();
-  const [paused, setPaused] = useState(false);
-  const lastDataRef = useRef<string | null>(null);
+  const focused = useIsFocused();
+  const scanLockedRef = useRef(true);
 
   useEffect(() => {
     if (!permission) {
@@ -53,35 +54,38 @@ function ScanScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      setPaused(false);
+      scanLockedRef.current = false;
+      return () => {
+        scanLockedRef.current = true;
+      };
     }, []),
   );
 
   const handleScanned = useCallback(
     (scan: BarcodeScanningResult) => {
-      if (paused) return;
-      if (scan.data === lastDataRef.current) return;
-      lastDataRef.current = scan.data;
-      setPaused(true);
+      if (scanLockedRef.current || !scan.data) return;
+      scanLockedRef.current = true;
       haptic();
       router.push({
         pathname: "/share" as never,
         params: { data: scan.data },
       });
     },
-    [haptic, paused],
+    [haptic],
   );
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
       <Stack.Screen options={{ headerShown: false }} />
       {permission?.granted ? (
-        <CameraView
-          style={{ flex: 1 }}
-          facing="back"
-          barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-          onBarcodeScanned={paused ? undefined : handleScanned}
-        />
+        focused && (
+          <CameraView
+            style={{ flex: 1 }}
+            facing="back"
+            barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+            onBarcodeScanned={handleScanned}
+          />
+        )
       ) : (
         <PermissionState
           loading={!permission}
