@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
+import { useIsFocused } from "expo-router/react-navigation";
 import { CirclePlus, CircleX } from "lucide";
-import { type ComponentProps, useRef, useState } from "react";
+import { type ComponentProps, useCallback, useRef, useState } from "react";
 import {
   Modal,
   Platform,
@@ -13,10 +14,10 @@ import {
   type ViewInstance,
 } from "react-native";
 
+import { MorphingIcon } from "@/components/ui/morphing-icon";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useT } from "@/lib/i18n";
 import { useUpdateStore } from "@/store/update";
-import { MorphingIcon } from "@/components/ui/morphing-icon";
 
 const MENU_SHADOW = {
   shadowColor: "#000",
@@ -29,6 +30,7 @@ const MENU_SHADOW = {
 type Anchor = { top: number; right: number };
 
 export function HomeMenu({ isDark }: Readonly<{ isDark: boolean }>) {
+  const isFocused = useIsFocused();
   const t = useT();
   const haptic = useHaptics();
   const hasUpdate = useUpdateStore((s) => s.hasUpdate);
@@ -39,6 +41,12 @@ export function HomeMenu({ isDark }: Readonly<{ isDark: boolean }>) {
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const pendingAction = useRef<(() => void) | null>(null);
   const isOpen = anchor !== null;
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => setAnchor(null);
+    }, []),
+  );
 
   const open = () => {
     haptic();
@@ -69,16 +77,20 @@ export function HomeMenu({ isDark }: Readonly<{ isDark: boolean }>) {
         ref={triggerRef}
         hitSlop={8}
         className="relative p-1 active:opacity-60"
+        style={{ width: 34, height: 34 }}
         onPress={open}
         accessibilityRole="button"
         accessibilityState={{ expanded: isOpen }}
       >
-        <MorphingIcon
-          icon={isOpen ? CircleX : CirclePlus}
-          size={26}
-          color={isDark ? "#e5e5e5" : "#404040"}
-          strokeWidth={2}
-        />
+        {/* 返回页面时重建图标，避免残留旧的绘制状态 */}
+        {isFocused && (
+          <MorphingIcon
+            icon={isOpen ? CircleX : CirclePlus}
+            size={26}
+            color={isDark ? "#e5e5e5" : "#404040"}
+            strokeWidth={2}
+          />
+        )}
         {hasUpdate && (
           <View className="absolute right-0.5 top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-red-500 dark:border-neutral-900" />
         )}

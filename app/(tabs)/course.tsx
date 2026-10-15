@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
+import { useIsFocused } from "expo-router/react-navigation";
 import { Menu, X } from "lucide";
 import {
   type ReactNode,
@@ -99,6 +100,7 @@ function TabContent({
 
 export default function CourseScreen() {
   useMarkRouteInteractive();
+  const isFocused = useIsFocused();
   const t = useT();
   const courses = useCourseStore((store) => store.courses);
   const termStart = useCourseStore((store) => store.termStart);
@@ -141,7 +143,6 @@ export default function CourseScreen() {
     fabProgress.value = withTiming(fabOpen ? 1 : 0, { duration: 200 });
   }, [fabOpen, fabProgress]);
 
-  // 侧栏展开时顶栏垫上实色背景，避免背景图穿透；动画节奏与抽屉保持一致
   const headerBackdropProgress = useSharedValue(0);
 
   useEffect(() => {
@@ -193,7 +194,7 @@ export default function CourseScreen() {
         });
         return;
       }
-      // 实验系统只返回绝对日期，需要学期起始日才能换算周次
+      // 实验课程只有日期，需要学期起始日换算周次
       if (!termStart) {
         Toast.show({
           type: "error",
@@ -235,8 +236,7 @@ export default function CourseScreen() {
     setWeek(clamped);
   };
 
-  // 滚轮需要实时跟随课表，但连续跨周不应阻塞滚动手势；
-  // transition 允许 React 丢弃已经过时的中间周渲染。
+  // 降低课表更新的优先级，避免快速选择周次时阻塞滚动
   const handleWeekPickerSelect = useCallback((index: number) => {
     startTransition(() => {
       setWeek(index + 1);
@@ -288,12 +288,15 @@ export default function CourseScreen() {
               setShowDrawer((visible) => !visible);
             }}
           >
-            <MorphingIcon
-              icon={showDrawer ? X : Menu}
-              size={24}
-              color={iconColor}
-              strokeWidth={2}
-            />
+            {/* 返回页面时重建图标，避免残留旧的绘制状态 */}
+            {isFocused && (
+              <MorphingIcon
+                icon={showDrawer ? X : Menu}
+                size={24}
+                color={iconColor}
+                strokeWidth={2}
+              />
+            )}
           </Pressable>
 
           <View className="flex-1 flex-row items-center justify-center">

@@ -16,7 +16,7 @@ export function BottomSheetContent({
   return (
     <View
       collapsable={false}
-      style={{ paddingTop: Platform.OS === "ios" ? 32 : 16 }}
+      style={{ paddingTop: Platform.OS === "ios" ? 32 : 0 }}
     >
       {title && (
         <Text

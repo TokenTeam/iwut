@@ -388,7 +388,6 @@ export default function HomeScreen() {
   const handleCoursesLoaded = useCallback(() => {
     if (didAutoScroll.current) return;
     didAutoScroll.current = true;
-    // 虚拟化列表不会挂载所有卡片，交由 FlashList 测量并定位目标项
     if (firstUpcomingIdx > 0) {
       void courseScrollRef.current?.scrollToIndex({
         index: firstUpcomingIdx,
