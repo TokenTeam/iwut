@@ -12,6 +12,7 @@ Sentry.init({
   enableNative: !__DEV__,
   enableNativeCrashHandling: !__DEV__,
   enableNdk: !__DEV__,
+  enableTombstone: !__DEV__,
   environment: Updates.channel ?? "development",
   integrations: [
     Sentry.feedbackIntegration({

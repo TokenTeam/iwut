@@ -1,0 +1,13 @@
+diff --git a/types/index.d.ts b/types/index.d.ts
+index 6a66a1e8415324798ec5c88a44476d2981adb98e..cf68dacf39a4a165d7332ba9441962adbd973da1 100644
+--- a/types/index.d.ts
++++ b/types/index.d.ts
+@@ -14,7 +14,7 @@ interface MaskedViewProps extends ReactNative.ViewProps {
+  */
+ declare class MaskedViewComponent extends React.Component<MaskedViewProps> {}
+ declare const MaskedViewBase: Constructor<
+-  ReactNative.NativeMethods
++  ReactNative.HostInstance
+ > &
+   typeof MaskedViewComponent;
+ export default class MaskedView extends MaskedViewBase {}

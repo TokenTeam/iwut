@@ -7,6 +7,7 @@ import {
   NativeSyntheticEvent,
   Pressable,
   ScrollView,
+  type ScrollViewInstance,
   Text,
   View,
 } from "react-native";
@@ -42,7 +43,7 @@ export function AnnouncementBanner({
 }) {
   const [width, setWidth] = useState(0);
   const [activeIdx, setActiveIdx] = useState(0);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const pausedUntilRef = useRef(0);
   const activeIdxRef = useRef(0);
   const expandedIdsRef = useRef<Set<string>>(new Set());

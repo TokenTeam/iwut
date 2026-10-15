@@ -19,6 +19,7 @@ import {
   type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
+  type ScrollViewInstance,
 } from "react-native";
 
 import { CourseShareSheet } from "@/components/share/course-share-sheet";
@@ -436,7 +437,7 @@ export function Schedule({
   const [shareName, setShareName] = useState<string | null>(null);
   const [quickAddSlot, setQuickAddSlot] = useState<QuickAddSlot | null>(null);
 
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<ScrollViewInstance>(null);
   const didInitialScroll = useRef(false);
   const pagerRef = useRef<FlashListRef<number>>(null);
   const [pagerSize, setPagerSize] = useState({ width: 0, height: 0 });

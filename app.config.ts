@@ -148,6 +148,7 @@ const config: ExpoConfig = {
           enableAutoSessionTracking: false,
           enableNativeCrashHandling: !IS_DEV,
           enableNdk: !IS_DEV,
+          enableTombstone: !IS_DEV,
           tracesSampleRate: 0,
         },
         experimental_android: {

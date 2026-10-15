@@ -13,6 +13,7 @@ import {
   Switch,
   Text,
   TextInput,
+  type TextInputInstance,
   View,
 } from "react-native";
 import { FileLogger } from "react-native-file-logger";
@@ -75,7 +76,7 @@ export default function SettingsScreen() {
   const [reminderSheetVisible, setReminderSheetVisible] = useState(false);
   const [permissionSheetVisible, setPermissionSheetVisible] = useState(false);
   const [customMinutes, setCustomMinutes] = useState("");
-  const customInputRef = useRef<TextInput>(null);
+  const customInputRef = useRef<TextInputInstance>(null);
 
   const handleCourseDndChange = async (value: boolean) => {
     if (courseDndBusyRef.current) return;
