@@ -3,8 +3,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import { Menu, X } from "lucide";
 import {
-  startTransition,
   type ReactNode,
+  startTransition,
   useCallback,
   useEffect,
   useRef,
@@ -18,8 +18,8 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import { SafeAreaView } from "react-native-screens/experimental";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-screens/experimental";
 import Toast from "react-native-toast-message";
 
 import {
@@ -49,12 +49,48 @@ import { type ImportType, useCourseStore } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 import { useUserBindStore } from "@/store/user-bind";
 
-function TabContent({ children }: { children: ReactNode }) {
+function TabContent({
+  children,
+  bottomBackdrop,
+}: {
+  children: ReactNode;
+  bottomBackdrop: ReactNode;
+}) {
+  const [height, setHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+
   if (Platform.OS === "ios") {
     return (
-      <SafeAreaView edges={{ bottom: true }} style={{ flex: 1 }}>
-        {children}
-      </SafeAreaView>
+      <View
+        style={{ flex: 1 }}
+        onLayout={(event) => setHeight(event.nativeEvent.layout.height)}
+      >
+        <SafeAreaView edges={{ bottom: true }} style={{ flex: 1 }}>
+          <View
+            style={{ flex: 1 }}
+            onLayout={(event) =>
+              setContentHeight(event.nativeEvent.layout.height)
+            }
+          >
+            {children}
+          </View>
+        </SafeAreaView>
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height:
+              height > 0 && contentHeight > 0
+                ? Math.max(height - contentHeight, 0)
+                : 0,
+          }}
+        >
+          {bottomBackdrop}
+        </View>
+      </View>
     );
   }
 
@@ -213,7 +249,17 @@ export default function CourseScreen() {
   };
 
   return (
-    <TabContent>
+    <TabContent
+      bottomBackdrop={
+        courses.length === 0 && (
+          <Animated.View
+            className="absolute inset-0 bg-black"
+            style={fabOverlayStyle}
+            pointerEvents="none"
+          />
+        )
+      }
+    >
       {hasBgImage && (
         <Animated.View
           pointerEvents="none"

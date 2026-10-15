@@ -18,6 +18,8 @@
   "dependencies": {
     "@bacons/apple-targets": "~5.0.0",
     "@bsky.app/expo-image-crop-tool": "~0.5.1",
+    "@expo/material-symbols": "^0.1.1",
+    "@expo/ui": "~58.0.17",
     "@expo/vector-icons": "~15.1.1",
     "@preeternal/react-native-cookie-manager": "~6.3.2",
     "@react-native-assets/slider": "~11.0.12",

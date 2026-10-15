@@ -1,11 +1,12 @@
+import MaterialAdd from "@expo/material-symbols/add.xml";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 import Toast from "react-native-toast-message";
 
-import { getDayLabels } from "@/constants/weekdays";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
+import { getDayLabels } from "@/constants/weekdays";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
@@ -78,20 +79,17 @@ export default function ManageCourseScreen() {
   return (
     <>
       <Stack.Screen options={{ title: t("courseManage.title") }} />
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Button
+          icon={Platform.OS === "ios" ? "plus" : MaterialAdd}
+          accessibilityLabel={t("courseManage.addCourse")}
+          onPress={() => router.push("/settings/course/add")}
+        />
+      </Stack.Toolbar>
       <ScrollView
         className="flex-1 bg-neutral-100 dark:bg-neutral-900"
         contentContainerClassName="px-4 pt-4 pb-8"
       >
-        <Pressable
-          className="mb-4 flex-row items-center justify-center rounded-xl bg-blue-500 py-3.5 active:bg-blue-600"
-          onPress={() => router.push("/settings/course/add")}
-        >
-          <Ionicons name="add" size={20} color="#fff" />
-          <Text className="ml-1 text-base font-semibold text-white">
-            {t("courseManage.addCourse")}
-          </Text>
-        </Pressable>
-
         {uniqueCourses.length > 0 ? (
           <View className="overflow-hidden rounded-xl bg-white dark:bg-neutral-800">
             {uniqueCourses.map((item, index) => (
