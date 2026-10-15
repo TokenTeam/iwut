@@ -1,9 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import {
-  FlashList,
-  type FlashListRef,
-  type ListRenderItemInfo,
-} from "@shopify/flash-list";
+import { FlashList, type ListRenderItemInfo } from "@shopify/flash-list";
 import { router } from "expo-router";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -41,7 +37,7 @@ import {
   getTomorrowWeek,
   isVacation,
 } from "@/lib/date";
-import { type TKey, useT } from "@/lib/i18n";
+import { useT, type TKey } from "@/lib/i18n";
 import { filterActiveAnnouncements } from "@/services/announcements";
 import {
   formatCourseTimeRange,
@@ -382,19 +378,7 @@ export default function HomeScreen() {
     [todayCourses, nowMs],
   );
 
-  const courseScrollRef = useRef<FlashListRef<Course>>(null);
-  const didAutoScroll = useRef(false);
-
-  const handleCoursesLoaded = useCallback(() => {
-    if (didAutoScroll.current) return;
-    didAutoScroll.current = true;
-    if (firstUpcomingIdx > 0) {
-      void courseScrollRef.current?.scrollToIndex({
-        index: firstUpcomingIdx,
-        animated: true,
-      });
-    }
-  }, [firstUpcomingIdx]);
+  const [initialCourseIndex] = useState(() => Math.max(firstUpcomingIdx, 0));
 
   const courseColorOf = useCallback(
     (name: string) =>
@@ -678,15 +662,19 @@ export default function HomeScreen() {
                 <View key="today" style={{ flex: 1 }}>
                   {hasCourses && todayCourses.length > 0 ? (
                     <FlashList
-                      ref={courseScrollRef}
                       data={todayCourses}
                       keyExtractor={courseKeyExtractor}
+                      style={{ flex: 1 }}
                       contentContainerStyle={courseListStyles.content}
                       ItemSeparatorComponent={CourseSeparator}
                       maintainVisibleContentPosition={COURSE_CONTENT_POSITION}
-                      showsVerticalScrollIndicator={false}
-                      onLoad={handleCoursesLoaded}
+                      initialScrollIndex={Math.min(
+                        initialCourseIndex,
+                        todayCourses.length - 1,
+                      )}
                       renderItem={renderTodayCourse}
+                      drawDistance={600}
+                      showsVerticalScrollIndicator={false}
                     />
                   ) : (
                     <EmptyState
@@ -703,11 +691,13 @@ export default function HomeScreen() {
                     <FlashList
                       data={tomorrowCourses}
                       keyExtractor={courseKeyExtractor}
+                      style={{ flex: 1 }}
                       contentContainerStyle={courseListStyles.content}
                       ItemSeparatorComponent={CourseSeparator}
                       maintainVisibleContentPosition={COURSE_CONTENT_POSITION}
-                      showsVerticalScrollIndicator={false}
                       renderItem={renderTomorrowCourse}
+                      drawDistance={600}
+                      showsVerticalScrollIndicator={false}
                     />
                   ) : (
                     <EmptyState

@@ -57,23 +57,47 @@ function TabContent({
   children: ReactNode;
   bottomBackdrop: ReactNode;
 }) {
-  const [height, setHeight] = useState(0);
-  const [contentHeight, setContentHeight] = useState(0);
+  const [layout, setLayout] = useState({
+    height: 0,
+    contentHeight: 0,
+    ready: false,
+  });
+
+  const updateLayout = useCallback(
+    (key: "height" | "contentHeight", value: number) => {
+      setLayout((previous) => {
+        if (previous[key] === value) return previous;
+        const next = { ...previous, [key]: value };
+        // 等底部安全区生效后再挂载，避免网格先铺满屏幕再缩短
+        next.ready =
+          previous.ready ||
+          (Platform.OS === "ios" &&
+            Platform.isPad &&
+            next.contentHeight > 0 &&
+            next.height > 0) ||
+          (next.contentHeight > 0 && next.height > next.contentHeight);
+        return next;
+      });
+    },
+    [],
+  );
 
   if (Platform.OS === "ios") {
     return (
       <View
         style={{ flex: 1 }}
-        onLayout={(event) => setHeight(event.nativeEvent.layout.height)}
+        onLayout={(event) =>
+          updateLayout("height", event.nativeEvent.layout.height)
+        }
       >
         <SafeAreaView edges={{ bottom: true }} style={{ flex: 1 }}>
           <View
             style={{ flex: 1 }}
             onLayout={(event) =>
-              setContentHeight(event.nativeEvent.layout.height)
+              updateLayout("contentHeight", event.nativeEvent.layout.height)
             }
           >
-            {children}
+            {layout.ready ? children : null}
           </View>
         </SafeAreaView>
         <View
@@ -84,8 +108,8 @@ function TabContent({
             right: 0,
             bottom: 0,
             height:
-              height > 0 && contentHeight > 0
-                ? Math.max(height - contentHeight, 0)
+              layout.height > 0 && layout.contentHeight > 0
+                ? Math.max(layout.height - layout.contentHeight, 0)
                 : 0,
           }}
         >
