@@ -125,6 +125,7 @@ const config: ExpoConfig = {
       "expo-build-properties",
       {
         android: {
+          buildExpoModulesCoreFromSource: true,
           buildArchs: ["arm64-v8a"],
           useLegacyPackaging: true,
           enableMinifyInReleaseBuilds: true,

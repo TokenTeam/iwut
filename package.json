@@ -102,8 +102,7 @@
   "expo": {
     "autolinking": {
       "buildFromSource": [
-        "expo-blur",
-        "expo-calendar"
+        ".*"
       ]
     },
     "install": {
