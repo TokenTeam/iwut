@@ -4,13 +4,7 @@ import {
   CameraView,
   useCameraPermissions,
 } from "expo-camera";
-import {
-  Redirect,
-  router,
-  Stack,
-  useFocusEffect,
-  useLocalSearchParams,
-} from "expo-router";
+import { Redirect, router, Stack, useLocalSearchParams } from "expo-router";
 import { useIsFocused } from "expo-router/react-navigation";
 import { useCallback, useEffect, useRef } from "react";
 import {
@@ -24,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useHaptics } from "@/hooks/use-haptics";
 import { useT } from "@/lib/i18n";
+import { reportError } from "@/lib/report";
 
 export default function ScanRoute() {
   const params = useLocalSearchParams<{ data?: string | string[] }>();
@@ -41,51 +36,22 @@ export default function ScanRoute() {
 function ScanScreen() {
   const t = useT();
   const insets = useSafeAreaInsets();
-  const haptic = useHaptics();
   const [permission, requestPermission] = useCameraPermissions();
   const focused = useIsFocused();
-  const scanLockedRef = useRef(true);
 
   useEffect(() => {
     if (!permission) {
-      void requestPermission();
+      void requestPermission().catch((error) => {
+        reportError(error, { module: "scan", stage: "permission" });
+      });
     }
   }, [permission, requestPermission]);
-
-  useFocusEffect(
-    useCallback(() => {
-      scanLockedRef.current = false;
-      return () => {
-        scanLockedRef.current = true;
-      };
-    }, []),
-  );
-
-  const handleScanned = useCallback(
-    (scan: BarcodeScanningResult) => {
-      if (scanLockedRef.current || !scan.data) return;
-      scanLockedRef.current = true;
-      haptic();
-      router.push({
-        pathname: "/share" as never,
-        params: { data: scan.data },
-      });
-    },
-    [haptic],
-  );
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
       <Stack.Screen options={{ headerShown: false }} />
       {permission?.granted ? (
-        focused && (
-          <CameraView
-            style={{ flex: 1 }}
-            facing="back"
-            barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-            onBarcodeScanned={handleScanned}
-          />
-        )
+        focused && <ScanCamera />
       ) : (
         <PermissionState
           loading={!permission}
@@ -145,6 +111,63 @@ function ScanScreen() {
         <View />
       </View>
     </View>
+  );
+}
+
+function ScanCamera() {
+  const haptic = useHaptics();
+  const scanLockedRef = useRef(false);
+  const invalidEventReportedRef = useRef(false);
+
+  useEffect(() => {
+    scanLockedRef.current = false;
+    console.info("[scan] Camera mounted");
+    return () => {
+      scanLockedRef.current = true;
+      console.info("[scan] Camera unmounted");
+    };
+  }, []);
+
+  const handleScanned = useCallback(
+    (scan: BarcodeScanningResult) => {
+      if (scanLockedRef.current) return;
+      if (!scan.data) {
+        if (!invalidEventReportedRef.current) {
+          invalidEventReportedRef.current = true;
+          reportError(new Error("Barcode event has no data"), {
+            module: "scan",
+            stage: "barcode-event",
+            keys: Object.keys(scan),
+          });
+        }
+        return;
+      }
+      scanLockedRef.current = true;
+      console.info("[scan] Barcode received");
+      router.push({
+        pathname: "/share" as never,
+        params: { data: scan.data },
+      });
+      haptic();
+    },
+    [haptic],
+  );
+
+  return (
+    <CameraView
+      style={{ flex: 1 }}
+      facing="back"
+      mode="picture"
+      barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+      onBarcodeScanned={handleScanned}
+      onCameraReady={() => console.info("[scan] Camera ready")}
+      onMountError={({ message }) => {
+        reportError(new Error(message), {
+          module: "scan",
+          stage: "camera-mount",
+        });
+      }}
+    />
   );
 }
 
