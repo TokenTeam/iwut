@@ -85,6 +85,14 @@ export default function DeveloperSettingsScreen() {
             }
           />
         </MenuGroup>
+        <MenuGroup title={t("developer.debugSection")}>
+          <MenuItem
+            icon="article"
+            iconBg="#007AFF"
+            label={t("developer.viewLogs")}
+            href="/(pages)/settings/developer-logs"
+          />
+        </MenuGroup>
         <MenuGroup title={t("developer.sentrySection")}>
           <MenuItem
             icon="bug-report"

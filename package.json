@@ -62,6 +62,8 @@
     "morphicons": "~1.7.0",
     "nativewind": "5.0.0-rc.0",
     "node-forge": "~1.4.0",
+    "prism-react-renderer": "~2.4.1",
+    "prismjs": "~1.30.0",
     "qrcode": "~1.5.4",
     "react": "19.3.0",
     "react-dom": "19.3.0",

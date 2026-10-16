@@ -5,13 +5,20 @@ import {
   type transportFunctionType,
 } from "react-native-logs";
 
+import { appendLog, type LogLevelName } from "@/lib/log-buffer";
+
 const pending: { level: LogLevel; message: string }[] = [];
 let fileReady = false;
 let fileFailed = false;
 
-const transport: transportFunctionType<object> = ({ msg, level }) => {
+const transport: transportFunctionType<object> = ({
+  msg,
+  level,
+  extension,
+}) => {
   const message = msg.trim();
-  const method = level.text as "debug" | "info" | "warn" | "error";
+  const method = level.text as LogLevelName;
+  appendLog(method, extension, message);
   console[method](message);
   if (Platform.OS === "web" || fileFailed) return;
   if (fileReady) {
