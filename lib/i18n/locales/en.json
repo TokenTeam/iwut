@@ -319,6 +319,8 @@
     "enabled": "Developer options enabled",
     "sentrySection": "Sentry",
     "sentryTest": "Send test event",
+    "sentryTestConfirmDesc": "This will send a test exception to Sentry to verify error reporting. Send it now?",
+    "sentryTestConfirm": "Confirm",
     "sentryTestSent": "Test event sent",
     "sentryTestFailed": "Failed to send test event",
     "sentryUnavailable": "Sentry is disabled in the dev client"

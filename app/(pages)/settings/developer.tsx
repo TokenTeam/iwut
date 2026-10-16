@@ -1,9 +1,10 @@
 import * as Sentry from "@sentry/react-native";
 import { Redirect, Stack } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ActivityIndicator, ScrollView, Switch, View } from "react-native";
 import Toast from "react-native-toast-message";
 
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { IS_DEV } from "@/constants/is-dev";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
@@ -17,12 +18,16 @@ export default function DeveloperSettingsScreen() {
   useMarkRouteInteractive();
   const t = useT();
   const [sendingSentryTest, setSendingSentryTest] = useState(false);
+  const [sentryConfirmVisible, setSentryConfirmVisible] = useState(false);
+  const sendingSentryTestRef = useRef(false);
   const enabled = useDeveloperOptionsStore((s) => s.enabled);
   const setEnabled = useDeveloperOptionsStore((s) => s.setEnabled);
 
   if (!IS_DEV || !enabled) return <Redirect href="/(tabs)/user" />;
 
   const handleSentryTest = async () => {
+    if (sendingSentryTestRef.current) return;
+    setSentryConfirmVisible(false);
     if (__DEV__) {
       Toast.show({
         type: "info",
@@ -32,6 +37,7 @@ export default function DeveloperSettingsScreen() {
       return;
     }
 
+    sendingSentryTestRef.current = true;
     setSendingSentryTest(true);
     try {
       Sentry.captureException(new Error("This is a test event"), {
@@ -57,6 +63,7 @@ export default function DeveloperSettingsScreen() {
         position: "bottom",
       });
     } finally {
+      sendingSentryTestRef.current = false;
       setSendingSentryTest(false);
     }
   };
@@ -102,10 +109,22 @@ export default function DeveloperSettingsScreen() {
             right={
               sendingSentryTest ? <ActivityIndicator size="small" /> : undefined
             }
-            onPress={sendingSentryTest ? undefined : handleSentryTest}
+            onPress={
+              sendingSentryTest
+                ? undefined
+                : () => setSentryConfirmVisible(true)
+            }
           />
         </MenuGroup>
       </ScrollView>
+      <ConfirmSheet
+        visible={sentryConfirmVisible}
+        onClose={() => setSentryConfirmVisible(false)}
+        title={t("developer.sentryTest")}
+        description={t("developer.sentryTestConfirmDesc")}
+        confirmText={t("developer.sentryTestConfirm")}
+        onConfirm={() => void handleSentryTest()}
+      />
     </View>
   );
 }

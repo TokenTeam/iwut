@@ -5,8 +5,10 @@ import {
   type transportFunctionType,
 } from "react-native-logs";
 
+import { IS_DEV } from "@/constants/is-dev";
 import { appendLog, type LogLevelName } from "@/lib/log-buffer";
 
+const isDebug = __DEV__ || IS_DEV;
 const pending: { level: LogLevel; message: string }[] = [];
 let fileReady = false;
 let fileFailed = false;
@@ -31,7 +33,7 @@ const transport: transportFunctionType<object> = ({
 };
 
 export const logger = nativeLogger.createLogger({
-  severity: __DEV__ ? "debug" : "info",
+  severity: isDebug ? "debug" : "info",
   levels: {
     debug: LogLevel.Debug,
     info: LogLevel.Info,
@@ -47,7 +49,7 @@ export const logger = nativeLogger.createLogger({
 if (Platform.OS !== "web") {
   void FileLogger.configure({
     captureConsole: false,
-    logLevel: __DEV__ ? LogLevel.Debug : LogLevel.Info,
+    logLevel: isDebug ? LogLevel.Debug : LogLevel.Info,
     dailyRolling: true,
     maximumFileSize: 1024 * 512,
     maximumNumberOfFiles: 5,

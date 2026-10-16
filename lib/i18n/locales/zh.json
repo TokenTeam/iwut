@@ -319,6 +319,8 @@
     "enabled": "已启用开发者选项",
     "sentrySection": "Sentry",
     "sentryTest": "发送测试事件",
+    "sentryTestConfirmDesc": "将向 Sentry 发送一条测试异常，用于验证错误上报。确定发送吗？",
+    "sentryTestConfirm": "确认发送",
     "sentryTestSent": "测试事件已发送",
     "sentryTestFailed": "测试事件发送失败",
     "sentryUnavailable": "Dev Client 中未启用 Sentry"
