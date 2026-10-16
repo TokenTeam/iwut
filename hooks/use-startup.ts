@@ -3,8 +3,10 @@ import * as SplashScreen from "expo-splash-screen";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useStartupStore } from "@/store/startup";
+import { logger } from "@/lib/logger";
 
 const RENDER_WAIT_MS = 2000;
+const log = logger.extend("Startup");
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -64,7 +66,7 @@ export function useStartup({
         hiding.current = true;
         if (__DEV__) {
           const { homeReady, courseReady } = useStartupStore.getState();
-          console.info("[Startup] splash released", {
+          log.debug("splash released", {
             activeTab,
             homeReady,
             courseReady,

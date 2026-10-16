@@ -21,6 +21,7 @@ import { IS_DEV } from "@/constants/is-dev";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useZhlgdAutoLogin } from "@/hooks/use-zhlgd-autologin";
 import { t as translate, useT } from "@/lib/i18n";
+import { logger } from "@/lib/logger";
 import { reportError } from "@/lib/report";
 import {
   createWebViewScriptError,
@@ -36,6 +37,7 @@ import {
 } from "@/services/exam-import";
 import { useExamStore } from "@/store/exam";
 
+const log = logger.extend("ExamImport");
 const PROGRESS_STRIPES = Array.from({ length: 24 }, (_, i) => i);
 const PROGRESS_STRIPE_WIDTH = 12;
 const PROGRESS_STRIPE_GAP = 10;
@@ -206,7 +208,7 @@ export default function ExamImportScreen() {
       }
 
       if (msg?.type === "debug") {
-        console.log("exam", msg.message);
+        log.debug(msg.message);
         return;
       }
 

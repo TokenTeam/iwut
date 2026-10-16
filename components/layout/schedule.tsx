@@ -34,6 +34,7 @@ import { buildColorMap, getCourseColor } from "@/lib/course-colors";
 import { MAX_WEEK } from "@/lib/course-weeks";
 import { getTermWeekDayNumbers, getTermWeekMonthLabel } from "@/lib/date";
 import { useT } from "@/lib/i18n";
+import { logger } from "@/lib/logger";
 import type { Course } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 
@@ -48,6 +49,8 @@ import {
   type CourseSectionRange,
   type ScheduleCellTheme,
 } from "./schedule-day-column";
+
+const log = logger.extend("Schedule");
 
 interface SidebarLabel {
   label: string;
@@ -577,7 +580,7 @@ export function Schedule({
     if (previousSize.width === width && previousSize.height === height) return;
     pagerSizeRef.current = { width, height };
     if (__DEV__ && previousSize.height > 0) {
-      console.info("[Schedule] container resized", {
+      log.debug("container resized", {
         previous: previousSize,
         current: { width, height },
       });
@@ -585,7 +588,7 @@ export function Schedule({
     if (firstLayoutTimeRef.current === null) {
       firstLayoutTimeRef.current = Date.now();
       if (__DEV__) {
-        console.info("[Schedule] container ready", {
+        log.debug("container ready", {
           sinceCommitInMs:
             commitTimeRef.current === null
               ? null
@@ -644,7 +647,7 @@ export function Schedule({
       return;
     pagerVisibleRef.current = true;
     if (__DEV__) {
-      console.info("[Schedule] pager visible", {
+      log.debug("pager visible", {
         sinceCommitInMs:
           commitTimeRef.current === null
             ? null
@@ -668,7 +671,7 @@ export function Schedule({
     ({ elapsedTimeInMs }: { elapsedTimeInMs: number }) => {
       pagerLoadedRef.current = true;
       if (__DEV__) {
-        console.info("[Schedule] pager loaded", {
+        log.debug("pager loaded", {
           elapsedTimeInMs,
           sinceCommitInMs:
             commitTimeRef.current === null

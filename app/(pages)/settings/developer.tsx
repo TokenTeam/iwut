@@ -8,7 +8,10 @@ import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { IS_DEV } from "@/constants/is-dev";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
+import { logger } from "@/lib/logger";
 import { useDeveloperOptionsStore } from "@/store/developer-options";
+
+const log = logger.extend("Developer");
 
 export default function DeveloperSettingsScreen() {
   useMarkRouteInteractive();
@@ -47,7 +50,7 @@ export default function DeveloperSettingsScreen() {
         position: "bottom",
       });
     } catch (error) {
-      console.error("Failed to send Sentry test event", error);
+      log.error("Failed to send Sentry test event", error);
       Toast.show({
         type: "error",
         text1: t("developer.sentryTestFailed"),

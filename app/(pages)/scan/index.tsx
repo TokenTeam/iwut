@@ -18,7 +18,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useHaptics } from "@/hooks/use-haptics";
 import { useT } from "@/lib/i18n";
+import { logger } from "@/lib/logger";
 import { reportError } from "@/lib/report";
+
+const log = logger.extend("Scan");
 
 export default function ScanRoute() {
   const params = useLocalSearchParams<{ data?: string | string[] }>();
@@ -121,10 +124,10 @@ function ScanCamera() {
 
   useEffect(() => {
     scanLockedRef.current = false;
-    console.info("[scan] Camera mounted");
+    log.debug("Camera mounted");
     return () => {
       scanLockedRef.current = true;
-      console.info("[scan] Camera unmounted");
+      log.debug("Camera unmounted");
     };
   }, []);
 
@@ -143,7 +146,7 @@ function ScanCamera() {
         return;
       }
       scanLockedRef.current = true;
-      console.info("[scan] Barcode received");
+      log.debug("Barcode received");
       router.push({
         pathname: "/share" as never,
         params: { data: scan.data },
@@ -160,7 +163,7 @@ function ScanCamera() {
       mode="picture"
       barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
       onBarcodeScanned={handleScanned}
-      onCameraReady={() => console.info("[scan] Camera ready")}
+      onCameraReady={() => log.debug("Camera ready")}
       onMountError={({ message }) => {
         reportError(new Error(message), {
           module: "scan",

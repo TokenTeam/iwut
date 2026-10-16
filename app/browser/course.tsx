@@ -22,6 +22,7 @@ import { IS_DEV } from "@/constants/is-dev";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useZhlgdAutoLogin } from "@/hooks/use-zhlgd-autologin";
 import { t as translate, useT } from "@/lib/i18n";
+import { logger } from "@/lib/logger";
 import { reportError } from "@/lib/report";
 import {
   createWebViewScriptError,
@@ -45,6 +46,8 @@ import {
 import { syncWidgetData } from "@/services/widget-sync";
 import { type ImportType, useCourseStore } from "@/store/course";
 import { useUserBindStore } from "@/store/user-bind";
+
+const log = logger.extend("CourseImport");
 
 function normalizeImportType(type: string | string[] | undefined): ImportType {
   return type === "master" ? "master" : "bachelor";
@@ -270,7 +273,7 @@ export default function CourseImportScreen() {
       }
 
       if (msg?.type === "debug") {
-        console.log(importType, msg.message);
+        log.debug(importType, msg.message);
         return;
       }
 

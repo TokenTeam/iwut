@@ -1,5 +1,5 @@
+import "@/lib/logger";
 import * as Sentry from "@sentry/react-native";
-import { FileLogger } from "react-native-file-logger";
 
 import { SENTRY_DSN } from "@/constants/api";
 import { isNetworkError } from "@/lib/network-error";
@@ -48,13 +48,6 @@ Sentry.init({
   },
 });
 
-FileLogger.configure({
-  dailyRolling: true,
-  maximumFileSize: 1024 * 512,
-  maximumNumberOfFiles: 5,
-  captureConsole: true,
-});
-
 /* eslint-disable import/first */
 import "@/lib/i18n/bootstrap";
 import { Feather, Ionicons } from "@expo/vector-icons";
@@ -82,11 +75,11 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useStartup } from "@/hooks/use-startup";
 import { refreshSystemLocale, t } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
-import { syncCourseDnd } from "@/services/course-dnd";
 import {
   clearSyncedCalendarData,
   syncCoursesToCalendar,
 } from "@/services/calendar-sync";
+import { syncCourseDnd } from "@/services/course-dnd";
 import {
   initNotificationChannel,
   registerBackgroundRefresh,
