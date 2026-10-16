@@ -402,11 +402,7 @@ export default function HomeScreen() {
       : tomorrowCourses.length === 0 || loadedDays.tomorrow);
   useTabViewport();
   useMarkRouteInteractive(homeLaidOut && homeReady);
-  const homeListsReady =
-    homeLaidOut &&
-    (vacation ||
-      ((todayCourses.length === 0 || loadedDays.today) &&
-        (tomorrowCourses.length === 0 || loadedDays.tomorrow)));
+  const homeListsReady = homeLaidOut && homeReady;
   useEffect(() => {
     if (homeListsReady) useStartupStore.getState().markHomeReady();
   }, [homeListsReady]);

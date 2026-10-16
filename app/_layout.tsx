@@ -137,6 +137,7 @@ function RootLayout() {
     assetsReady: fontsLoaded || !!fontError,
     routeReady: segments.length > 0,
     inTabs: segments[0] === "(tabs)",
+    activeTab: segments[1] ?? "index",
     needsOnboarding: !onboardingCompleted && !isBound && courseCount === 0,
   });
 

@@ -12,19 +12,25 @@ export function useStartup({
   assetsReady,
   routeReady,
   inTabs,
+  activeTab,
   needsOnboarding,
 }: {
   assetsReady: boolean;
   routeReady: boolean;
   inTabs: boolean;
+  activeTab: string;
   needsOnboarding: boolean;
 }) {
   const [rootLaidOut, setRootLaidOut] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
   const [released, setReleased] = useState(false);
   const hiding = useRef(false);
-  const tabsReady = useStartupStore(
-    (state) => state.homeReady && state.courseReady,
+  const screenReady = useStartupStore((state) =>
+    activeTab === "index"
+      ? state.homeReady
+      : activeTab === "course"
+        ? state.courseReady
+        : true,
   );
   const onRootLayout = useCallback(() => setRootLaidOut(true), []);
 
@@ -44,8 +50,9 @@ export function useStartup({
     return () => clearTimeout(timer);
   }, [released, rootLaidOut]);
 
+  // 只等待启动页面，隐藏页的预热不能阻塞启动
   const canRelease =
-    timedOut || (routeReady && (!inTabs || (!needsOnboarding && tabsReady)));
+    timedOut || (routeReady && (!inTabs || (!needsOnboarding && screenReady)));
 
   useEffect(() => {
     if (!assetsReady || !rootLaidOut || !canRelease || released) return;
@@ -56,7 +63,13 @@ export function useStartup({
         if (hiding.current) return;
         hiding.current = true;
         if (__DEV__) {
-          console.info("[Startup] splash released", { tabsReady, timedOut });
+          const { homeReady, courseReady } = useStartupStore.getState();
+          console.info("[Startup] splash released", {
+            activeTab,
+            homeReady,
+            courseReady,
+            timedOut,
+          });
         }
         void SplashScreen.hideAsync()
           .catch(() => {})
@@ -67,7 +80,7 @@ export function useStartup({
       cancelAnimationFrame(firstFrame);
       if (secondFrame !== undefined) cancelAnimationFrame(secondFrame);
     };
-  }, [assetsReady, canRelease, released, rootLaidOut, tabsReady, timedOut]);
+  }, [activeTab, assetsReady, canRelease, released, rootLaidOut, timedOut]);
 
   return onRootLayout;
 }
