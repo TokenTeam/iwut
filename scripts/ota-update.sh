@@ -15,8 +15,8 @@ cd "$(dirname "$0")/.."
 VERSION=$(bun -p "require('./package.json').version")
 
 rm -rf dist
-bun expo export --platform ios --platform android --output-dir dist --source-maps
-bun expo config --type public --json > dist/expoConfig.json
+npx expo export --platform ios --platform android --output-dir dist --source-maps
+npx expo config --type public --json > dist/expoConfig.json
 bunx sentry-expo-upload-sourcemaps dist
 
 cd dist
