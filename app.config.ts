@@ -12,7 +12,11 @@ const ALLOW_UNRESTRICTED_HTTP =
   !PROFILE || PROFILE === "development" || PROFILE === "preview";
 
 const config: ExpoConfig = {
-  name: IS_DEV ? "掌上吾理 Dev" : "掌上吾理 Pro",
+  name: IS_DEV
+    ? "掌上吾理 Dev"
+    : process.env.EAS_BUILD_PLATFORM === "ios"
+      ? "掌上吾理 Pro"
+      : "掌上吾理",
   slug: "iwut",
   version: "0.3.25",
   runtimeVersion: {
