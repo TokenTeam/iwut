@@ -1,4 +1,5 @@
 import { BottomSheet as NativeBottomSheet, Host, RNHostView } from "@expo/ui";
+import { Platform } from "react-native";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
@@ -23,6 +24,7 @@ export function BottomSheet(props: Readonly<BottomSheetProps>) {
           props.onDismiss?.();
         }}
         contentPadding={0}
+        showDragIndicator={Platform.OS !== "android"}
         containerColor={colorScheme === "dark" ? "#262626" : "#ffffff"}
       >
         <RNHostView matchContents={{ vertical: true }}>

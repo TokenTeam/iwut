@@ -18,6 +18,21 @@ export function BottomSheetContent({
       collapsable={false}
       style={{ paddingTop: Platform.OS === "ios" ? 32 : 0 }}
     >
+      {Platform.OS === "android" && (
+        <View
+          pointerEvents="none"
+          accessible={false}
+          className="bg-neutral-300 dark:bg-neutral-600"
+          style={{
+            alignSelf: "center",
+            width: 36,
+            height: 4,
+            borderRadius: 2,
+            marginTop: 8,
+            marginBottom: 12,
+          }}
+        />
+      )}
       {title && (
         <Text
           accessibilityRole="header"
