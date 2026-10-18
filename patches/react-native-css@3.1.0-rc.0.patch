@@ -1,0 +1,39 @@
+diff --git a/src/components/index.cts b/src/components/index.cts
+--- a/src/components/index.cts
++++ b/src/components/index.cts
+@@ -119,6 +119,9 @@ module.exports = {
+   get AppState() {
+     return require("react-native").AppState;
+   },
++  get AssetRegistry() {
++    return require("react-native").AssetRegistry;
++  },
+   get BackHandler() {
+     return require("react-native").BackHandler;
+   },
+diff --git a/dist/commonjs/components/index.cjs b/dist/commonjs/components/index.cjs
+--- a/dist/commonjs/components/index.cjs
++++ b/dist/commonjs/components/index.cjs
+@@ -120,6 +120,9 @@ module.exports = {
+   get AppState() {
+     return require("react-native").AppState;
+   },
++  get AssetRegistry() {
++    return require("react-native").AssetRegistry;
++  },
+   get BackHandler() {
+     return require("react-native").BackHandler;
+   },
+diff --git a/dist/module/components/index.cjs b/dist/module/components/index.cjs
+--- a/dist/module/components/index.cjs
++++ b/dist/module/components/index.cjs
+@@ -120,6 +120,9 @@ module.exports = {
+   get AppState() {
+     return require("react-native").AppState;
+   },
++  get AssetRegistry() {
++    return require("react-native").AssetRegistry;
++  },
+   get BackHandler() {
+     return require("react-native").BackHandler;
+   },

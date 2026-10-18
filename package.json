@@ -121,6 +121,7 @@
     }
   },
   "patchedDependencies": {
+    "react-native-css@3.1.0-rc.0": "patches/react-native-css@3.1.0-rc.0.patch",
     "@bsky.app/expo-image-crop-tool@0.5.1": "patches/@bsky.app%2Fexpo-image-crop-tool@0.5.1.patch",
     "expo-blur@58.0.4": "patches/expo-blur@58.0.4.patch",
     "expo-calendar@58.0.6": "patches/expo-calendar@58.0.6.patch",
