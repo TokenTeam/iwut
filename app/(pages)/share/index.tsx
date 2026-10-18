@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Clipboard from "expo-clipboard";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import {
@@ -10,6 +11,7 @@ import {
 } from "react-native";
 import Toast from "react-native-toast-message";
 
+import { Fonts } from "@/constants/theme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
@@ -48,6 +50,24 @@ export default function ShareScreen() {
   };
 
   const matched = result.status === "matched" ? result : null;
+  const copyContent = async () => {
+    haptic();
+    try {
+      await Clipboard.setStringAsync(data);
+      Toast.show({
+        type: "success",
+        text1: t("scan.contentCopied"),
+        position: "bottom",
+      });
+    } catch {
+      Toast.show({
+        type: "error",
+        text1: t("scan.copyFailed"),
+        position: "bottom",
+      });
+    }
+  };
+
   const description =
     result.status === "matched"
       ? result.preview.description
@@ -55,7 +75,11 @@ export default function ShareScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: t("share.receiveTitle") }} />
+      <Stack.Screen
+        options={{
+          title: matched ? t("share.receiveTitle") : t("scan.resultTitle"),
+        }}
+      />
       <ScrollView
         className="flex-1 bg-neutral-100 dark:bg-neutral-900"
         contentContainerClassName="px-4 pt-4 pb-8"
@@ -72,12 +96,35 @@ export default function ShareScreen() {
               />
             </View>
             <Text className="mt-4 text-center text-xl font-semibold text-neutral-900 dark:text-neutral-100">
-              {matched?.preview.title ?? t("scan.invalidTitle")}
+              {matched?.preview.title ?? t("scan.resultTitle")}
             </Text>
             <Text className="mt-2 text-center text-sm leading-5 text-neutral-500 dark:text-neutral-400">
               {description}
             </Text>
           </View>
+
+          {!matched && data.length > 0 && (
+            <View className="mx-5 mb-6 flex-row items-center overflow-hidden rounded-xl bg-neutral-100 dark:bg-neutral-900">
+              <View className="min-w-0 flex-1 py-4 pl-4">
+                <Text
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  className="text-sm leading-6 text-neutral-900 dark:text-neutral-100"
+                  style={{ fontFamily: Fonts.mono }}
+                >
+                  {data.replace(/\r\n|[\n\r\u2028\u2029]/g, " ")}
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t("scan.copyContent")}
+                className="m-1 h-12 w-12 shrink-0 items-center justify-center rounded-lg active:bg-neutral-200 dark:active:bg-neutral-800"
+                onPress={() => void copyContent()}
+              >
+                <Ionicons name="copy-outline" size={22} color="#3b82f6" />
+              </Pressable>
+            </View>
+          )}
 
           {matched?.preview.details && (
             <View className="mx-5 mb-6 overflow-hidden rounded-xl bg-neutral-100 dark:bg-neutral-900">
