@@ -14,6 +14,7 @@ export function ConfirmSheet({
   cancelText,
   destructive = false,
   onConfirm,
+  onCancel,
 }: Readonly<{
   visible: boolean;
   onClose: () => void;
@@ -23,6 +24,7 @@ export function ConfirmSheet({
   cancelText?: string;
   destructive?: boolean;
   onConfirm: () => void;
+  onCancel?: () => void;
 }>) {
   const t = useT();
   const haptic = useHaptics();
@@ -38,7 +40,7 @@ export function ConfirmSheet({
           className="flex-1 items-center rounded-xl bg-neutral-200 py-3 active:bg-neutral-300 dark:bg-neutral-700 dark:active:bg-neutral-600"
           onPress={() => {
             haptic();
-            onClose();
+            (onCancel ?? onClose)();
           }}
         >
           <Text className="text-base font-medium text-neutral-600 dark:text-neutral-300">

@@ -11,6 +11,7 @@ import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import { useDeveloperOptionsStore } from "@/store/developer-options";
+import { useTelemetryStore } from "@/store/telemetry";
 
 const log = logger.extend("Developer");
 
@@ -28,6 +29,14 @@ export default function DeveloperSettingsScreen() {
   const handleSentryTest = async () => {
     if (sendingSentryTestRef.current) return;
     setSentryConfirmVisible(false);
+    if (!useTelemetryStore.getState().enabled) {
+      Toast.show({
+        type: "info",
+        text1: t("settings.telemetryDisabled"),
+        position: "bottom",
+      });
+      return;
+    }
     if (__DEV__) {
       Toast.show({
         type: "info",

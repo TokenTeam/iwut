@@ -3,12 +3,14 @@ import * as Sentry from "@sentry/react-native";
 
 import { SENTRY_DSN } from "@/constants/api";
 import { isNetworkError } from "@/lib/network-error";
+import { useTelemetryStore } from "@/store/telemetry";
 
 Sentry.init({
   dsn: SENTRY_DSN,
   enableAutoSessionTracking: false,
   tracesSampleRate: 0,
-  enabled: !__DEV__,
+  enabled: !__DEV__ && useTelemetryStore.getState().enabled,
+  autoInitializeNativeSdk: false,
   enableNative: !__DEV__,
   enableNativeCrashHandling: !__DEV__,
   enableNdk: !__DEV__,
@@ -38,6 +40,7 @@ Sentry.init({
     }),
   ],
   beforeSend(event, hint) {
+    if (!useTelemetryStore.getState().enabled) return null;
     if (isNetworkError(hint.originalException)) return null;
 
     const isNetworkException = event.exception?.values?.some((exception) =>
@@ -45,6 +48,9 @@ Sentry.init({
     );
 
     return isNetworkException ? null : event;
+  },
+  beforeBreadcrumb(breadcrumb) {
+    return useTelemetryStore.getState().enabled ? breadcrumb : null;
   },
 });
 
@@ -227,8 +233,7 @@ function RootLayout() {
       if (Platform.OS === "ios") {
         showUpcomingLiveActivity().catch(() => {});
       }
-      // On Android the app keeps running across system-language changes, so
-      // re-resolve the device locale whenever we come back to the foreground.
+      // 返回前台时重新读取系统语言
       if (Platform.OS === "android") {
         refreshSystemLocale();
       }
@@ -240,7 +245,7 @@ function RootLayout() {
 
   useEffect(() => {
     syncWidgetData().catch(() => {});
-    // 课程批量变更会连续触发订阅，debounce 后只执行最后一次
+    // 批量修改课程后执行一次同步
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const unsub = useCourseStore.subscribe((state, prev) => {
       if (
@@ -265,7 +270,7 @@ function RootLayout() {
         }, 400);
       }
     });
-    // 考试数据导入/清空后重排考试提醒（与课程提醒共用同一调度流程）
+    // 考试数据变化后重新安排本地提醒
     const unsubExam = useExamStore.subscribe((state, prev) => {
       if (state.exams !== prev.exams) {
         scheduleWeeklyReminders().catch(() => {});

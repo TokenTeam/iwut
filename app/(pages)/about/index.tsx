@@ -24,6 +24,7 @@ import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import { useDeveloperOptionsStore } from "@/store/developer-options";
+import { useTelemetryStore } from "@/store/telemetry";
 import { useUpdateStore } from "@/store/update";
 
 const icon = require("@/assets/images/icon.png");
@@ -108,6 +109,14 @@ export default function AboutScreen() {
   }, [check, openUpdateModal, t]);
 
   const handleFeedback = useCallback(() => {
+    if (!useTelemetryStore.getState().enabled) {
+      Toast.show({
+        type: "info",
+        text1: t("settings.telemetryDisabled"),
+        position: "bottom",
+      });
+      return;
+    }
     if (__DEV__ || !Sentry.getClient()) {
       Toast.show({
         type: "info",

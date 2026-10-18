@@ -1,0 +1,18 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'dev.tokenteam.iwut'
+
+expoModule {
+  canBePublished = false
+}
+
+android {
+  namespace "dev.tokenteam.iwut.telemetry"
+}
+
+dependencies {
+  implementation project(':sentry_react-native')
+}

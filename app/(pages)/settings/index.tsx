@@ -43,6 +43,7 @@ import {
 import { useCourseStore } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 import { useSettingsStore } from "@/store/settings";
+import { useTelemetryStore } from "@/store/telemetry";
 
 const REMINDER_PRESETS = [15, 30, 60];
 const EMPTY_WEBVIEW_HTML = "<!doctype html><html><body></body></html>";
@@ -65,6 +66,31 @@ export default function SettingsScreen() {
   const setExamReminder = useSettingsStore((s) => s.setExamReminder);
   const reminderMinutes = useSettingsStore((s) => s.reminderMinutes);
   const setReminderMinutes = useSettingsStore((s) => s.setReminderMinutes);
+  const telemetryEnabled = useTelemetryStore((s) => s.enabled);
+  const telemetryUpdating = useTelemetryStore((s) => s.updating);
+  const setTelemetryEnabled = useTelemetryStore((s) => s.setEnabled);
+  const [telemetryConfirmVisible, setTelemetryConfirmVisible] = useState(false);
+
+  const applyTelemetryChange = async (value: boolean) => {
+    try {
+      await setTelemetryEnabled(value);
+    } catch {
+      Toast.show({
+        type: "error",
+        text1: t("settings.telemetryFailed"),
+        position: "bottom",
+      });
+    }
+  };
+
+  const handleTelemetryChange = (value: boolean) => {
+    if (telemetryUpdating) return;
+    if (value) {
+      void applyTelemetryChange(true);
+    } else {
+      setTelemetryConfirmVisible(true);
+    }
+  };
 
   const courseDndBusyRef = useRef(false);
   const [courseDndSheet, setCourseDndSheet] = useState<
@@ -125,13 +151,13 @@ export default function SettingsScreen() {
     }
   };
 
-  // 临时挂载隐藏 WebView 调 ref.clearCache(true)
+  // 临时创建隐藏网页视图以清理网页缓存
   const [cacheWebViewMounted, setCacheWebViewMounted] = useState(false);
   const cacheClearedResolveRef = useRef<(() => void) | null>(null);
 
   const clearWebViewCache = () =>
     new Promise<void>((resolve) => {
-      // ref 回调没拿到实例也要在 2s 后放行避免卡死
+      // 等待超时后结束清理流程以免界面卡住
       const timer = setTimeout(() => {
         cacheClearedResolveRef.current = null;
         setCacheWebViewMounted(false);
@@ -147,7 +173,7 @@ export default function SettingsScreen() {
 
   const handleCacheWebViewRef = (instance: WebView | null) => {
     if (!instance) return;
-    // ref 已赋值意味着 native 视图构造完成，再给 50ms 缓冲后派发命令
+    // 等待原生视图就绪后再清理缓存
     setTimeout(() => {
       instance.clearCache(true);
       setTimeout(() => {
@@ -158,7 +184,7 @@ export default function SettingsScreen() {
     }, 50);
   };
 
-  // 课程或考试提醒任一开启就需要后台刷新，两者都关才注销。
+  // 课程和考试提醒全部关闭后才能注销后台刷新
   const syncBackgroundRefresh = async () => {
     const { courseReminder: cr, examReminder: er } =
       useSettingsStore.getState();
@@ -273,7 +299,6 @@ export default function SettingsScreen() {
       const diagnostics = await collectDiagnostics();
       const info = formatDiagnostics(diagnostics);
 
-      // 动态加载 jszip，避免计入首屏 bundle
       const { default: JSZip } = await import("jszip");
       const archive = new JSZip();
       archive.file("info.txt", info);
@@ -405,6 +430,24 @@ export default function SettingsScreen() {
           )}
         </MenuGroup>
 
+        <MenuGroup title={t("settings.privacy")}>
+          <MenuItem
+            icon="bug-report"
+            iconBg="#5856D6"
+            label={t("settings.telemetry")}
+            showArrow={false}
+            onPress={() => handleTelemetryChange(!telemetryEnabled)}
+            right={
+              <Switch
+                accessibilityLabel={t("settings.telemetry")}
+                value={telemetryEnabled}
+                disabled={telemetryUpdating}
+                onValueChange={handleTelemetryChange}
+              />
+            }
+          />
+        </MenuGroup>
+
         <MenuGroup title={t("settings.storage")}>
           <MenuItem
             icon="delete-outline"
@@ -424,6 +467,20 @@ export default function SettingsScreen() {
           />
         </MenuGroup>
       </ScrollView>
+
+      <ConfirmSheet
+        visible={telemetryConfirmVisible}
+        onClose={() => setTelemetryConfirmVisible(false)}
+        title={t("settings.telemetryDisableTitle")}
+        description={t("settings.telemetryDisableDesc")}
+        confirmText={t("settings.telemetryKeepEnabled")}
+        cancelText={t("settings.telemetryDisableConfirm")}
+        onConfirm={() => setTelemetryConfirmVisible(false)}
+        onCancel={() => {
+          setTelemetryConfirmVisible(false);
+          void applyTelemetryChange(false);
+        }}
+      />
 
       {Platform.OS === "android" && (
         <ConfirmSheet
