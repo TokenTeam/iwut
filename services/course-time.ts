@@ -42,10 +42,30 @@ function timeToMinutes(time?: string): number | null {
   if (!time) return null;
   const m = /^(\d{1,2}):(\d{2})$/.exec(time);
   if (!m) return null;
-  return Number(m[1]) * 60 + Number(m[2]);
+  const hours = Number(m[1]);
+  const minutes = Number(m[2]);
+  return hours < 24 && minutes < 60 ? hours * 60 + minutes : null;
 }
 
-// 以下取值均优先课程携带的真实时间，节次时间作兜底
+export function isValidCourseTimeRange(start?: string, end?: string): boolean {
+  const startMin = timeToMinutes(start);
+  const endMin = timeToMinutes(end);
+  return startMin !== null && endMin !== null && startMin < endMin;
+}
+
+/** 按时间范围计算课表占用的节次，超出课表的部分归入首节或末节 */
+export function getCourseSectionsForTime(start: string, end: string) {
+  if (!isValidCourseTimeRange(start, end)) return null;
+  const startMin = timeToMinutes(start)!;
+  const endMin = timeToMinutes(end)!;
+  const sections = Object.keys(SECTION_TIMES).map(Number);
+  // 开始时间落在课间时取下一节，结束时间落在课间时取上一节，至少占一节
+  const sectionStart =
+    sections.find((s) => SECTION_TIMES[s][3] > startMin) ?? sections.at(-1)!;
+  const sectionEnd =
+    sections.findLast((s) => SECTION_TIMES[s][2] < endMin) ?? sections[0];
+  return { sectionStart, sectionEnd: Math.max(sectionStart, sectionEnd) };
+}
 
 export function getCourseStartMin(course: CourseTimeFields): number {
   return (

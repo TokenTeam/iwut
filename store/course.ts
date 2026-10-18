@@ -7,18 +7,20 @@ import { zustandStorage } from "@/lib/storage";
 export type ImportType = "bachelor" | "master" | "lab";
 
 export interface Course {
-  name: string; // 课程名
-  room: string; // 教室
-  teacher: string; // 教师
-  weekStart: number; // 开始周数
-  weekEnd: number; // 结束周数
-  day: number; // 星期几
-  sectionStart: number; // 开始节数
-  sectionEnd: number; // 结束节数
-  note?: string; // 附加信息
-  seat?: number; // 座位号
-  startTime?: string; // 真实开始时间 "HH:mm"，节次仅用于排版定位
-  endTime?: string; // 真实结束时间 "HH:mm"
+  name: string;
+  room: string;
+  teacher: string;
+  weekStart: number;
+  weekEnd: number;
+  day: number; // 1 为周一，7 为周日
+  sectionStart: number;
+  sectionEnd: number;
+  note?: string;
+  seat?: number;
+  // 自定义时间采用 H:mm 或 HH:mm 格式，优先于节次时间，节次仍用于课表布局
+  startTime?: string;
+  endTime?: string;
+  timeMode?: "sections" | "time"; // 编辑时使用的模式，默认按节数调整
   source?: "imported" | "manual" | "lab";
 }
 
@@ -39,7 +41,7 @@ export const useCourseStore = create<CourseStore>()(
       courses: [],
       termStart: "",
       setImportedCourses: (imported: Course[]) => {
-        // 只替换普通导入课程，保留手动添加与实验课
+        // 导入普通课程时，保留手动添加的课程和实验课
         const kept = get().courses.filter(
           (c) => c.source === "manual" || c.source === "lab",
         );
@@ -50,7 +52,7 @@ export const useCourseStore = create<CourseStore>()(
         set({ courses: dedupeCourses([...tagged, ...kept]) });
       },
       setLabCourses: (imported: Course[]) => {
-        // 实验课作为独立来源，重新导入只覆盖旧的实验课
+        // 导入实验课时，只替换已有的实验课
         const kept = get().courses.filter((c) => c.source !== "lab");
         const tagged = imported.map((c) => ({
           ...c,

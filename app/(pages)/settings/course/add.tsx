@@ -1,3 +1,4 @@
+import { DateTimePicker } from "@expo/ui/community/datetime-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { RangeSlider } from "@react-native-assets/slider";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
@@ -30,13 +31,21 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { MAX_SECTION, MAX_WEEK, weeksToRanges } from "@/lib/course-weeks";
 import { useT } from "@/lib/i18n";
-import { formatCourseSectionTimeRange } from "@/services/course-time";
+import {
+  formatCourseTimeRange,
+  getCourseSectionsForTime,
+  isValidCourseTimeRange,
+  SECTION_TIMES,
+} from "@/services/course-time";
 import { type Course, useCourseStore } from "@/store/course";
 
 interface TimeSlot {
   day: number;
   sectionStart: number;
   sectionEnd: number;
+  timeMode: "sections" | "time";
+  startTime?: string;
+  endTime?: string;
   room: string;
   weeks: Set<number>;
 }
@@ -48,6 +57,7 @@ function createEmptySlot(): TimeSlot {
     day: 1,
     sectionStart: 1,
     sectionEnd: 2,
+    timeMode: "sections",
     room: "",
     weeks: new Set(),
   };
@@ -57,7 +67,16 @@ function recordsToSlots(records: Course[]): TimeSlot[] {
   const map = new Map<string, TimeSlot>();
   for (const r of records) {
     const room = r.room ?? "";
-    const key = `${r.day}-${r.sectionStart}-${r.sectionEnd}-${room}`;
+    const timeMode = r.timeMode ?? "sections";
+    const key = JSON.stringify([
+      r.day,
+      r.sectionStart,
+      r.sectionEnd,
+      room,
+      timeMode,
+      r.startTime,
+      r.endTime,
+    ]);
     if (map.has(key)) {
       const slot = map.get(key)!;
       for (let w = r.weekStart; w <= r.weekEnd; w++) slot.weeks.add(w);
@@ -68,6 +87,9 @@ function recordsToSlots(records: Course[]): TimeSlot[] {
         day: r.day,
         sectionStart: r.sectionStart,
         sectionEnd: r.sectionEnd,
+        timeMode,
+        startTime: r.startTime,
+        endTime: r.endTime,
         room,
         weeks,
       });
@@ -131,6 +153,7 @@ export default function AddEditCourseScreen() {
       day: Math.min(7, Math.max(1, day)),
       sectionStart: ss,
       sectionEnd: Math.max(ss, se),
+      timeMode: "sections",
       room: params.prefillRoom ?? "",
       weeks: new Set<number>(),
     };
@@ -249,6 +272,18 @@ export default function AddEditCourseScreen() {
     }
     for (let i = 0; i < slots.length; i++) {
       const slot = slots[i];
+      if (
+        slot.timeMode === "time" &&
+        !isValidCourseTimeRange(slot.startTime, slot.endTime)
+      ) {
+        Toast.show({
+          type: "error",
+          text1: t("courseAdd.slotInvalidTime", { n: i + 1 }),
+          position: "bottom",
+        });
+        setExpandedIndex(i);
+        return;
+      }
       if (slot.weeks.size === 0) {
         Toast.show({
           type: "error",
@@ -285,6 +320,9 @@ export default function AddEditCourseScreen() {
           weekEnd: we,
           sectionStart: slot.sectionStart,
           sectionEnd: slot.sectionEnd,
+          timeMode: slot.timeMode,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
           source: "manual",
         });
       }
@@ -518,6 +556,17 @@ function SlotCard({
   weeksSuffix: string;
 }) {
   // 拖动周次网格或节次滑块时锁定/解锁页面滚动，避免手势冲突
+  const [editingTime, setEditingTime] = useState<
+    "startTime" | "endTime" | null
+  >(null);
+  const updateTime = (field: "startTime" | "endTime", value: string) => {
+    const startTime = field === "startTime" ? value : (slot.startTime ?? "");
+    const endTime = field === "endTime" ? value : (slot.endTime ?? "");
+    onUpdate({
+      [field]: value,
+      ...getCourseSectionsForTime(startTime, endTime),
+    });
+  };
   const scrollLock = useScrollLock();
   // 周次格子的相对布局，用于涂抹时根据触摸坐标命中格子
   const cellLayouts = useRef<
@@ -672,10 +721,7 @@ function SlotCard({
   };
 
   const weeksLabel = formatWeeks(slot.weeks, notSelectedLabel, weeksSuffix);
-  const sectionTimeRange = formatCourseSectionTimeRange(
-    slot.sectionStart,
-    slot.sectionEnd,
-  );
+  const sectionTimeRange = formatCourseTimeRange(slot);
   const primarySummary = `${dayOptions[slot.day - 1]} · ${t(
     "courseAdd.currentRange",
     {
@@ -712,7 +758,11 @@ function SlotCard({
         className="flex-row items-center px-4 py-3.5"
         onPress={onToggle}
         accessibilityRole="button"
-        accessibilityLabel={summary}
+        accessibilityLabel={
+          slot.timeMode === "time"
+            ? `${primarySummary} · ${secondarySummary} · ${weeksLabel}`
+            : summary
+        }
         accessibilityState={{ expanded }}
       >
         <View
@@ -932,50 +982,233 @@ function SlotCard({
           </View>
 
           {/* 节次范围 */}
-          <Text style={{ fontSize: 12, color: labelColor, marginBottom: 4 }}>
-            {t("courseAdd.sectionRange")}
-          </Text>
-          <Text
-            style={{
-              fontSize: 15,
-              fontWeight: "600",
-              color: isDark ? "#e5e5e5" : "#1c1c1e",
-              textAlign: "center",
-              marginBottom: 4,
-            }}
-          >
-            {t("courseAdd.currentRange", {
-              start: slot.sectionStart,
-              end: slot.sectionEnd,
-            })}
-            {sectionTimeRange ? ` (${sectionTimeRange})` : ""}
-          </Text>
           <View
-            onStartShouldSetResponderCapture={() => {
-              lockSliderTouch();
-              return false;
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 6,
             }}
-            onTouchEnd={releaseSliderTouch}
-            onTouchCancel={releaseSliderTouch}
           >
-            <RangeSlider
-              range={[slot.sectionStart, slot.sectionEnd]}
-              minimumValue={1}
-              maximumValue={MAX_SECTION}
-              step={1}
-              onValueChange={([s, e]) =>
-                onUpdate({ sectionStart: s, sectionEnd: e })
-              }
-              onSlidingStart={lockSliderSliding}
-              onSlidingComplete={releaseSliderSliding}
-              inboundColor="#3b82f6"
-              outboundColor={isDark ? "#404040" : "#d4d4d4"}
-              thumbTintColor="#3b82f6"
-              thumbSize={22}
-              trackHeight={4}
-              style={{ height: 40 }}
-            />
+            <Text style={{ fontSize: 12, color: labelColor }}>
+              {t(
+                slot.timeMode === "time"
+                  ? "courseAdd.directTime"
+                  : "courseAdd.sectionRange",
+              )}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setEditingTime(null);
+                onUpdate(
+                  slot.timeMode === "sections"
+                    ? {
+                        timeMode: "time",
+                        startTime:
+                          slot.startTime ?? SECTION_TIMES[slot.sectionStart][0],
+                        endTime:
+                          slot.endTime ?? SECTION_TIMES[slot.sectionEnd][1],
+                      }
+                    : {
+                        timeMode: "sections",
+                        startTime: undefined,
+                        endTime: undefined,
+                      },
+                );
+              }}
+              hitSlop={8}
+            >
+              <Text style={{ fontSize: 12, color: "#3b82f6" }}>
+                {t(
+                  slot.timeMode === "time"
+                    ? "courseAdd.switchToSections"
+                    : "courseAdd.switchToTime",
+                )}
+              </Text>
+            </Pressable>
           </View>
+          <View
+            style={{
+              minHeight: 64,
+              justifyContent: "center",
+              paddingHorizontal: slot.timeMode === "time" ? 14 : 0,
+              paddingVertical: slot.timeMode === "time" ? 9 : 0,
+            }}
+          >
+            {slot.timeMode === "time" && (
+              <View
+                pointerEvents="none"
+                collapsable={false}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  left: 0,
+                  backgroundColor: inputBg,
+                  borderRadius: 10,
+                }}
+              />
+            )}
+            {slot.timeMode === "time" ? (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}
+              >
+                {(["startTime", "endTime"] as const).map((field) => (
+                  <View
+                    key={field}
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      paddingLeft: field === "endTime" ? 14 : 0,
+                      paddingRight: field === "startTime" ? 14 : 0,
+                      borderLeftWidth: field === "endTime" ? 1 : 0,
+                      borderLeftColor: isDark ? "#404040" : "#e5e5e5",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        color: labelColor,
+                        marginBottom: 4,
+                      }}
+                    >
+                      {t(
+                        field === "startTime"
+                          ? "courseAdd.startTime"
+                          : "courseAdd.endTime",
+                      )}
+                    </Text>
+                    {Platform.OS === "web" ? (
+                      <TextInput
+                        value={slot[field] ?? ""}
+                        onChangeText={(value) => updateTime(field, value)}
+                        placeholder="HH:mm"
+                        accessibilityLabel={t(
+                          field === "startTime"
+                            ? "courseAdd.startTime"
+                            : "courseAdd.endTime",
+                        )}
+                        maxLength={5}
+                        style={{
+                          color: inputColor,
+                          paddingHorizontal: 0,
+                          paddingVertical: 0,
+                          minHeight: 24,
+                          fontSize: 16,
+                          fontVariant: ["tabular-nums"],
+                        }}
+                      />
+                    ) : (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`${t(field === "startTime" ? "courseAdd.startTime" : "courseAdd.endTime")} ${slot[field] ?? ""}`}
+                        onPress={() =>
+                          setEditingTime(editingTime === field ? null : field)
+                        }
+                        hitSlop={8}
+                        style={{
+                          minHeight: 24,
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: inputColor,
+                            fontSize: 16,
+                            fontVariant: ["tabular-nums"],
+                          }}
+                        >
+                          {slot[field]}
+                        </Text>
+                      </Pressable>
+                    )}
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <>
+                <Text
+                  style={{
+                    fontSize: 15,
+                    lineHeight: 20,
+                    fontWeight: "600",
+                    color: isDark ? "#e5e5e5" : "#1c1c1e",
+                    textAlign: "center",
+                    marginBottom: 4,
+                  }}
+                >
+                  {t("courseAdd.currentRange", {
+                    start: slot.sectionStart,
+                    end: slot.sectionEnd,
+                  })}
+                  {sectionTimeRange ? ` (${sectionTimeRange})` : ""}
+                </Text>
+                <View
+                  onStartShouldSetResponderCapture={() => {
+                    lockSliderTouch();
+                    return false;
+                  }}
+                  onTouchEnd={releaseSliderTouch}
+                  onTouchCancel={releaseSliderTouch}
+                >
+                  <RangeSlider
+                    range={[slot.sectionStart, slot.sectionEnd]}
+                    minimumValue={1}
+                    maximumValue={MAX_SECTION}
+                    step={1}
+                    onValueChange={([s, e]) =>
+                      onUpdate({
+                        sectionStart: s,
+                        sectionEnd: e,
+                        startTime: undefined,
+                        endTime: undefined,
+                      })
+                    }
+                    onSlidingStart={lockSliderSliding}
+                    onSlidingComplete={releaseSliderSliding}
+                    inboundColor="#3b82f6"
+                    outboundColor={isDark ? "#404040" : "#d4d4d4"}
+                    thumbTintColor="#3b82f6"
+                    thumbSize={22}
+                    trackHeight={4}
+                    style={{ height: 40 }}
+                  />
+                </View>
+              </>
+            )}
+          </View>
+          {slot.timeMode === "time" && editingTime && Platform.OS !== "web" && (
+            <DateTimePicker
+              value={
+                new Date(
+                  2000,
+                  0,
+                  1,
+                  ...((slot[editingTime] ?? "08:00").split(":").map(Number) as [
+                    number,
+                    number,
+                  ]),
+                )
+              }
+              mode="time"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              is24Hour
+              themeVariant={isDark ? "dark" : "light"}
+              onDismiss={() => setEditingTime(null)}
+              onValueChange={(_event, date) => {
+                updateTime(
+                  editingTime,
+                  `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`,
+                );
+                if (Platform.OS === "android") setEditingTime(null);
+              }}
+            />
+          )}
 
           {canDelete && (
             <View
