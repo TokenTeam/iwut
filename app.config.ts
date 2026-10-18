@@ -144,6 +144,7 @@ const config: ExpoConfig = {
         },
       },
     ],
+    "./plugins/with-sentry-filter.js",
     [
       "@sentry/react-native/expo",
       {
