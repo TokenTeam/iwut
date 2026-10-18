@@ -28,7 +28,14 @@ import { MorphingIcon } from "@/components/ui/morphing-icon";
 import { ScrollLockProvider, useScrollLock } from "@/components/ui/scroll-lock";
 import { WEEKDAY_KEYS as DAY_KEYS } from "@/constants/weekdays";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useLatest } from "@/hooks/use-latest";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
+import {
+  type CourseTimeSlot as TimeSlot,
+  createEmptySlot,
+  recordsToSlots,
+  slotsToRecords,
+} from "@/lib/course-editor";
 import { MAX_SECTION, MAX_WEEK, weeksToRanges } from "@/lib/course-weeks";
 import { useT } from "@/lib/i18n";
 import {
@@ -37,66 +44,9 @@ import {
   isValidCourseTimeRange,
   SECTION_TIMES,
 } from "@/services/course-time";
-import { type Course, useCourseStore } from "@/store/course";
-
-interface TimeSlot {
-  day: number;
-  sectionStart: number;
-  sectionEnd: number;
-  timeMode: "sections" | "time";
-  startTime?: string;
-  endTime?: string;
-  room: string;
-  weeks: Set<number>;
-}
+import { useCourseStore } from "@/store/course";
 
 const SLOT_LAYOUT_TRANSITION = LinearTransition.duration(220);
-
-function createEmptySlot(): TimeSlot {
-  return {
-    day: 1,
-    sectionStart: 1,
-    sectionEnd: 2,
-    timeMode: "sections",
-    room: "",
-    weeks: new Set(),
-  };
-}
-
-function recordsToSlots(records: Course[]): TimeSlot[] {
-  const map = new Map<string, TimeSlot>();
-  for (const r of records) {
-    const room = r.room ?? "";
-    const timeMode = r.timeMode ?? "sections";
-    const key = JSON.stringify([
-      r.day,
-      r.sectionStart,
-      r.sectionEnd,
-      room,
-      timeMode,
-      r.startTime,
-      r.endTime,
-    ]);
-    if (map.has(key)) {
-      const slot = map.get(key)!;
-      for (let w = r.weekStart; w <= r.weekEnd; w++) slot.weeks.add(w);
-    } else {
-      const weeks = new Set<number>();
-      for (let w = r.weekStart; w <= r.weekEnd; w++) weeks.add(w);
-      map.set(key, {
-        day: r.day,
-        sectionStart: r.sectionStart,
-        sectionEnd: r.sectionEnd,
-        timeMode,
-        startTime: r.startTime,
-        endTime: r.endTime,
-        room,
-        weeks,
-      });
-    }
-  }
-  return map.size > 0 ? [...map.values()] : [createEmptySlot()];
-}
 
 function formatWeeks(
   weeks: Set<number>,
@@ -135,7 +85,7 @@ export default function AddEditCourseScreen() {
   const notSelectedLabel = t("courseAdd.weeksNotSelected");
 
   const courses = useCourseStore((s) => s.courses);
-  const addCourse = useCourseStore((s) => s.addCourse);
+  const saveCourse = useCourseStore((s) => s.saveCourse);
   const removeCoursesByName = useCourseStore((s) => s.removeCoursesByName);
 
   const existingRecords = useMemo(
@@ -150,6 +100,7 @@ export default function AddEditCourseScreen() {
     const se = Number(params.prefillSectionEnd);
     if (!day || !ss || !se) return null;
     return {
+      ...createEmptySlot(),
       day: Math.min(7, Math.max(1, day)),
       sectionStart: ss,
       sectionEnd: Math.max(ss, se),
@@ -175,12 +126,12 @@ export default function AddEditCourseScreen() {
     if (prefillSlot) return [prefillSlot];
     return [createEmptySlot()];
   });
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(() =>
-    isEdit && existingRecords.length > 0 ? null : 0,
+  const [expandedId, setExpandedId] = useState<string | null>(() =>
+    isEdit && existingRecords.length > 0 ? null : slots[0].id,
   );
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [shareVisible, setShareVisible] = useState(false);
-  // 拖动周次网格或节次滑块时临时禁用页面滚动，避免手势冲突
+  // 拖动周次或节次时锁定页面滚动，避免手势冲突
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const scrollLockCount = useRef(0);
 
@@ -202,24 +153,23 @@ export default function AddEditCourseScreen() {
     [acquireScrollLock, releaseScrollLock],
   );
 
-  const toggleExpand = useCallback((index: number) => {
-    setExpandedIndex((prev) => (prev === index ? null : index));
+  const toggleExpand = useCallback((id: string) => {
+    setExpandedId((prev) => (prev === id ? null : id));
   }, []);
 
-  const updateSlot = useCallback((index: number, patch: Partial<TimeSlot>) => {
-    setSlots((prev) =>
-      prev.map((s, i) => (i === index ? { ...s, ...patch } : s)),
-    );
+  const updateSlot = useCallback((id: string, patch: Partial<TimeSlot>) => {
+    setSlots((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
   }, []);
 
   const addSlot = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setSlots((prev) => [...prev, createEmptySlot()]);
-    setExpandedIndex(slots.length);
-  }, [slots.length]);
+    const slot = createEmptySlot();
+    setSlots((prev) => [...prev, slot]);
+    setExpandedId(slot.id);
+  }, []);
 
   const removeSlot = useCallback(
-    (index: number) => {
+    (id: string) => {
       if (slots.length <= 1) {
         Toast.show({
           type: "error",
@@ -229,13 +179,8 @@ export default function AddEditCourseScreen() {
         return;
       }
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setSlots((prev) => prev.filter((_, i) => i !== index));
-      setExpandedIndex((prev) => {
-        if (prev === null) return null;
-        if (prev === index) return null;
-        if (prev > index) return prev - 1;
-        return prev;
-      });
+      setSlots((prev) => prev.filter((slot) => slot.id !== id));
+      setExpandedId((prev) => (prev === id ? null : prev));
     },
     [slots.length, t],
   );
@@ -260,7 +205,7 @@ export default function AddEditCourseScreen() {
     router.back();
   };
 
-  const handleSave = () => {
+  const validateDraft = () => {
     const trimmedName = name.trim();
     if (!trimmedName) {
       Toast.show({
@@ -268,7 +213,7 @@ export default function AddEditCourseScreen() {
         text1: t("courseAdd.needCourseName"),
         position: "bottom",
       });
-      return;
+      return false;
     }
     for (let i = 0; i < slots.length; i++) {
       const slot = slots[i];
@@ -281,8 +226,8 @@ export default function AddEditCourseScreen() {
           text1: t("courseAdd.slotInvalidTime", { n: i + 1 }),
           position: "bottom",
         });
-        setExpandedIndex(i);
-        return;
+        setExpandedId(slot.id);
+        return false;
       }
       if (slot.weeks.size === 0) {
         Toast.show({
@@ -290,8 +235,8 @@ export default function AddEditCourseScreen() {
           text1: t("courseAdd.slotNoWeeks", { n: i + 1 }),
           position: "bottom",
         });
-        setExpandedIndex(i);
-        return;
+        setExpandedId(slot.id);
+        return false;
       }
       if (slot.sectionEnd < slot.sectionStart) {
         Toast.show({
@@ -299,34 +244,17 @@ export default function AddEditCourseScreen() {
           text1: t("courseAdd.slotInvalidRange", { n: i + 1 }),
           position: "bottom",
         });
-        setExpandedIndex(i);
-        return;
+        setExpandedId(slot.id);
+        return false;
       }
     }
 
-    if (isEdit) {
-      removeCoursesByName(editName!);
-    }
+    return true;
+  };
 
-    for (const slot of slots) {
-      const ranges = weeksToRanges(slot.weeks);
-      for (const [ws, we] of ranges) {
-        addCourse({
-          name: trimmedName,
-          room: slot.room.trim(),
-          teacher: teacher.trim(),
-          day: slot.day,
-          weekStart: ws,
-          weekEnd: we,
-          sectionStart: slot.sectionStart,
-          sectionEnd: slot.sectionEnd,
-          timeMode: slot.timeMode,
-          startTime: slot.startTime,
-          endTime: slot.endTime,
-          source: "manual",
-        });
-      }
-    }
+  const handleSave = () => {
+    if (!validateDraft()) return;
+    saveCourse(slotsToRecords(slots, name, teacher), editName);
 
     Toast.show({
       type: "success",
@@ -402,18 +330,16 @@ export default function AddEditCourseScreen() {
               </View>
             </View>
 
-            {/* 时段列表 */}
             {slots.map((slot, index) => (
-              <Animated.View key={index} layout={SLOT_LAYOUT_TRANSITION}>
+              <Animated.View key={slot.id} layout={SLOT_LAYOUT_TRANSITION}>
                 <SlotCard
-                  key={index}
                   slot={slot}
                   index={index}
-                  expanded={expandedIndex === index}
+                  expanded={expandedId === slot.id}
                   canDelete={slots.length > 1}
-                  onToggle={() => toggleExpand(index)}
-                  onUpdate={(patch) => updateSlot(index, patch)}
-                  onDelete={() => removeSlot(index)}
+                  onToggle={() => toggleExpand(slot.id)}
+                  onUpdate={(patch) => updateSlot(slot.id, patch)}
+                  onDelete={() => removeSlot(slot.id)}
                   isDark={isDark}
                   labelColor={labelColor}
                   chipBg={chipBg}
@@ -456,7 +382,9 @@ export default function AddEditCourseScreen() {
                   </Pressable>
 
                   <Pressable
-                    onPress={() => setShareVisible(true)}
+                    onPress={() => {
+                      if (validateDraft()) setShareVisible(true);
+                    }}
                     className="flex-1 flex-row items-center justify-center rounded-xl bg-white py-3.5 active:bg-neutral-50 dark:bg-neutral-800 dark:active:bg-neutral-700"
                   >
                     <Ionicons
@@ -508,6 +436,9 @@ export default function AddEditCourseScreen() {
 
       <CourseShareSheet
         courseName={shareVisible ? (editName ?? null) : null}
+        records={
+          shareVisible ? slotsToRecords(slots, name, teacher) : undefined
+        }
         onClose={() => setShareVisible(false)}
       />
     </>
@@ -555,7 +486,6 @@ function SlotCard({
   notSelectedLabel: string;
   weeksSuffix: string;
 }) {
-  // 拖动周次网格或节次滑块时锁定/解锁页面滚动，避免手势冲突
   const [editingTime, setEditingTime] = useState<
     "startTime" | "endTime" | null
   >(null);
@@ -568,27 +498,40 @@ function SlotCard({
     });
   };
   const scrollLock = useScrollLock();
-  // 周次格子的相对布局，用于涂抹时根据触摸坐标命中格子
+  const onUpdateRef = useLatest(onUpdate);
   const cellLayouts = useRef<
     Record<number, { x: number; y: number; w: number; h: number }>
   >({});
-  // 网格容器自身尺寸，用于判断手指是否已滑出网格区域
   const gridSize = useRef({ w: 0, h: 0 });
   const downCoords = useRef({ x: 0, y: 0 });
-  // 本次手势按下时是否落在某个周次格子上
   const startedOnCell = useRef(false);
-  // 手势开始时的已选周次快照 / 起点周次 A / 本次区间模式（true=选中, false=取消）
   const baseWeeks = useRef<Set<number>>(new Set());
   const startWeek = useRef<number | null>(null);
+  const lastWeek = useRef<number | null>(null);
   const paintMode = useRef<boolean | null>(null);
   const weekGestureLocked = useRef(false);
   const sliderTouchLocked = useRef(false);
   const sliderSlidingLocked = useRef(false);
-  // 始终持有最新的已选周次，供手势回调读取
-  const weeksRef = useRef(slot.weeks);
+  const weeksRef = useLatest(slot.weeks);
+
   useEffect(() => {
-    weeksRef.current = slot.weeks;
-  }, [slot.weeks]);
+    if (!expanded) return;
+    return () => {
+      for (const lock of [
+        weekGestureLocked,
+        sliderTouchLocked,
+        sliderSlidingLocked,
+      ]) {
+        if (!lock.current) continue;
+        lock.current = false;
+        scrollLock.release();
+      }
+      paintMode.current = null;
+      startWeek.current = null;
+      lastWeek.current = null;
+      startedOnCell.current = false;
+    };
+  }, [expanded, scrollLock]);
 
   const findWeekAt = (x: number, y: number): number | null => {
     for (const key in cellLayouts.current) {
@@ -639,6 +582,7 @@ function SlotCard({
   const resetWeekGesture = () => {
     paintMode.current = null;
     startWeek.current = null;
+    lastWeek.current = null;
     startedOnCell.current = false;
     releaseWeekGesture();
   };
@@ -652,9 +596,11 @@ function SlotCard({
     return startedOnCell.current;
   };
 
-  // 将 min(A,B)..max(A,B) 整段设为本次模式，区间外的格子回到快照状态
+  // 按拖动起点和当前周次更新整个区间，区间外恢复为手势开始时的状态
   const applyRange = (b: number) => {
     if (startWeek.current === null || paintMode.current === null) return;
+    if (lastWeek.current === b) return;
+    lastWeek.current = b;
     const lo = Math.min(startWeek.current, b);
     const hi = Math.max(startWeek.current, b);
     const next = new Set(baseWeeks.current);
@@ -662,12 +608,12 @@ function SlotCard({
       if (paintMode.current) next.add(w);
       else next.delete(w);
     }
-    onUpdate({ weeks: next });
+    onUpdateRef.current({ weeks: next });
   };
 
-  const panResponder = useRef(
-    // PanResponder 回调仅在手势事件触发时读取 ref，并非渲染期读取，规则为误报
-    // eslint-disable-next-line react-hooks/refs
+  // 初始化只注册回调，手势触发时才读取 ref
+  // eslint-disable-next-line react-hooks/refs
+  const [panResponder] = useState(() =>
     PanResponder.create({
       onStartShouldSetPanResponderCapture: (e) => {
         const { locationX, locationY } = e.nativeEvent;
@@ -685,11 +631,12 @@ function SlotCard({
         const { locationX, locationY } = e.nativeEvent;
         const w = findWeekAt(locationX, locationY);
         startWeek.current = w;
-        // 模式由起点 A 当前状态决定：未选则本次为“选中”，已选则本次为“取消”
+        lastWeek.current = null;
+        // 起点未选中时选中整个区间，已选中时取消整个区间
         paintMode.current = w != null ? !baseWeeks.current.has(w) : null;
         if (w != null) applyRange(w);
       },
-      onPanResponderMove: (e, gs) => {
+      onPanResponderMove: (_e, gs) => {
         const currentGridX = downCoords.current.x + gs.dx;
         const currentGridY = downCoords.current.y + gs.dy;
         if (
@@ -700,15 +647,14 @@ function SlotCard({
         ) {
           return;
         }
-        const { locationX, locationY } = e.nativeEvent;
-        const w = findWeekAt(locationX, locationY);
+        const w = findWeekAt(currentGridX, currentGridY);
         if (w != null) applyRange(w);
       },
       onPanResponderRelease: resetWeekGesture,
       onPanResponderTerminate: resetWeekGesture,
       onPanResponderTerminationRequest: () => false,
     }),
-  ).current;
+  );
 
   const selectAllWeeks = () => {
     onUpdate({
@@ -753,10 +699,12 @@ function SlotCard({
       className="mb-3 overflow-hidden rounded-xl"
       style={{ backgroundColor: cardBg, borderCurve: "continuous" }}
     >
-      {/* 摘要行 */}
       <Pressable
         className="flex-row items-center px-4 py-3.5"
-        onPress={onToggle}
+        onPress={() => {
+          setEditingTime(null);
+          onToggle();
+        }}
         accessibilityRole="button"
         accessibilityLabel={
           slot.timeMode === "time"
@@ -847,7 +795,6 @@ function SlotCard({
         />
       </Pressable>
 
-      {/* 展开编辑区域 */}
       {expanded && (
         <Animated.View
           entering={FadeIn.delay(50).duration(170)}
@@ -856,7 +803,6 @@ function SlotCard({
         >
           <View className="mb-3 border-t border-neutral-200 dark:border-neutral-700" />
 
-          {/* 星期 */}
           <Text style={{ fontSize: 12, color: labelColor, marginBottom: 8 }}>
             {t("courseAdd.weekday")}
           </Text>
@@ -889,7 +835,6 @@ function SlotCard({
             })}
           </View>
 
-          {/* 教室 */}
           <Text style={{ fontSize: 12, color: labelColor, marginBottom: 6 }}>
             {t("courseAdd.room")}
           </Text>
@@ -909,7 +854,6 @@ function SlotCard({
             }}
           />
 
-          {/* 周次 */}
           <View
             style={{
               flexDirection: "row",
@@ -935,7 +879,6 @@ function SlotCard({
             </View>
           </View>
           <View
-            // eslint-disable-next-line react-hooks/refs
             {...panResponder.panHandlers}
             onLayout={(e) => {
               const { width, height } = e.nativeEvent.layout;
@@ -981,7 +924,6 @@ function SlotCard({
             })}
           </View>
 
-          {/* 节次范围 */}
           <View
             style={{
               flexDirection: "row",

@@ -17,10 +17,10 @@ export interface Course {
   sectionEnd: number;
   note?: string;
   seat?: number;
-  // 自定义时间采用 H:mm 或 HH:mm 格式，优先于节次时间，节次仍用于课表布局
+  // 自定义时间支持 H:mm 和 HH:mm 格式，优先于节次时间，节次仍用于课表布局
   startTime?: string;
   endTime?: string;
-  timeMode?: "sections" | "time"; // 编辑时使用的模式，默认按节数调整
+  timeMode?: "sections" | "time"; // 时间编辑模式，默认按节数调整
   source?: "imported" | "manual" | "lab";
 }
 
@@ -32,6 +32,7 @@ interface CourseStore {
   setCourses: (courses: Course[]) => void;
   setTermStart: (termStart: string) => void;
   addCourse: (course: Course) => void;
+  saveCourse: (records: Course[], previousName?: string) => void;
   removeCoursesByName: (name: string) => void;
 }
 
@@ -64,6 +65,13 @@ export const useCourseStore = create<CourseStore>()(
       setTermStart: (termStart: string) => set({ termStart }),
       addCourse: (course: Course) =>
         set({ courses: [...get().courses, course] }),
+      saveCourse: (records, previousName) =>
+        set((state) => ({
+          courses: [
+            ...state.courses.filter((course) => course.name !== previousName),
+            ...records,
+          ],
+        })),
       removeCoursesByName: (name: string) =>
         set({ courses: get().courses.filter((c) => c.name !== name) }),
     }),

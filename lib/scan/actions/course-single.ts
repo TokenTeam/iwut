@@ -1,4 +1,5 @@
 import { MAX_SECTION, MAX_WEEK } from "@/lib/course-weeks";
+import { isValidCourseTimeRange } from "@/services/course-time";
 import { type Course, useCourseStore } from "@/store/course";
 
 import type { ScanEnvelope } from "../protocol";
@@ -13,6 +14,11 @@ export interface SharedCourseSlot {
   sectionEnd: number;
   weekStart: number;
   weekEnd: number;
+  startTime?: string;
+  endTime?: string;
+  timeMode?: Course["timeMode"];
+  note?: string;
+  seat?: number;
 }
 
 export interface SharedCourse {
@@ -40,6 +46,11 @@ export function buildCourseSingleScanEnvelope(
         sectionEnd: r.sectionEnd,
         weekStart: r.weekStart,
         weekEnd: r.weekEnd,
+        startTime: r.startTime,
+        endTime: r.endTime,
+        timeMode: r.timeMode,
+        note: r.note,
+        seat: r.seat,
       })),
     },
   };
@@ -54,7 +65,20 @@ function isValidSlot(value: unknown): value is SharedCourseSlot {
     isInt(s.sectionStart, 1, MAX_SECTION) &&
     isInt(s.sectionEnd, s.sectionStart as number, MAX_SECTION) &&
     isInt(s.weekStart, 1, MAX_WEEK) &&
-    isInt(s.weekEnd, s.weekStart as number, MAX_WEEK)
+    isInt(s.weekEnd, s.weekStart as number, MAX_WEEK) &&
+    (s.timeMode === undefined ||
+      s.timeMode === "sections" ||
+      s.timeMode === "time") &&
+    (s.note === undefined || typeof s.note === "string") &&
+    (s.seat === undefined ||
+      (typeof s.seat === "number" && Number.isInteger(s.seat))) &&
+    (s.startTime === undefined &&
+    s.endTime === undefined &&
+    s.timeMode !== "time"
+      ? true
+      : typeof s.startTime === "string" &&
+        typeof s.endTime === "string" &&
+        isValidCourseTimeRange(s.startTime, s.endTime))
   );
 }
 
@@ -119,10 +143,8 @@ export const courseSingleScanAction: ScanActionHandler = {
     if (!payload) throw new Error("Invalid course payload");
 
     const store = useCourseStore.getState();
-    // 覆盖语义：先清除同名课程的全部时段，再写入分享的时段。
-    store.removeCoursesByName(payload.name);
-    for (const slot of payload.slots) {
-      store.addCourse({
+    store.saveCourse(
+      payload.slots.map((slot) => ({
         name: payload.name,
         teacher: payload.teacher,
         room: slot.room,
@@ -131,9 +153,15 @@ export const courseSingleScanAction: ScanActionHandler = {
         sectionEnd: slot.sectionEnd,
         weekStart: slot.weekStart,
         weekEnd: slot.weekEnd,
-        source: "manual",
-      });
-    }
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        timeMode: slot.timeMode,
+        note: slot.note,
+        seat: slot.seat,
+        source: "manual" as const,
+      })),
+      payload.name,
+    );
 
     return {
       title: context.t("scan.courseImported", { name: payload.name }),
