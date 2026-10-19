@@ -39,6 +39,7 @@ interface UpdateStore {
   downloadUrl: ReleaseDownloadUrl | null;
   blockedByMinVersion: boolean;
   blockedByDeparted: boolean;
+  isRollout: boolean;
 
   dismissedRecommendedVersion: string | null;
   requiredDismiss: RequiredDismissState | null;
@@ -64,6 +65,7 @@ export const useUpdateStore = create<UpdateStore>()(
       downloadUrl: null,
       blockedByMinVersion: false,
       blockedByDeparted: false,
+      isRollout: false,
 
       dismissedRecommendedVersion: null,
       requiredDismiss: null,
@@ -153,6 +155,7 @@ export const useUpdateStore = create<UpdateStore>()(
               downloadUrl: summary.downloadUrl,
               blockedByMinVersion: summary.blockedByMinVersion,
               blockedByDeparted: summary.blockedByDeparted,
+              isRollout: summary.isRollout,
               dismissedRecommendedVersion,
               requiredDismiss,
               checkedAt: Date.now(),
@@ -177,18 +180,27 @@ export const useUpdateStore = create<UpdateStore>()(
       name: "update",
       storage: zustandStorage,
       partialize: (s) => ({
-        // 检查时间不持久化，确保每次冷启动都能检查更新
-        hasUpdate: s.hasUpdate,
-        level: s.level,
-        latestVersion: s.latestVersion,
-        applicableReleases: s.applicableReleases,
-        reason: s.reason,
-        downloadUrl: s.downloadUrl,
-        blockedByMinVersion: s.blockedByMinVersion,
-        blockedByDeparted: s.blockedByDeparted,
+        // 仅持久化用户操作
         dismissedRecommendedVersion: s.dismissedRecommendedVersion,
         requiredDismiss: s.requiredDismiss,
       }),
+      merge: (persisted, current) => {
+        const saved = persisted as Partial<UpdateStore> | undefined;
+        return {
+          ...current,
+          dismissedRecommendedVersion:
+            typeof saved?.dismissedRecommendedVersion === "string"
+              ? saved.dismissedRecommendedVersion
+              : null,
+          requiredDismiss:
+            saved?.requiredDismiss &&
+            typeof saved.requiredDismiss.version === "string" &&
+            Number.isInteger(saved.requiredDismiss.count) &&
+            saved.requiredDismiss.count >= 0
+              ? saved.requiredDismiss
+              : null,
+        };
+      },
     },
   ),
 );

@@ -4,10 +4,17 @@ import { Platform } from "react-native";
 
 import { CONFIG_REPO_CDN } from "@/constants/api";
 import type { ResolvedLang } from "@/lib/i18n";
+import { isInRollout, type Rollout } from "@/lib/update-rollout";
 import { compareVersions } from "@/lib/version";
 
 export type UpdateLevel = "silent" | "recommended" | "required";
 type UpdatePlatform = "ios" | "android" | "web";
+
+export interface UpdateContext {
+  platform: UpdatePlatform;
+  deviceId: string | null;
+  now: number;
+}
 
 export type LocalizedString = string | Partial<Record<string, string>>;
 export type LocalizedStringArray = string[] | Partial<Record<string, string[]>>;
@@ -30,10 +37,14 @@ export interface Release {
   downloadUrl: ReleaseDownloadUrl | null;
 }
 
+export interface ManifestRelease extends Release {
+  rollout: { android: Rollout } | null;
+}
+
 interface ChannelManifest {
   latestVersion: string;
   minSupportedVersion: string | null;
-  releases: Release[];
+  releases: ManifestRelease[];
 }
 
 export interface UpdateManifest {
@@ -42,7 +53,7 @@ export interface UpdateManifest {
   channels: Record<string, ChannelManifest>;
 }
 
-interface UpdateSummary {
+export interface UpdateSummary {
   hasUpdate: boolean;
   level: UpdateLevel;
   latestVersion: string | null;
@@ -51,6 +62,7 @@ interface UpdateSummary {
   blockedByDeparted: boolean;
   reason: LocalizedString | null;
   downloadUrl: ReleaseDownloadUrl | null;
+  isRollout: boolean;
 }
 
 const SUPPORTED_VERSION = 1;
@@ -124,7 +136,7 @@ function parseDownloadUrl(raw: unknown): ReleaseDownloadUrl | null {
   return { ios, android };
 }
 
-function parseRelease(raw: unknown): Release | null {
+function parseRelease(raw: unknown): ManifestRelease | null {
   if (!isObject(raw)) return null;
 
   const version = raw.version;
@@ -138,8 +150,27 @@ function parseRelease(raw: unknown): Release | null {
   }
 
   const reason = parseLocalizedString(raw.reason);
-  // 强制更新缺少原因时拒绝配置，保留已有有效状态
   if (level === "required" && reason === null) return null;
+
+  let rollout: ManifestRelease["rollout"] = null;
+  if (raw.rollout !== undefined && raw.rollout !== null) {
+    if (!isObject(raw.rollout) || !isObject(raw.rollout.android)) return null;
+    const { percentage, seed } = raw.rollout.android;
+    if (
+      typeof percentage !== "number" ||
+      !Number.isFinite(percentage) ||
+      percentage < 0 ||
+      percentage > 100 ||
+      typeof seed !== "string" ||
+      seed.trim().length === 0
+    ) {
+      return null;
+    }
+    if (percentage < 100 && (level === "required" || raw.departed === true)) {
+      return null;
+    }
+    rollout = { android: { percentage, seed } };
+  }
 
   let platforms: UpdatePlatform[] | null = null;
   if (raw.platforms !== undefined && raw.platforms !== null) {
@@ -166,6 +197,7 @@ function parseRelease(raw: unknown): Release | null {
     highlights: parseLocalizedStringArray(raw.highlights),
     changelog: parseLocalizedString(raw.changelog),
     downloadUrl: parseDownloadUrl(raw.downloadUrl),
+    rollout,
   };
 }
 
@@ -187,7 +219,7 @@ function parseChannel(raw: unknown): ChannelManifest | null {
       : null;
 
   if (!Array.isArray(raw.releases)) return null;
-  const releases: Release[] = [];
+  const releases: ManifestRelease[] = [];
   const seen = new Set<string>();
   for (const item of raw.releases) {
     const r = parseRelease(item);
@@ -200,7 +232,7 @@ function parseChannel(raw: unknown): ChannelManifest | null {
   return { latestVersion, minSupportedVersion, releases };
 }
 
-function parseManifest(raw: unknown): UpdateManifest | null {
+export function parseUpdateManifest(raw: unknown): UpdateManifest | null {
   if (!isObject(raw)) return null;
   if (raw.version !== SUPPORTED_VERSION) return null;
   if (!isObject(raw.channels)) return null;
@@ -232,7 +264,7 @@ export async function fetchUpdateManifest(): Promise<UpdateManifest | null> {
     const res = await fetch(`${CONFIG_REPO_CDN}/update.json`, {
       signal: controller.signal,
     });
-    // 返回 null 表示检查失败，调用方应保留上次有效状态
+    // 检查失败时保留上次有效状态
     if (!res.ok) return null;
     let data: unknown;
     try {
@@ -240,20 +272,35 @@ export async function fetchUpdateManifest(): Promise<UpdateManifest | null> {
     } catch {
       return null;
     }
-    return parseManifest(data);
+    return parseUpdateManifest(data);
   } finally {
     clearTimeout(timer);
   }
 }
 
-function isReleaseApplicable(release: Release): boolean {
+export function getUpdateContext(): UpdateContext {
+  const platform = Platform.OS as UpdatePlatform;
+  let deviceId: string | null = null;
+  if (platform === "android") {
+    try {
+      deviceId = Application.getAndroidId() || null;
+    } catch {
+      // 无设备标识时仅允许全量更新
+    }
+  }
+  return { platform, deviceId, now: Date.now() };
+}
+
+function isReleaseApplicable(
+  release: Release,
+  context: UpdateContext,
+): boolean {
   if (release.releasedAt) {
     const t = Date.parse(release.releasedAt);
-    if (Number.isFinite(t) && Date.now() < t) return false;
+    if (Number.isFinite(t) && context.now < t) return false;
   }
   if (release.platforms) {
-    const cur = Platform.OS as UpdatePlatform;
-    if (!release.platforms.includes(cur)) return false;
+    if (!release.platforms.includes(context.platform)) return false;
   }
   return true;
 }
@@ -280,12 +327,14 @@ const emptySummary = (latestVersion: string | null = null): UpdateSummary => ({
   blockedByDeparted: false,
   reason: null,
   downloadUrl: null,
+  isRollout: false,
 });
 
 export function summarizeUpdate(
   manifest: UpdateManifest | null,
   channel: string,
   currentVersion: string,
+  context: UpdateContext = getUpdateContext(),
 ): UpdateSummary {
   if (!manifest) return emptySummary();
 
@@ -301,7 +350,7 @@ export function summarizeUpdate(
     (r) =>
       r.departed &&
       compareVersions(r.version, currentVersion) === 0 &&
-      isReleaseApplicable(r),
+      isReleaseApplicable(r, context),
   );
   const blockedByDeparted = departedRelease !== undefined;
 
@@ -310,13 +359,19 @@ export function summarizeUpdate(
       (r) =>
         compareVersions(r.version, currentVersion) > 0 &&
         compareVersions(r.version, latestVersion) <= 0 &&
-        isReleaseApplicable(r),
+        isReleaseApplicable(r, context),
     )
     .sort((a, b) => compareVersions(b.version, a.version));
 
   const target = applicable.find(
     (r) =>
       !r.departed &&
+      (context.platform !== "android" ||
+        isInRollout(r.rollout?.android, context.deviceId)) &&
+      (!(blockedByMinVersion || blockedByDeparted) ||
+        context.platform !== "android" ||
+        !r.rollout ||
+        r.rollout.android.percentage === 100) &&
       (!blockedByMinVersion ||
         (minSupportedVersion !== null &&
           compareVersions(r.version, minSupportedVersion) >= 0)),
@@ -327,21 +382,32 @@ export function summarizeUpdate(
   const includedReleases = applicable.filter(
     (r) => compareVersions(r.version, target.version) <= 0,
   );
+  // 未命中的灰度版本仅合并日志
+  const policyReleases = includedReleases.filter(
+    (r) =>
+      !r.departed &&
+      (context.platform !== "android" ||
+        isInRollout(r.rollout?.android, context.deviceId)),
+  );
 
   return {
     hasUpdate: true,
     level:
       blockedByMinVersion || blockedByDeparted
         ? "required"
-        : mergeLevels(includedReleases.filter((r) => !r.departed)),
+        : mergeLevels(policyReleases),
     latestVersion: target.version,
-    applicableReleases: includedReleases,
+    applicableReleases: includedReleases.map(
+      ({ rollout: _rollout, ...r }) => r,
+    ),
     blockedByMinVersion,
     blockedByDeparted,
-    reason:
-      departedRelease?.reason ??
-      pickReason(includedReleases.filter((r) => !r.departed)),
+    reason: departedRelease?.reason ?? pickReason(policyReleases),
     downloadUrl: target.downloadUrl,
+    isRollout:
+      context.platform === "android" &&
+      target.rollout !== null &&
+      target.rollout.android.percentage < 100,
   };
 }
 

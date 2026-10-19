@@ -66,6 +66,37 @@
           "default": false,
           "description": "是否弃用该版本。设为 true 后，只有安装了该版本且符合平台和发布时间条件的用户会被要求强制更新，并且必须先有可用的升级目标。用户最多可延期 3 次，已弃用版本不会成为升级目标。省略时默认为 false，不支持此字段的旧客户端会忽略它。"
         },
+        "rollout": {
+          "description": "灰度更新通知。省略或设为 null 时全量通知，客户端不持久化此配置和判定结果。",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["android"],
+              "properties": {
+                "android": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["percentage", "seed"],
+                  "properties": {
+                    "percentage": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100,
+                      "description": "通知覆盖比例。0 暂停通知，100 全量通知，未命中时回退到之前可用的版本。"
+                    },
+                    "seed": {
+                      "type": "string",
+                      "pattern": "\\S",
+                      "description": "分桶种子，同一次发布扩量时应保持不变。与设备 ID 一起计算稳定桶号，不读取或保存额外设备标识。"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
         "level": {
           "type": "string",
           "description": "该版本的更新提醒方式。silent 只显示红点，recommended 自动弹窗且允许稍后再说，required 自动弹窗且最多允许延期 3 次，延期额度用完后无法关闭弹窗。",
@@ -138,6 +169,31 @@
         }
       },
       "allOf": [
+        {
+          "if": {
+            "anyOf": [
+              {
+                "required": ["level"],
+                "properties": { "level": { "const": "required" } }
+              },
+              {
+                "required": ["departed"],
+                "properties": { "departed": { "const": true } }
+              }
+            ]
+          },
+          "then": {
+            "properties": {
+              "rollout": {
+                "properties": {
+                  "android": {
+                    "properties": { "percentage": { "const": 100 } }
+                  }
+                }
+              }
+            }
+          }
+        },
         {
           "if": {
             "required": ["level"],

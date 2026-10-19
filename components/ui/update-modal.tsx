@@ -70,7 +70,6 @@ export function UpdateModal() {
   const isDark = useColorScheme() === "dark";
   const blurProps = useAppBlurProps();
 
-  // 分别订阅稳定字段，避免选择器创建新对象导致重复渲染
   const modalOpen = useUpdateStore((s) => s.modalOpen);
   const hasUpdate = useUpdateStore((s) => s.hasUpdate);
   const level = useUpdateStore((s) => s.level);
@@ -80,6 +79,7 @@ export function UpdateModal() {
   const downloadUrl = useUpdateStore((s) => s.downloadUrl);
   const blockedByMinVersion = useUpdateStore((s) => s.blockedByMinVersion);
   const blockedByDeparted = useUpdateStore((s) => s.blockedByDeparted);
+  const isRollout = useUpdateStore((s) => s.isRollout);
   const requiredDismissVersion = useUpdateStore(
     (s) => s.requiredDismiss?.version ?? null,
   );
@@ -188,6 +188,8 @@ export function UpdateModal() {
             releasedAt={releasedAt}
             isRequired={isRequired}
             requiredBadge={t("update.requiredBadge")}
+            isRollout={isRollout}
+            rolloutBadge={t("update.rolloutBadge")}
           />
 
           <View style={CONTENT_PADDING}>
@@ -298,12 +300,16 @@ function Header({
   releasedAt,
   isRequired,
   requiredBadge,
+  isRollout,
+  rolloutBadge,
 }: {
   title: string;
   version: string;
   releasedAt: string | null;
   isRequired: boolean;
   requiredBadge: string;
+  isRollout: boolean;
+  rolloutBadge: string;
 }) {
   return (
     <View className="flex-row items-center gap-3 border-b border-neutral-100 px-5 pb-4 pt-5 dark:border-neutral-700">
@@ -326,6 +332,13 @@ function Header({
             <View className="rounded-full bg-red-100 px-2 py-0.5 dark:bg-red-900/60">
               <Text className="text-[11px] font-semibold text-red-600 dark:text-red-300">
                 {requiredBadge}
+              </Text>
+            </View>
+          ) : null}
+          {isRollout ? (
+            <View className="rounded-md bg-teal-50 px-2 py-0.5 dark:bg-teal-950">
+              <Text className="text-[11px] font-semibold text-teal-700 dark:text-teal-300">
+                {rolloutBadge}
               </Text>
             </View>
           ) : null}
@@ -379,7 +392,7 @@ function buildMarkdownStyles(isDark: boolean) {
 
   return {
     body,
-    // 行内文字需单独设置样式，避免回退到默认字号
+    // 行内文字单独设置字号以避免回退
     text: body,
     paragraph: { marginTop: 0, marginBottom: 0 },
     heading1: { ...heading, fontSize: 13, marginTop: 0, marginBottom: 0 },
