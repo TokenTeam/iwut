@@ -88,6 +88,7 @@ export default function ManageCourseScreen() {
       </Stack.Toolbar>
       <ScrollView
         className="flex-1 bg-neutral-100 dark:bg-neutral-900"
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerClassName="px-4 pt-4 pb-8"
       >
         {uniqueCourses.length > 0 ? (

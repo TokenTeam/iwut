@@ -82,6 +82,7 @@ export default function ShareScreen() {
       />
       <ScrollView
         className="flex-1 bg-neutral-100 dark:bg-neutral-900"
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerClassName="px-4 pt-4 pb-8"
       >
         <View className="overflow-hidden rounded-2xl bg-white dark:bg-neutral-800">

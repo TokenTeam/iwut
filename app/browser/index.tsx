@@ -19,6 +19,7 @@ import type {
   WebViewNavigationEvent,
 } from "react-native-webview/lib/WebViewTypes";
 
+import { StackScreenContent } from "@/components/layout/stack-screen-content";
 import { IS_DEV } from "@/constants/is-dev";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useWebViewBackHandler } from "@/hooks/use-webview-back-handler";
@@ -31,7 +32,6 @@ import {
   NativeRPCBridge,
 } from "@/lib/nativerpc";
 
-// 允许 WebView 自己加载的 scheme
 const BLANK_WEBVIEW_URL = "about:blank";
 const IN_WEBVIEW_SCHEMES = ["http:", "https:", "data:", "file:"];
 
@@ -56,7 +56,6 @@ export default function BrowserScreen() {
     navigation.setOptions({ title: uri.split("/").pop() });
   }, [navigation, uri]);
 
-  // 离开浏览器时清空 WebView 的 HTTP 缓存
   useEffect(() => {
     const currentWebView = webview.current;
     return () => {
@@ -73,7 +72,6 @@ export default function BrowserScreen() {
     }
   };
 
-  // 非 http(s) 等浏览器 scheme 一律转交给系统，避免 WebView 自己报错
   const onShouldStartLoadWithRequest = useCallback(
     (request: ShouldStartLoadRequest) => {
       const { url } = request;
@@ -117,29 +115,35 @@ export default function BrowserScreen() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      <WebView
-        ref={webview}
-        source={{ uri }}
-        style={{ flex: 1 }}
-        javaScriptEnabled
-        originWhitelist={["*"]}
-        webviewDebuggingEnabled={IS_DEV}
-        // 仅受信域名注入 RPC 桥；桥接层另有按消息来源的二次校验
-        injectedJavaScriptBeforeContentLoaded={
-          isTrustedRpcOrigin(uri) ? NATIVE_RPC_INJECTED_JAVASCRIPT : undefined
-        }
-        allowsBackForwardNavigationGestures={Platform.OS === "ios" && canGoBack}
-        pullToRefreshEnabled
-        onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
-        onNavigationStateChange={onNavigationStateChange}
-        onLoadStart={progressBar.onLoadStart}
-        onLoadProgress={progressBar.onLoadProgress}
-        onLoadEnd={onLoadEnd}
-        onMessage={onMessage}
-      />
-      {progressBar.node}
-      {smsNode}
-    </View>
+    <StackScreenContent>
+      <View style={{ flex: 1 }}>
+        <WebView
+          ref={webview}
+          source={{ uri }}
+          style={{ flex: 1 }}
+          automaticallyAdjustContentInsets={false}
+          contentInsetAdjustmentBehavior="never"
+          javaScriptEnabled
+          originWhitelist={["*"]}
+          webviewDebuggingEnabled={IS_DEV}
+          // 仅向受信域名注入桥接脚本并在处理消息时再次校验来源
+          injectedJavaScriptBeforeContentLoaded={
+            isTrustedRpcOrigin(uri) ? NATIVE_RPC_INJECTED_JAVASCRIPT : undefined
+          }
+          allowsBackForwardNavigationGestures={
+            Platform.OS === "ios" && canGoBack
+          }
+          pullToRefreshEnabled
+          onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
+          onNavigationStateChange={onNavigationStateChange}
+          onLoadStart={progressBar.onLoadStart}
+          onLoadProgress={progressBar.onLoadProgress}
+          onLoadEnd={onLoadEnd}
+          onMessage={onMessage}
+        />
+        {progressBar.node}
+        {smsNode}
+      </View>
+    </StackScreenContent>
   );
 }

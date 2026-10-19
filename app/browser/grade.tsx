@@ -16,6 +16,7 @@ import type {
   WebViewHttpErrorEvent,
 } from "react-native-webview/lib/WebViewTypes";
 
+import { StackScreenContent } from "@/components/layout/stack-screen-content";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { IS_DEV } from "@/constants/is-dev";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
@@ -235,123 +236,127 @@ export default function GradeSyncScreen() {
   );
 
   return (
-    <View style={{ flex: 1 }}>
-      <Stack.Screen options={{ title: t("grade.queryTitle") }} />
-      <WebView
-        source={{ uri: GRADE_LOGIN_URL }}
-        style={{ flex: 1 }}
-        javaScriptEnabled
-        domStorageEnabled
-        thirdPartyCookiesEnabled
-        sharedCookiesEnabled
-        cacheEnabled={false}
-        originWhitelist={["*"]}
-        webviewDebuggingEnabled={IS_DEV}
-        onLoadEnd={handleLoadEnd}
-        onError={handleError}
-        onHttpError={handleHttpError}
-        onMessage={handleMessage}
-        ref={webview}
-      />
-      <View
-        style={{
-          position: "absolute",
-          inset: 0,
-          backgroundColor: "rgba(0,0,0,0.72)",
-        }}
-        onStartShouldSetResponder={() => true}
-        onMoveShouldSetResponder={() => true}
-      >
+    <StackScreenContent>
+      <View style={{ flex: 1 }}>
+        <Stack.Screen options={{ title: t("grade.queryTitle") }} />
+        <WebView
+          source={{ uri: GRADE_LOGIN_URL }}
+          style={{ flex: 1 }}
+          automaticallyAdjustContentInsets={false}
+          contentInsetAdjustmentBehavior="never"
+          javaScriptEnabled
+          domStorageEnabled
+          thirdPartyCookiesEnabled
+          sharedCookiesEnabled
+          cacheEnabled={false}
+          originWhitelist={["*"]}
+          webviewDebuggingEnabled={IS_DEV}
+          onLoadEnd={handleLoadEnd}
+          onError={handleError}
+          onHttpError={handleHttpError}
+          onMessage={handleMessage}
+          ref={webview}
+        />
         <View
           style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            paddingHorizontal: 28,
+            position: "absolute",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.72)",
           }}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}
         >
           <View
             style={{
-              width: "100%",
-              maxWidth: 320,
-              borderRadius: 8,
-              backgroundColor: "white",
-              paddingHorizontal: 18,
-              paddingBottom: 12,
-              paddingTop: 28,
+              flex: 1,
+              justifyContent: "center",
               alignItems: "center",
-              boxShadow: "0 8px 18px rgba(0, 0, 0, 0.22)",
+              paddingHorizontal: 28,
             }}
           >
             <View
               style={{
-                position: "absolute",
-                top: -28,
-                width: 56,
-                height: 56,
-                borderRadius: 28,
-                backgroundColor: "white",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <IconSymbol name="assignment" size={30} color="#111827" />
-            </View>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 10,
-                marginBottom: 10,
-              }}
-            >
-              <ActivityIndicator size="small" color="#178f8b" />
-              <Text
-                style={{ fontSize: 16, fontWeight: "500", color: "#111827" }}
-              >
-                {t("grade.queryingWait")}
-              </Text>
-            </View>
-            <View
-              style={{
                 width: "100%",
-                height: 6,
-                overflow: "hidden",
-                backgroundColor: "#4b5563",
+                maxWidth: 320,
+                borderRadius: 8,
+                backgroundColor: "white",
+                paddingHorizontal: 18,
+                paddingBottom: 12,
+                paddingTop: 28,
+                alignItems: "center",
+                boxShadow: "0 8px 18px rgba(0, 0, 0, 0.22)",
               }}
             >
-              <Animated.View
-                style={[
-                  {
-                    position: "absolute",
-                    top: -9,
-                    left: 0,
-                    height: 24,
-                    flexDirection: "row",
-                  },
-                  stripeStyle,
-                ]}
+              <View
+                style={{
+                  position: "absolute",
+                  top: -28,
+                  width: 56,
+                  height: 56,
+                  borderRadius: 28,
+                  backgroundColor: "white",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
               >
-                {PROGRESS_STRIPES.map((stripe) => (
-                  <View
-                    key={stripe}
-                    style={{
-                      width: PROGRESS_STRIPE_WIDTH,
-                      height: 28,
-                      marginRight: PROGRESS_STRIPE_GAP,
-                      backgroundColor: "#111827",
-                      opacity: 0.5,
-                      transform: [{ rotate: "30deg" }],
-                    }}
-                  />
-                ))}
-              </Animated.View>
+                <IconSymbol name="assignment" size={30} color="#111827" />
+              </View>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 10,
+                  marginBottom: 10,
+                }}
+              >
+                <ActivityIndicator size="small" color="#178f8b" />
+                <Text
+                  style={{ fontSize: 16, fontWeight: "500", color: "#111827" }}
+                >
+                  {t("grade.queryingWait")}
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: "100%",
+                  height: 6,
+                  overflow: "hidden",
+                  backgroundColor: "#4b5563",
+                }}
+              >
+                <Animated.View
+                  style={[
+                    {
+                      position: "absolute",
+                      top: -9,
+                      left: 0,
+                      height: 24,
+                      flexDirection: "row",
+                    },
+                    stripeStyle,
+                  ]}
+                >
+                  {PROGRESS_STRIPES.map((stripe) => (
+                    <View
+                      key={stripe}
+                      style={{
+                        width: PROGRESS_STRIPE_WIDTH,
+                        height: 28,
+                        marginRight: PROGRESS_STRIPE_GAP,
+                        backgroundColor: "#111827",
+                        opacity: 0.5,
+                        transform: [{ rotate: "30deg" }],
+                      }}
+                    />
+                  ))}
+                </Animated.View>
+              </View>
             </View>
           </View>
         </View>
+        {smsNode}
       </View>
-      {smsNode}
-    </View>
+    </StackScreenContent>
   );
 }

@@ -17,6 +17,7 @@ import type {
   WebViewHttpErrorEvent,
 } from "react-native-webview/lib/WebViewTypes";
 
+import { StackScreenContent } from "@/components/layout/stack-screen-content";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { IS_DEV } from "@/constants/is-dev";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
@@ -334,136 +335,140 @@ export default function CourseImportScreen() {
   const importingWait = t("course.importingWait");
 
   return (
-    <View style={{ flex: 1 }}>
-      <Stack.Screen options={{ title: importTitle }} />
-      <WebView
-        source={{ uri: loginUrl }}
-        style={{ flex: 1 }}
-        javaScriptEnabled
-        domStorageEnabled
-        thirdPartyCookiesEnabled
-        sharedCookiesEnabled
-        cacheEnabled={false}
-        originWhitelist={["*"]}
-        webviewDebuggingEnabled={IS_DEV}
-        onLoadEnd={handleLoadEnd}
-        onError={handleError}
-        onHttpError={handleHttpError}
-        onMessage={handleMessage}
-        ref={webview}
-      />
-      {showImportOverlay && (
-        <View
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.72)",
-          }}
-          onStartShouldSetResponder={() => true}
-          onMoveShouldSetResponder={() => true}
-        >
+    <StackScreenContent>
+      <View style={{ flex: 1 }}>
+        <Stack.Screen options={{ title: importTitle }} />
+        <WebView
+          source={{ uri: loginUrl }}
+          style={{ flex: 1 }}
+          automaticallyAdjustContentInsets={false}
+          contentInsetAdjustmentBehavior="never"
+          javaScriptEnabled
+          domStorageEnabled
+          thirdPartyCookiesEnabled
+          sharedCookiesEnabled
+          cacheEnabled={false}
+          originWhitelist={["*"]}
+          webviewDebuggingEnabled={IS_DEV}
+          onLoadEnd={handleLoadEnd}
+          onError={handleError}
+          onHttpError={handleHttpError}
+          onMessage={handleMessage}
+          ref={webview}
+        />
+        {showImportOverlay && (
           <View
             style={{
-              flex: 1,
-              justifyContent: "center",
-              alignItems: "center",
-              paddingHorizontal: 28,
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0,0,0,0.72)",
             }}
+            onStartShouldSetResponder={() => true}
+            onMoveShouldSetResponder={() => true}
           >
             <View
               style={{
-                width: "100%",
-                maxWidth: 320,
-                borderRadius: 8,
-                backgroundColor: "white",
-                paddingHorizontal: 18,
-                paddingBottom: 12,
-                paddingTop: 28,
+                flex: 1,
+                justifyContent: "center",
                 alignItems: "center",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.22,
-                shadowRadius: 18,
-                elevation: 10,
+                paddingHorizontal: 28,
               }}
             >
               <View
                 style={{
-                  position: "absolute",
-                  top: -28,
-                  width: 56,
-                  height: 56,
-                  borderRadius: 28,
+                  width: "100%",
+                  maxWidth: 320,
+                  borderRadius: 8,
                   backgroundColor: "white",
-                  justifyContent: "center",
+                  paddingHorizontal: 18,
+                  paddingBottom: 12,
+                  paddingTop: 28,
                   alignItems: "center",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 8 },
+                  shadowOpacity: 0.22,
+                  shadowRadius: 18,
+                  elevation: 10,
                 }}
               >
-                <IconSymbol name="local-cafe" size={30} color="#111827" />
-              </View>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 10,
-                  marginBottom: 10,
-                }}
-              >
-                <ActivityIndicator size="small" color="#178f8b" />
-                <Text
+                <View
                   style={{
-                    fontSize: 16,
-                    fontWeight: "500",
-                    color: "#111827",
+                    position: "absolute",
+                    top: -28,
+                    width: 56,
+                    height: 56,
+                    borderRadius: 28,
+                    backgroundColor: "white",
+                    justifyContent: "center",
+                    alignItems: "center",
                   }}
                 >
-                  {importingWait}
-                </Text>
-              </View>
-              <View
-                style={{
-                  width: "100%",
-                  height: 6,
-                  overflow: "hidden",
-                  backgroundColor: "#4b5563",
-                }}
-              >
-                <Animated.View
-                  style={[
-                    {
-                      position: "absolute",
-                      top: -9,
-                      left: 0,
-                      height: 24,
-                      flexDirection: "row",
-                    },
-                    stripeStyle,
-                  ]}
+                  <IconSymbol name="local-cafe" size={30} color="#111827" />
+                </View>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10,
+                    marginBottom: 10,
+                  }}
                 >
-                  {PROGRESS_STRIPES.map((stripe) => (
-                    <View
-                      key={stripe}
-                      style={{
-                        width: PROGRESS_STRIPE_WIDTH,
-                        height: 28,
-                        marginRight: PROGRESS_STRIPE_GAP,
-                        backgroundColor: "#111827",
-                        opacity: 0.5,
-                        transform: [{ rotate: "30deg" }],
-                      }}
-                    />
-                  ))}
-                </Animated.View>
+                  <ActivityIndicator size="small" color="#178f8b" />
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: "500",
+                      color: "#111827",
+                    }}
+                  >
+                    {importingWait}
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    width: "100%",
+                    height: 6,
+                    overflow: "hidden",
+                    backgroundColor: "#4b5563",
+                  }}
+                >
+                  <Animated.View
+                    style={[
+                      {
+                        position: "absolute",
+                        top: -9,
+                        left: 0,
+                        height: 24,
+                        flexDirection: "row",
+                      },
+                      stripeStyle,
+                    ]}
+                  >
+                    {PROGRESS_STRIPES.map((stripe) => (
+                      <View
+                        key={stripe}
+                        style={{
+                          width: PROGRESS_STRIPE_WIDTH,
+                          height: 28,
+                          marginRight: PROGRESS_STRIPE_GAP,
+                          backgroundColor: "#111827",
+                          opacity: 0.5,
+                          transform: [{ rotate: "30deg" }],
+                        }}
+                      />
+                    ))}
+                  </Animated.View>
+                </View>
               </View>
             </View>
           </View>
-        </View>
-      )}
-      {smsNode}
-    </View>
+        )}
+        {smsNode}
+      </View>
+    </StackScreenContent>
   );
 }

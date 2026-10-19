@@ -58,7 +58,7 @@ export default function AppearanceScreen() {
     if (!uri) return;
     try {
       const { File } = await import("expo-file-system");
-      // 存储的 URI 可能带 ?v= 版本参数，去掉后才是真实文件路径
+      // 删除文件前去掉用于缓存刷新的查询参数
       const old = new File(uri.split("?")[0]);
       if (old.exists) old.delete();
     } catch {}
@@ -95,13 +95,11 @@ export default function AppearanceScreen() {
       tempCroppedUri = cropped.path;
       const source = new File(cropped.path);
 
-      // 固定文件名，换图直接覆盖，无需清理旧文件
       const dest = new File(Paths.document, "bg.jpg");
       if (dest.exists) dest.delete();
       await source.copy(dest);
 
-      // 文件名固定后 URI 不变，expo-image 会命中旧缓存且组件不会重渲染，
-      // 加 ?v= 版本参数作为新的缓存键；原生端解析 file URI 时会忽略 query
+      // 文件路径不变时通过查询参数刷新图片缓存
       setBackgroundImageUri(`${dest.uri}?v=${Date.now()}`);
       Toast.show({
         type: "success",
@@ -135,7 +133,7 @@ export default function AppearanceScreen() {
     haptic();
     setShowBgPicker(false);
     if (Platform.OS === "ios") {
-      // 需要等待原生 Modal 关闭
+      // 等待原生弹窗关闭后再打开图片选择器
       pendingImagePick.current = true;
     } else {
       void pickImage();
@@ -197,6 +195,7 @@ export default function AppearanceScreen() {
       <Stack.Screen options={{ title: t("appearance.title") }} />
       <ScrollView
         className="flex-1 bg-neutral-100 dark:bg-neutral-900"
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerClassName="px-4 pt-4"
       >
         <MenuGroup title={t("appearance.themeGroup")}>

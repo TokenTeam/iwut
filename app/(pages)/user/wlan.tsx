@@ -224,6 +224,7 @@ export default function WlanScreen() {
       <Stack.Screen options={{ title: t("wlan.title") }} />
       <ScrollView
         className="flex-1 bg-neutral-100 dark:bg-neutral-900"
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerClassName="px-4 pt-4 pb-8"
       >
         <View className="mb-4 items-center rounded-2xl bg-white py-16 dark:bg-neutral-800">

@@ -1,3 +1,4 @@
+import { StackScreenContent } from "@/components/layout/stack-screen-content";
 import { IS_DEV } from "@/constants/is-dev";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
@@ -265,25 +266,29 @@ export default function BindScreen() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      <Stack.Screen options={{ title: t("user.bindScreenTitle") }} />
+    <StackScreenContent>
+      <View style={{ flex: 1 }}>
+        <Stack.Screen options={{ title: t("user.bindScreenTitle") }} />
 
-      <WebView
-        ref={webview}
-        source={{ uri: TALENT_CAS_URL }}
-        style={{ flex: 1 }}
-        javaScriptEnabled
-        domStorageEnabled
-        thirdPartyCookiesEnabled
-        sharedCookiesEnabled
-        cacheEnabled={false}
-        originWhitelist={["*"]}
-        webviewDebuggingEnabled={IS_DEV}
-        onLoadEnd={handleLoadEnd}
-        onMessage={onMessage}
-        onError={onError}
-        onHttpError={onHttpError}
-      />
-    </View>
+        <WebView
+          ref={webview}
+          source={{ uri: TALENT_CAS_URL }}
+          style={{ flex: 1 }}
+          automaticallyAdjustContentInsets={false}
+          contentInsetAdjustmentBehavior="never"
+          javaScriptEnabled
+          domStorageEnabled
+          thirdPartyCookiesEnabled
+          sharedCookiesEnabled
+          cacheEnabled={false}
+          originWhitelist={["*"]}
+          webviewDebuggingEnabled={IS_DEV}
+          onLoadEnd={handleLoadEnd}
+          onMessage={onMessage}
+          onError={onError}
+          onHttpError={onHttpError}
+        />
+      </View>
+    </StackScreenContent>
   );
 }

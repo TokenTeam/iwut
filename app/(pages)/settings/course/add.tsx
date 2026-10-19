@@ -131,7 +131,7 @@ export default function AddEditCourseScreen() {
   );
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [shareVisible, setShareVisible] = useState(false);
-  // 拖动周次或节次时锁定页面滚动，避免手势冲突
+  // 拖动周次或节次时锁定页面滚动以避免手势冲突
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const scrollLockCount = useRef(0);
 
@@ -279,6 +279,7 @@ export default function AddEditCourseScreen() {
         >
           <ScrollView
             className="flex-1 bg-neutral-100 dark:bg-neutral-900"
+            contentInsetAdjustmentBehavior="automatic"
             contentContainerClassName="px-4 pt-4 pb-8"
             keyboardShouldPersistTaps="handled"
             scrollEnabled={scrollEnabled}
@@ -596,7 +597,7 @@ function SlotCard({
     return startedOnCell.current;
   };
 
-  // 按拖动起点和当前周次更新整个区间，区间外恢复为手势开始时的状态
+  // 更新拖动区间并保留区间外的初始选择
   const applyRange = (b: number) => {
     if (startWeek.current === null || paintMode.current === null) return;
     if (lastWeek.current === b) return;
@@ -611,7 +612,7 @@ function SlotCard({
     onUpdateRef.current({ weeks: next });
   };
 
-  // 初始化只注册回调，手势触发时才读取 ref
+  // 初始化仅注册回调并在手势触发时读取引用
   // eslint-disable-next-line react-hooks/refs
   const [panResponder] = useState(() =>
     PanResponder.create({
@@ -632,7 +633,7 @@ function SlotCard({
         const w = findWeekAt(locationX, locationY);
         startWeek.current = w;
         lastWeek.current = null;
-        // 起点未选中时选中整个区间，已选中时取消整个区间
+        // 根据起点的选择状态决定选中或取消整个区间
         paintMode.current = w != null ? !baseWeeks.current.has(w) : null;
         if (w != null) applyRange(w);
       },

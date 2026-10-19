@@ -351,6 +351,7 @@ export default function CalendarSettingsScreen() {
       <Stack.Screen options={{ title: t("calendarSet.title") }} />
       <ScrollView
         className="flex-1 bg-neutral-100 dark:bg-neutral-900"
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerClassName="px-4 pt-4 pb-8"
       >
         <MenuGroup title={t("calendarSet.courseGroup")}>

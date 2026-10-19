@@ -16,6 +16,7 @@ import Animated, {
   useAnimatedStyle,
 } from "react-native-reanimated";
 
+import { StackScreenContent } from "@/components/layout/stack-screen-content";
 import { getDayLabels } from "@/constants/weekdays";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -501,10 +502,10 @@ export default function ExamScreen() {
   const importTime = formatImportTime(importedAt);
 
   return (
-    <View className="flex-1 bg-neutral-100 dark:bg-neutral-900">
+    <StackScreenContent className="bg-neutral-100 dark:bg-neutral-900">
       <Stack.Screen options={{ title: t("exam.title") }} />
 
-      <View className="px-4 pt-4">
+      <View className="px-4 pt-4" style={{ flexShrink: 0 }}>
         <View className="mb-4 rounded-2xl bg-white p-4 dark:bg-neutral-800">
           <View className="flex-row items-center gap-3">
             <View
@@ -615,7 +616,7 @@ export default function ExamScreen() {
 
       <AnimatedPagerView
         ref={pagerRef}
-        style={{ flex: 1 }}
+        style={{ flex: 1, minHeight: 0 }}
         initialPage={0}
         onPageScroll={pagerScrollHandler as never}
         onPageSelected={handlePageSelected}
@@ -714,26 +715,25 @@ export default function ExamScreen() {
           </ExamListPage>
         </View>
       </AnimatedPagerView>
-    </View>
+    </StackScreenContent>
   );
 }
 
 function ExamListPage({ children }: { children: ReactNode }) {
   return (
-    <View style={{ flex: 1 }}>
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingBottom: 32,
-          flexGrow: 1,
-          gap: 12,
-        }}
-        showsVerticalScrollIndicator={false}
-      >
-        {children}
-      </ScrollView>
-    </View>
+    <ScrollView
+      style={{ flex: 1, minHeight: 0 }}
+      contentInsetAdjustmentBehavior="never"
+      contentContainerStyle={{
+        paddingHorizontal: 16,
+        paddingBottom: 32,
+        flexGrow: 1,
+        gap: 12,
+      }}
+      showsVerticalScrollIndicator={false}
+    >
+      {children}
+    </ScrollView>
   );
 }
 

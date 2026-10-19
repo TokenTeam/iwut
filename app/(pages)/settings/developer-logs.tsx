@@ -23,8 +23,9 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { StackScreenContent } from "@/components/layout/stack-screen-content";
 import { Highlight } from "@/components/ui/highlight";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { IS_DEV } from "@/constants/is-dev";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
@@ -166,9 +167,12 @@ export default function DeveloperLogsScreen() {
   if (!allowed) return <Redirect href="/(tabs)/user" />;
 
   return (
-    <View className="flex-1 bg-white dark:bg-neutral-900">
+    <StackScreenContent className="bg-white dark:bg-neutral-900">
       <Stack.Screen options={{ title: t("developer.logsTitle") }} />
-      <View className="border-b border-neutral-200 px-4 py-2 dark:border-neutral-800">
+      <View
+        className="border-b border-neutral-200 px-4 py-2 dark:border-neutral-800"
+        style={{ flexShrink: 0 }}
+      >
         <View className="flex-row items-center gap-2">
           <IconSymbol name="search" size={20} color={iconColor} />
           <TextInput
@@ -235,6 +239,8 @@ export default function DeveloperLogsScreen() {
         </View>
       </View>
       <FlashList
+        style={{ flex: 1, minHeight: 0 }}
+        contentInsetAdjustmentBehavior="never"
         data={filtered}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
@@ -242,7 +248,9 @@ export default function DeveloperLogsScreen() {
         onScrollBeginDrag={() => setPaused(true)}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: insets.bottom }}
+        contentContainerStyle={{
+          paddingBottom: Platform.OS === "ios" ? 0 : insets.bottom,
+        }}
         ListEmptyComponent={
           <Text className="py-12 text-center text-sm text-neutral-500">
             {t("developer.logsEmpty")}
@@ -331,6 +339,6 @@ export default function DeveloperLogsScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </StackScreenContent>
   );
 }

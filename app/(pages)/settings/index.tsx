@@ -151,13 +151,11 @@ export default function SettingsScreen() {
     }
   };
 
-  // 临时创建隐藏网页视图以清理网页缓存
   const [cacheWebViewMounted, setCacheWebViewMounted] = useState(false);
   const cacheClearedResolveRef = useRef<(() => void) | null>(null);
 
   const clearWebViewCache = () =>
     new Promise<void>((resolve) => {
-      // 等待超时后结束清理流程以免界面卡住
       const timer = setTimeout(() => {
         cacheClearedResolveRef.current = null;
         setCacheWebViewMounted(false);
@@ -173,7 +171,7 @@ export default function SettingsScreen() {
 
   const handleCacheWebViewRef = (instance: WebView | null) => {
     if (!instance) return;
-    // 等待原生视图就绪后再清理缓存
+    // 延迟清理以等待原生网页视图就绪
     setTimeout(() => {
       instance.clearCache(true);
       setTimeout(() => {
@@ -184,7 +182,6 @@ export default function SettingsScreen() {
     }, 50);
   };
 
-  // 课程和考试提醒全部关闭后才能注销后台刷新
   const syncBackgroundRefresh = async () => {
     const { courseReminder: cr, examReminder: er } =
       useSettingsStore.getState();
@@ -345,6 +342,7 @@ export default function SettingsScreen() {
       <Stack.Screen options={{ title: t("settings.generalTitle") }} />
       <ScrollView
         className="flex-1 bg-neutral-100 dark:bg-neutral-900"
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerClassName="px-4 pt-4"
       >
         <MenuGroup title={t("settings.interaction")}>

@@ -209,6 +209,7 @@ export default function PaletteScreen() {
       <Stack.Screen options={{ title: t("palette.title") }} />
       <ScrollView
         className="flex-1 bg-neutral-100 dark:bg-neutral-900"
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerClassName="px-4 pt-4 pb-8"
       >
         <View className="mb-4 overflow-hidden rounded-xl bg-white dark:bg-neutral-800">
