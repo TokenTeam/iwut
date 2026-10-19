@@ -54,6 +54,7 @@ export interface UpdateManifest {
 }
 
 export interface UpdateSummary {
+  channel: string | null;
   hasUpdate: boolean;
   level: UpdateLevel;
   latestVersion: string | null;
@@ -85,6 +86,20 @@ const LEVEL_ORDER: Record<UpdateLevel, number> = {
 
 function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+function isValidReleaseDate(value: unknown): value is string {
+  if (
+    typeof value !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(value)
+  ) {
+    return false;
+  }
+  const time = Date.parse(value);
+  return (
+    Number.isFinite(time) &&
+    new Date(time).toISOString().slice(0, 19) === value.slice(0, 19)
+  );
 }
 
 function parseLocalizedString(raw: unknown): LocalizedString | null {
@@ -151,6 +166,13 @@ function parseRelease(raw: unknown): ManifestRelease | null {
 
   const reason = parseLocalizedString(raw.reason);
   if (level === "required" && reason === null) return null;
+  if (
+    raw.releasedAt !== undefined &&
+    raw.releasedAt !== null &&
+    !isValidReleaseDate(raw.releasedAt)
+  ) {
+    return null;
+  }
 
   let rollout: ManifestRelease["rollout"] = null;
   if (raw.rollout !== undefined && raw.rollout !== null) {
@@ -212,11 +234,19 @@ function parseChannel(raw: unknown): ChannelManifest | null {
     return null;
   }
 
-  const minSupportedVersion =
-    typeof raw.minSupportedVersion === "string" &&
-    VERSION_PATTERN.test(raw.minSupportedVersion)
-      ? raw.minSupportedVersion
-      : null;
+  let minSupportedVersion: string | null = null;
+  if (
+    raw.minSupportedVersion !== undefined &&
+    raw.minSupportedVersion !== null
+  ) {
+    if (
+      typeof raw.minSupportedVersion !== "string" ||
+      !VERSION_PATTERN.test(raw.minSupportedVersion)
+    ) {
+      return null;
+    }
+    minSupportedVersion = raw.minSupportedVersion;
+  }
 
   if (!Array.isArray(raw.releases)) return null;
   const releases: ManifestRelease[] = [];
@@ -313,12 +343,35 @@ function mergeLevels(releases: Release[]): UpdateLevel {
   return max;
 }
 
+function isReleaseEligible(
+  release: ManifestRelease,
+  context: UpdateContext,
+): boolean {
+  return (
+    !release.departed &&
+    (context.platform !== "android" ||
+      isInRollout(release.rollout?.android, context.deviceId))
+  );
+}
+
+function isPartialRollout(
+  release: ManifestRelease,
+  context: UpdateContext,
+): boolean {
+  return (
+    context.platform === "android" &&
+    release.rollout !== null &&
+    release.rollout.android.percentage < 100
+  );
+}
+
 const pickReason = (releases: Release[]): LocalizedString | null =>
   releases.find((r) => r.level === "required" && r.reason)?.reason ??
   releases.find((r) => r.reason)?.reason ??
   null;
 
 const emptySummary = (latestVersion: string | null = null): UpdateSummary => ({
+  channel: null,
   hasUpdate: false,
   level: "silent",
   latestVersion,
@@ -338,7 +391,10 @@ export function summarizeUpdate(
 ): UpdateSummary {
   if (!manifest) return emptySummary();
 
-  const ch = manifest.channels[channel] ?? manifest.channels.production;
+  const resolvedChannel = Object.hasOwn(manifest.channels, channel)
+    ? channel
+    : "production";
+  const ch = manifest.channels[resolvedChannel];
   if (!ch) return emptySummary();
 
   const { latestVersion, minSupportedVersion, releases } = ch;
@@ -363,15 +419,17 @@ export function summarizeUpdate(
     )
     .sort((a, b) => compareVersions(b.version, a.version));
 
-  const target = applicable.find(
+  const eligible = applicable.filter((r) => isReleaseEligible(r, context));
+  const target = eligible.find(
     (r) =>
-      !r.departed &&
-      (context.platform !== "android" ||
-        isInRollout(r.rollout?.android, context.deviceId)) &&
-      (!(blockedByMinVersion || blockedByDeparted) ||
-        context.platform !== "android" ||
-        !r.rollout ||
-        r.rollout.android.percentage === 100) &&
+      (!isPartialRollout(r, context) ||
+        (!blockedByMinVersion &&
+          !blockedByDeparted &&
+          !eligible.some(
+            (previous) =>
+              compareVersions(previous.version, r.version) <= 0 &&
+              previous.level === "required",
+          ))) &&
       (!blockedByMinVersion ||
         (minSupportedVersion !== null &&
           compareVersions(r.version, minSupportedVersion) >= 0)),
@@ -383,14 +441,12 @@ export function summarizeUpdate(
     (r) => compareVersions(r.version, target.version) <= 0,
   );
   // 未命中的灰度版本仅合并日志
-  const policyReleases = includedReleases.filter(
-    (r) =>
-      !r.departed &&
-      (context.platform !== "android" ||
-        isInRollout(r.rollout?.android, context.deviceId)),
+  const policyReleases = includedReleases.filter((r) =>
+    isReleaseEligible(r, context),
   );
 
   return {
+    channel: resolvedChannel,
     hasUpdate: true,
     level:
       blockedByMinVersion || blockedByDeparted
@@ -404,10 +460,7 @@ export function summarizeUpdate(
     blockedByDeparted,
     reason: departedRelease?.reason ?? pickReason(policyReleases),
     downloadUrl: target.downloadUrl,
-    isRollout:
-      context.platform === "android" &&
-      target.rollout !== null &&
-      target.rollout.android.percentage < 100,
+    isRollout: isPartialRollout(target, context),
   };
 }
 

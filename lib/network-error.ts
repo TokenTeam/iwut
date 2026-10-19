@@ -37,6 +37,7 @@ const NETWORK_ERROR_MESSAGES = [
   /\bfetch request has been cancel(?:ed|led)\b/i,
   /\bjava\.net\.ConnectException:\s*Failed to connect to\b/i,
   /似乎已断开与互联网的连接/,
+  /网络连接已中断/,
   /network request failed/i,
   /failed to fetch/i,
   /internet connection appears to be offline/i,

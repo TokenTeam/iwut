@@ -32,6 +32,7 @@ describe("isNetworkError", () => {
     "fetch failed: Fetch request has been cancelled",
     "fetch failed: FetchRequestCanceledException: Fetch request has been canceled (at Expo/NativeResponse.swift:63)",
     "fetch failed: UnexpectedException: 似乎已断开与互联网的连接。 (at ExpoModulesCore/Promise.swift:56)",
+    "fetch failed: UnexpectedException: 网络连接已中断。 (at ExpoModulesCore/Promise.swift:56)",
   ])("recognizes Expo native fetch failures: %s", (message) => {
     expect(isNetworkError(new Error(message))).toBe(true);
     expect(isNetworkError(message)).toBe(true);

@@ -21,7 +21,6 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { getResolvedLang, useT } from "@/lib/i18n";
 import {
-  getCurrentChannel,
   resolveLocalizedString,
   resolveLocalizedStringArray,
   type Release,
@@ -42,8 +41,8 @@ const CONTENT_PADDING = { paddingHorizontal: 20, paddingBottom: 4 } as const;
 const CHANGELOG_SCROLL_STYLE = { maxHeight: 220 } as const;
 const CHANGELOG_CONTAINER_STYLE = { padding: 12 } as const;
 
-function buildFallbackAndroidUrl(version: string): string {
-  return `https://download.tokenteam.dev/iwut/${version}/${getCurrentChannel()}.apk`;
+function buildFallbackAndroidUrl(version: string, channel: string): string {
+  return `https://download.tokenteam.dev/iwut/${version}/${encodeURIComponent(channel)}.apk`;
 }
 
 function formatReleasedAt(
@@ -71,6 +70,7 @@ export function UpdateModal() {
   const blurProps = useAppBlurProps();
 
   const modalOpen = useUpdateStore((s) => s.modalOpen);
+  const channel = useUpdateStore((s) => s.channel);
   const hasUpdate = useUpdateStore((s) => s.hasUpdate);
   const level = useUpdateStore((s) => s.level);
   const latestVersion = useUpdateStore((s) => s.latestVersion);
@@ -80,11 +80,8 @@ export function UpdateModal() {
   const blockedByMinVersion = useUpdateStore((s) => s.blockedByMinVersion);
   const blockedByDeparted = useUpdateStore((s) => s.blockedByDeparted);
   const isRollout = useUpdateStore((s) => s.isRollout);
-  const requiredDismissVersion = useUpdateStore(
-    (s) => s.requiredDismiss?.version ?? null,
-  );
-  const requiredDismissCount = useUpdateStore(
-    (s) => s.requiredDismiss?.count ?? 0,
+  const requiredDismissCount = useUpdateStore((s) =>
+    s.latestVersion ? (s.requiredDismissCounts[s.latestVersion] ?? 0) : 0,
   );
   const closeModal = useUpdateStore((s) => s.closeModal);
 
@@ -98,8 +95,7 @@ export function UpdateModal() {
   if (!modalOpen || !hasUpdate || !latestVersion) return null;
 
   const isRequired = level === "required";
-  const dismissCount =
-    requiredDismissVersion === latestVersion ? requiredDismissCount : 0;
+  const dismissCount = requiredDismissCount;
   const remaining = isRequired
     ? Math.max(0, REQUIRED_MAX_DISMISS - dismissCount)
     : REQUIRED_MAX_DISMISS;
@@ -113,8 +109,9 @@ export function UpdateModal() {
   const reasonStr = resolveLocalizedString(reason, lang);
 
   const showVersionHeading = applicableReleases.length > 1;
-  const highlights = applicableReleases.flatMap((r) =>
-    resolveLocalizedStringArray(r.highlights, lang),
+  const highlights = resolveLocalizedStringArray(
+    primaryRelease?.highlights,
+    lang,
   );
   const changelog = applicableReleases
     .map((r) => {
@@ -148,7 +145,8 @@ export function UpdateModal() {
     const url =
       Platform.OS === "ios"
         ? (downloadUrl?.ios ?? FALLBACK_IOS_URL)
-        : (downloadUrl?.android ?? buildFallbackAndroidUrl(latestVersion));
+        : (downloadUrl?.android ??
+          buildFallbackAndroidUrl(latestVersion, channel ?? "production"));
     Linking.openURL(url).catch(() => {
       Toast.show({
         type: "error",

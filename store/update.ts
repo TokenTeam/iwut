@@ -4,6 +4,7 @@ import { persist } from "zustand/middleware";
 import { isNetworkError } from "@/lib/network-error";
 import { reportError } from "@/lib/report";
 import { zustandStorage } from "@/lib/storage";
+import { compareVersions } from "@/lib/version";
 import {
   fetchUpdateManifest,
   getCurrentAppVersion,
@@ -25,12 +26,8 @@ type UpdateCheckResult =
 
 let pendingCheck: Promise<UpdateCheckResult> | null = null;
 
-interface RequiredDismissState {
-  version: string;
-  count: number;
-}
-
 interface UpdateStore {
+  channel: string | null;
   hasUpdate: boolean;
   level: UpdateLevel;
   latestVersion: string | null;
@@ -41,8 +38,8 @@ interface UpdateStore {
   blockedByDeparted: boolean;
   isRollout: boolean;
 
-  dismissedRecommendedVersion: string | null;
-  requiredDismiss: RequiredDismissState | null;
+  dismissedRecommendedVersions: string[];
+  requiredDismissCounts: Record<string, number>;
 
   checking: boolean;
   checkedAt: number | null;
@@ -57,6 +54,7 @@ interface UpdateStore {
 export const useUpdateStore = create<UpdateStore>()(
   persist(
     (set, get) => ({
+      channel: null,
       hasUpdate: false,
       level: "silent",
       latestVersion: null,
@@ -67,8 +65,8 @@ export const useUpdateStore = create<UpdateStore>()(
       blockedByDeparted: false,
       isRollout: false,
 
-      dismissedRecommendedVersion: null,
-      requiredDismiss: null,
+      dismissedRecommendedVersions: [],
+      requiredDismissCounts: {},
 
       checking: false,
       checkedAt: null,
@@ -76,21 +74,23 @@ export const useUpdateStore = create<UpdateStore>()(
 
       openModal: () => set({ modalOpen: true }),
       closeModal: () => {
-        const { level, latestVersion, requiredDismiss } = get();
+        const {
+          level,
+          latestVersion,
+          requiredDismissCounts,
+          dismissedRecommendedVersions,
+        } = get();
         if (!latestVersion) {
           set({ modalOpen: false });
           return;
         }
         if (level === "required") {
-          const current =
-            requiredDismiss && requiredDismiss.version === latestVersion
-              ? requiredDismiss.count
-              : 0;
+          const current = requiredDismissCounts[latestVersion] ?? 0;
           if (current < REQUIRED_MAX_DISMISS) {
             set({
-              requiredDismiss: {
-                version: latestVersion,
-                count: current + 1,
+              requiredDismissCounts: {
+                ...requiredDismissCounts,
+                [latestVersion]: current + 1,
               },
               modalOpen: false,
             });
@@ -99,7 +99,11 @@ export const useUpdateStore = create<UpdateStore>()(
         }
         if (level === "recommended") {
           set({
-            dismissedRecommendedVersion: latestVersion,
+            dismissedRecommendedVersions: dismissedRecommendedVersions.includes(
+              latestVersion,
+            )
+              ? dismissedRecommendedVersions
+              : [...dismissedRecommendedVersions, latestVersion],
             modalOpen: false,
           });
           return;
@@ -122,31 +126,34 @@ export const useUpdateStore = create<UpdateStore>()(
           try {
             const manifest = await fetchUpdateManifest();
             if (!manifest) return { status: "failed" };
+            const currentVersion = getCurrentAppVersion();
             const summary = summarizeUpdate(
               manifest,
               getCurrentChannel(),
-              getCurrentAppVersion(),
+              currentVersion,
             );
 
             const prev = get();
-            const dismissedRecommendedVersion =
-              summary.latestVersion &&
-              prev.dismissedRecommendedVersion === summary.latestVersion
-                ? prev.dismissedRecommendedVersion
-                : null;
-            const requiredDismiss =
-              summary.latestVersion &&
-              prev.requiredDismiss?.version === summary.latestVersion
-                ? prev.requiredDismiss
-                : null;
+            const dismissedRecommendedVersions =
+              prev.dismissedRecommendedVersions.filter(
+                (version) => compareVersions(version, currentVersion) > 0,
+              );
+            const requiredDismissCounts = Object.fromEntries(
+              Object.entries(prev.requiredDismissCounts).filter(
+                ([version]) => compareVersions(version, currentVersion) > 0,
+              ),
+            );
 
             const autoOpen =
               summary.hasUpdate &&
               (summary.level === "required" ||
                 (summary.level === "recommended" &&
-                  dismissedRecommendedVersion !== summary.latestVersion));
+                  !dismissedRecommendedVersions.includes(
+                    summary.latestVersion!,
+                  )));
 
             set({
+              channel: summary.channel,
               hasUpdate: summary.hasUpdate,
               level: summary.level,
               latestVersion: summary.latestVersion,
@@ -156,8 +163,8 @@ export const useUpdateStore = create<UpdateStore>()(
               blockedByMinVersion: summary.blockedByMinVersion,
               blockedByDeparted: summary.blockedByDeparted,
               isRollout: summary.isRollout,
-              dismissedRecommendedVersion,
-              requiredDismiss,
+              dismissedRecommendedVersions,
+              requiredDismissCounts,
               checkedAt: Date.now(),
               modalOpen: summary.hasUpdate && (autoOpen || prev.modalOpen),
             });
@@ -181,24 +188,49 @@ export const useUpdateStore = create<UpdateStore>()(
       storage: zustandStorage,
       partialize: (s) => ({
         // 仅持久化用户操作
-        dismissedRecommendedVersion: s.dismissedRecommendedVersion,
-        requiredDismiss: s.requiredDismiss,
+        dismissedRecommendedVersions: s.dismissedRecommendedVersions,
+        requiredDismissCounts: s.requiredDismissCounts,
       }),
       merge: (persisted, current) => {
-        const saved = persisted as Partial<UpdateStore> | undefined;
+        const saved = persisted as
+          | (Partial<UpdateStore> & {
+              dismissedRecommendedVersion?: string;
+              requiredDismiss?: { version: string; count: number };
+            })
+          | undefined;
+        const validVersion = (value: unknown): value is string =>
+          typeof value === "string" && /^\d+(\.\d+){0,2}$/.test(value);
+        const dismissedRecommendedVersions = Array.isArray(
+          saved?.dismissedRecommendedVersions,
+        )
+          ? saved.dismissedRecommendedVersions.filter(validVersion)
+          : validVersion(saved?.dismissedRecommendedVersion)
+            ? [saved.dismissedRecommendedVersion]
+            : [];
+        const counts = saved?.requiredDismissCounts;
+        const requiredDismissCounts =
+          counts && typeof counts === "object" && !Array.isArray(counts)
+            ? Object.fromEntries(
+                Object.entries(counts).filter(
+                  ([version, count]) =>
+                    validVersion(version) &&
+                    Number.isInteger(count) &&
+                    count >= 0,
+                ),
+              )
+            : {};
+        if (
+          validVersion(saved?.requiredDismiss?.version) &&
+          Number.isInteger(saved.requiredDismiss.count) &&
+          saved.requiredDismiss.count >= 0
+        ) {
+          requiredDismissCounts[saved.requiredDismiss.version] =
+            saved.requiredDismiss.count;
+        }
         return {
           ...current,
-          dismissedRecommendedVersion:
-            typeof saved?.dismissedRecommendedVersion === "string"
-              ? saved.dismissedRecommendedVersion
-              : null,
-          requiredDismiss:
-            saved?.requiredDismiss &&
-            typeof saved.requiredDismiss.version === "string" &&
-            Number.isInteger(saved.requiredDismiss.count) &&
-            saved.requiredDismiss.count >= 0
-              ? saved.requiredDismiss
-              : null,
+          dismissedRecommendedVersions,
+          requiredDismissCounts,
         };
       },
     },
