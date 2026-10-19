@@ -448,10 +448,13 @@ export function Schedule({
 
   const scrollViewRef = useRef<ScrollViewInstance>(null);
   const didInitialScroll = useRef(false);
+  const weekendFrameRef = useRef<number | null>(null);
+  const weekendContentWidthRef = useRef(0);
   const pagerRef = useRef<FlashListRef<number>>(null);
   const pagerLoadedRef = useRef(false);
   const pagerVisibleRef = useRef(false);
   const nativePagerOffsetRef = useRef(0);
+  const pagerFrameRef = useRef<number | null>(null);
   const [pagerReady, setPagerReady] = useState(false);
   const [preloadWeeks, setPreloadWeeks] = useState(false);
   const commitTimeRef = useRef<number | null>(null);
@@ -563,15 +566,53 @@ export function Schedule({
     [colorMap, paletteColors, colorPalette.overrides, courseColorOverrides],
   );
 
-  const handleScrollContentSizeChange = useCallback(() => {
-    onReadyRef.current?.();
-    if (!didInitialScroll.current && today && today > 5) {
-      didInitialScroll.current = true;
-      requestAnimationFrame(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: false });
+  const setWeekendScrollRef = useCallback(
+    (instance: ScrollViewInstance | null) => {
+      if (scrollViewRef.current === instance) return;
+      scrollViewRef.current = instance;
+      weekendContentWidthRef.current = 0;
+      didInitialScroll.current = false;
+      if (weekendFrameRef.current !== null) {
+        cancelAnimationFrame(weekendFrameRef.current);
+        weekendFrameRef.current = null;
+      }
+    },
+    [],
+  );
+
+  const handleScrollContentSizeChange = useCallback(
+    (width?: number) => {
+      if (width !== undefined) weekendContentWidthRef.current = width;
+      onReadyRef.current?.();
+      if (didInitialScroll.current || weekendFrameRef.current !== null) return;
+      if (colWidth <= 0 || weekendContentWidthRef.current < colWidth * 7 - 1)
+        return;
+      const scrollView = scrollViewRef.current;
+      if (!scrollView) return;
+      weekendFrameRef.current = requestAnimationFrame(() => {
+        weekendFrameRef.current = null;
+        if (scrollViewRef.current !== scrollView) return;
+        didInitialScroll.current = true;
+        if (week === currentWeek && today && today > 5) {
+          scrollView.scrollToEnd({ animated: false });
+        } else {
+          scrollView.scrollTo({ x: 0, animated: false });
+        }
       });
-    }
-  }, [today, onReadyRef]);
+    },
+    [week, currentWeek, today, colWidth, onReadyRef],
+  );
+
+  useLayoutEffect(() => {
+    didInitialScroll.current = false;
+    if (scrollWeekend) handleScrollContentSizeChange();
+    return () => {
+      if (weekendFrameRef.current !== null) {
+        cancelAnimationFrame(weekendFrameRef.current);
+        weekendFrameRef.current = null;
+      }
+    };
+  }, [scrollWeekend, handleScrollContentSizeChange]);
 
   const handlePagerLayout = useCallback((event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
@@ -607,6 +648,10 @@ export function Schedule({
 
   const setPagerRef = useCallback((instance: FlashListRef<number> | null) => {
     if (pagerRef.current !== instance) {
+      if (pagerFrameRef.current !== null) {
+        cancelAnimationFrame(pagerFrameRef.current);
+        pagerFrameRef.current = null;
+      }
       pagerLoadedRef.current = false;
       pagerVisibleRef.current = false;
       nativePagerOffsetRef.current = 0;
@@ -617,18 +662,6 @@ export function Schedule({
       }
     }
   }, []);
-
-  const syncPagerWeek = useCallback(() => {
-    if (!pagerLoadedRef.current || availableWidth <= 0) return;
-    const offset = (selectedWeekRef.current - 1) * availableWidth;
-    const currentOffset = pagerRef.current?.getAbsoluteLastScrollOffset();
-    if (currentOffset !== undefined && Math.abs(currentOffset - offset) <= 1)
-      return;
-    pagerRef.current?.scrollToOffset({
-      offset,
-      animated: false,
-    });
-  }, [availableWidth, selectedWeekRef]);
 
   const revealPagerIfAligned = useCallback(() => {
     if (!pagerLoadedRef.current || pagerVisibleRef.current) return;
@@ -659,6 +692,63 @@ export function Schedule({
     onReadyRef.current?.();
   }, [selectedWeekRef, onReadyRef]);
 
+  const syncPagerWeek = useCallback(() => {
+    const pager = pagerRef.current;
+    if (!pager || !pagerLoadedRef.current || pagerSizeRef.current.width <= 0)
+      return;
+    const offset = (selectedWeekRef.current - 1) * pagerSizeRef.current.width;
+    if (Math.abs(pager.getAbsoluteLastScrollOffset() - offset) > 1) {
+      pager.scrollToOffset({ offset, animated: false });
+    }
+    if (pagerVisibleRef.current || pagerFrameRef.current !== null) return;
+
+    let attempts = 0;
+    let alignedFrames = 0;
+    // 连续两帧对齐后显示以兼容缺少原生滚动事件的初始化
+    const checkAlignment = () => {
+      pagerFrameRef.current = null;
+      if (pagerRef.current !== pager || pagerVisibleRef.current) return;
+      const { width, height } = pagerSizeRef.current;
+      const index = selectedWeekRef.current - 1;
+      const targetOffset = index * width;
+      const cell = pager.getLayout(index);
+      const offset = pager.getAbsoluteLastScrollOffset();
+      const aligned =
+        !!cell &&
+        width > 0 &&
+        height > 0 &&
+        Math.abs(cell.width - width) <= 1 &&
+        Math.abs(cell.height - height) <= 1 &&
+        Math.abs(cell.x - targetOffset) <= 1 &&
+        Math.abs(offset - targetOffset) <= 1;
+      alignedFrames = aligned ? alignedFrames + 1 : 0;
+      if (alignedFrames >= 2) {
+        nativePagerOffsetRef.current = offset;
+        revealPagerIfAligned();
+        return;
+      }
+      if (++attempts < 30) {
+        pagerFrameRef.current = requestAnimationFrame(checkAlignment);
+      } else {
+        log.warn("pager alignment pending", {
+          week: selectedWeekRef.current,
+          width,
+          height,
+        });
+      }
+    };
+    pagerFrameRef.current = requestAnimationFrame(checkAlignment);
+  }, [selectedWeekRef, revealPagerIfAligned]);
+
+  useEffect(
+    () => () => {
+      if (pagerFrameRef.current !== null) {
+        cancelAnimationFrame(pagerFrameRef.current);
+      }
+    },
+    [],
+  );
+
   const handlePagerScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       nativePagerOffsetRef.current = event.nativeEvent.contentOffset.x;
@@ -666,6 +756,10 @@ export function Schedule({
     },
     [revealPagerIfAligned],
   );
+
+  const handlePagerContentSizeChange = useCallback(() => {
+    if (!pagerVisibleRef.current) syncPagerWeek();
+  }, [syncPagerWeek]);
 
   const handlePagerLoaded = useCallback(
     ({ elapsedTimeInMs }: { elapsedTimeInMs: number }) => {
@@ -684,26 +778,11 @@ export function Schedule({
           week: selectedWeekRef.current,
         });
       }
-      // 测量完成不代表原生滚动已完成，等目标页对齐后再显示
       revealPagerIfAligned();
-      if (!pagerVisibleRef.current) {
-        pagerRef.current?.scrollToOffset({
-          offset: (selectedWeekRef.current - 1) * pagerSizeRef.current.width,
-          animated: false,
-        });
-      }
+      syncPagerWeek();
     },
-    [selectedWeekRef, revealPagerIfAligned],
+    [selectedWeekRef, revealPagerIfAligned, syncPagerWeek],
   );
-
-  const prevWeekRef = useRef(week);
-  useLayoutEffect(() => {
-    if (prevWeekRef.current === week) return;
-    prevWeekRef.current = week;
-    if (scrollWeekend) {
-      scrollViewRef.current?.scrollTo({ x: 0, animated: false });
-    }
-  }, [week, scrollWeekend]);
 
   // 跳过手势切周后的程序定位，避免分页回弹
   useLayoutEffect(() => {
@@ -716,7 +795,14 @@ export function Schedule({
       return;
     }
     syncPagerWeek();
-  }, [week, scrollWeekend, syncPagerWeek]);
+  }, [
+    week,
+    scrollWeekend,
+    pagerSize.width,
+    pagerSize.height,
+    isFocused,
+    syncPagerWeek,
+  ]);
 
   const onPagerMomentumEnd = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -883,12 +969,23 @@ export function Schedule({
 
   const renderPagerItem = useCallback(
     ({ item }: { item: number }) => (
-      <View style={{ width: availableWidth, height: pagerSize.height }}>
+      <View
+        style={{ width: availableWidth, height: pagerSize.height }}
+        onLayout={pagerReady ? undefined : syncPagerWeek}
+      >
         {/* 首屏只构建当前周，其他周先用等尺寸容器参与测量 */}
         {preloadWeeks || item === week ? renderPanel(item) : null}
       </View>
     ),
-    [availableWidth, pagerSize.height, renderPanel, preloadWeeks, week],
+    [
+      availableWidth,
+      pagerSize.height,
+      renderPanel,
+      preloadWeeks,
+      week,
+      pagerReady,
+      syncPagerWeek,
+    ],
   );
 
   return (
@@ -972,7 +1069,7 @@ export function Schedule({
           pagerSize.height <= 0 ? null : scrollWeekend ? (
             <ScrollView
               horizontal
-              ref={scrollViewRef}
+              ref={setWeekendScrollRef}
               // 列表不参与容器高度计算，避免内容测量反过来撑大网格
               style={styles.fill}
               contentContainerStyle={{
@@ -1004,7 +1101,7 @@ export function Schedule({
               onLoad={handlePagerLoaded}
               onScroll={handlePagerScroll}
               scrollEventThrottle={16}
-              onContentSizeChange={revealPagerIfAligned}
+              onContentSizeChange={handlePagerContentSizeChange}
               onMomentumScrollEnd={onPagerMomentumEnd}
               drawDistance={preloadWeeks ? availableWidth : 0}
               maintainVisibleContentPosition={PAGER_CONTENT_POSITION}
