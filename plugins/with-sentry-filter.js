@@ -44,8 +44,14 @@ function gateAndroidInitialization(contents, language) {
 }
 
 function gateIosInitialization(contents, language) {
+  if (language === "swift") {
+    contents = contents.replace(
+      /^([ \t]*)import Telemetry([ \t]*\r?)$/gm,
+      "$1internal import Telemetry$2",
+    );
+  }
   if (
-    contents.includes("IWUTTelemetrySentry") ||
+    contents.includes("[TelemetrySentry start]") ||
     contents.includes("TelemetrySentry.start()")
   )
     return contents.replace(
@@ -61,10 +67,10 @@ function gateIosInitialization(contents, language) {
   }
   const delegated = swift
     ? "TelemetrySentry.start()"
-    : "[IWUTTelemetrySentry start];";
+    : "[TelemetrySentry start];";
   const result = contents.replace(initialization, delegated);
   return swift
-    ? `import Telemetry\n${result}`
+    ? `internal import Telemetry\n${result}`
     : `#import <Telemetry/Telemetry-Swift.h>\n${result}`;
 }
 

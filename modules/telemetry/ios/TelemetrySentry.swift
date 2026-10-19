@@ -1,7 +1,7 @@
 import Foundation
 import RNSentry
 
-@objc(IWUTTelemetrySentry)
+@objc(TelemetrySentry)
 public final class TelemetrySentry: NSObject {
     @objc public static func start() {
         let defaults = UserDefaults.standard
