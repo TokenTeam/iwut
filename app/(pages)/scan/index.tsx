@@ -4,8 +4,13 @@ import {
   CameraView,
   useCameraPermissions,
 } from "expo-camera";
-import { Redirect, router, Stack, useLocalSearchParams } from "expo-router";
-import { useIsFocused } from "expo-router/react-navigation";
+import {
+  Redirect,
+  router,
+  Stack,
+  useIsFocused,
+  useLocalSearchParams,
+} from "expo-router";
 import { useCallback, useEffect, useRef } from "react";
 import {
   ActivityIndicator,

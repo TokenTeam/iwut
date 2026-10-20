@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Tabs, router } from "expo-router";
+import { router } from "expo-router";
+import { Tabs } from "expo-router/js-tabs";
 import { type ComponentProps, useEffect } from "react";
 
 import { Colors } from "@/constants/theme";

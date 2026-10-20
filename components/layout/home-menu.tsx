@@ -1,6 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router, useFocusEffect } from "expo-router";
-import { useIsFocused } from "expo-router/react-navigation";
+import { router, useFocusEffect, useIsFocused } from "expo-router";
 import { CirclePlus, CircleX } from "lucide";
 import { type ComponentProps, useCallback, useRef, useState } from "react";
 import {

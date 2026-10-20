@@ -60,8 +60,7 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useFonts } from "expo-font";
 import { Observe, ObserveRoot } from "expo-observe";
-import { Stack, router, useSegments } from "expo-router";
-import { ThemeProvider } from "expo-router/react-navigation";
+import { Stack, ThemeProvider, router, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as Updates from "expo-updates";
 import { useEffect, useRef } from "react";
@@ -245,7 +244,7 @@ function RootLayout() {
 
   useEffect(() => {
     syncWidgetData().catch(() => {});
-    // 批量修改课程后执行一次同步
+    // 合并短时间内的课程变更后同步
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const unsub = useCourseStore.subscribe((state, prev) => {
       if (

@@ -21,7 +21,7 @@ public class DiagnosticsModule: Module {
                     }
                     promise.resolve([
                         "platform": "ios",
-                        "display": display,
+                        "display": display as Any? ?? NSNull(),
                         "widgets": ["instances": instances]
                     ])
                 case .failure(let error):
@@ -31,8 +31,11 @@ public class DiagnosticsModule: Module {
         }.runOnQueue(.main)
     }
 
-    private func collectDisplayDiagnostics() -> [String: Any] {
-        let screen = UIScreen.main
+    private func collectDisplayDiagnostics() -> [String: Any]? {
+        guard let scene = SceneGeometry.windowScene() else {
+            return nil
+        }
+        let screen = scene.screen
         return [
             "boundsPoints": serialize(rect: screen.bounds),
             "nativeBoundsPixels": serialize(rect: screen.nativeBounds),

@@ -3,7 +3,7 @@
  * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
  */
 
-import { DarkTheme, DefaultTheme } from "expo-router/react-navigation";
+import { DarkTheme, DefaultTheme } from "expo-router";
 import { Platform } from "react-native";
 
 const tintColorLight = "#0a7ea4";
@@ -54,7 +54,6 @@ export const Fonts = Platform.select({
   },
 });
 
-// 主题配置
 export const Themes = {
   default: {
     ...DefaultTheme,

@@ -1,7 +1,6 @@
 import { FlashList } from "@shopify/flash-list";
 import * as Clipboard from "expo-clipboard";
-import { Redirect, Stack } from "expo-router";
-import { useIsFocused } from "expo-router/react-navigation";
+import { Redirect, Stack, useIsFocused } from "expo-router";
 import {
   memo,
   useCallback,

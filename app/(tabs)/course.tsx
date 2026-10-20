@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, useFocusEffect } from "expo-router";
-import { useIsFocused } from "expo-router/react-navigation";
+import { router, useFocusEffect, useIsFocused } from "expo-router";
 import { Menu, X } from "lucide";
 import {
   type ReactNode,
@@ -47,8 +46,8 @@ import { MAX_WEEK } from "@/lib/course-weeks";
 import { getCurrentDayOfWeek, getCurrentWeek, isVacation } from "@/lib/date";
 import { useT } from "@/lib/i18n";
 import { type ImportType, useCourseStore } from "@/store/course";
-import { getWarmupBottomInset, useStartupStore } from "@/store/startup";
 import { useScheduleStore } from "@/store/schedule";
+import { getWarmupBottomInset, useStartupStore } from "@/store/startup";
 import { useUserBindStore } from "@/store/user-bind";
 
 function TabContent({

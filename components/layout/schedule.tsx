@@ -1,8 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { BlurView } from "expo-blur";
-import { useRouter } from "expo-router";
-import { useIsFocused } from "expo-router/react-navigation";
+import { useIsFocused, useRouter } from "expo-router";
 import React, {
   startTransition,
   useCallback,

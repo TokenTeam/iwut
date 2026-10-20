@@ -66,37 +66,39 @@ export interface AndroidNativeDiagnostics {
   };
 }
 
+export interface IOSDisplayDiagnostics {
+  boundsPoints: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  nativeBoundsPixels: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  scale: number;
+  nativeScale: number;
+}
+
 export interface IOSNativeDiagnostics {
   platform: "ios";
-  display: {
-    boundsPoints: {
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-    };
-    nativeBoundsPixels: {
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-    };
-    scale: number;
-    nativeScale: number;
-  };
+  display: IOSDisplayDiagnostics | null;
   widgets: {
-    instances: Array<{
+    instances: {
       kind: string;
       family: string;
       familyRawValue: number;
-    }>;
+    }[];
   };
 }
 
 export type NativeDiagnostics = AndroidNativeDiagnostics | IOSNativeDiagnostics;
 
 interface DiagnosticsNativeModule {
-  getNativeDiagnostics(): Promise<NativeDiagnostics>;
+  getNativeDiagnostics(): Promise<NativeDiagnostics | null>;
 }
 
 const NativeDiagnosticsModule =
@@ -215,7 +217,7 @@ function formatValue(value: unknown): string {
 export function formatDiagnostics(
   diagnostics: Awaited<ReturnType<typeof collectDiagnostics>>,
 ): string {
-  const sections: Array<[string, Record<string, unknown>]> = [
+  const sections: [string, Record<string, unknown>][] = [
     ["Application", diagnostics.application],
     ["Update", diagnostics.update],
     ["Device", diagnostics.device],
