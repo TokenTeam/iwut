@@ -1,9 +1,6 @@
 {
-  "platforms": ["android", "ios"],
+  "platforms": ["android"],
   "android": {
     "modules": ["dev.tokenteam.iwut.wlan.WlanModule"]
-  },
-  "ios": {
-    "modules": ["WlanModule"]
   }
 }

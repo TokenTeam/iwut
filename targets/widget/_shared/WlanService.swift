@@ -1,49 +1,21 @@
-import ExpoModulesCore
 import Foundation
 import Security
 
-public class WlanModule: Module {
-    private let credentials = WlanCredentialStore()
-    private let authenticator = WlanAuthenticator()
-
-    public func definition() -> ModuleDefinition {
-        Name("Wlan")
-
-        AsyncFunction("saveCredentials") { (username: String, password: String) in
-            try self.credentials.save(username: username, password: password)
+enum WlanService {
+    static func login() async -> [String: String] {
+        guard let credentials = WlanCredentialStore().load() else {
+            return ["status": "no-credentials"]
         }
-
-        AsyncFunction("clearCredentials") {
-            try self.credentials.clear()
-        }
-
-        AsyncFunction("hasCredentials") { () -> Bool in
-            self.credentials.load() != nil
-        }
-
-        AsyncFunction("getSavedUsername") { () -> String? in
-            self.credentials.load()?.username
-        }
-
-        AsyncFunction("login") { () async -> [String: String] in
-            guard let credentials = self.credentials.load() else {
-                return ["status": "no-credentials"]
-            }
-            return await self.authenticator.login(credentials: credentials)
-        }
-
-        AsyncFunction("requestPinnedShortcut") { () -> Bool in
-            false
-        }
+        return await WlanAuthenticator().login(credentials: credentials)
     }
 }
 
-private struct WlanCredentials: Codable {
+struct WlanCredentials: Codable {
     let username: String
     let password: String
 }
 
-private final class WlanCredentialStore {
+final class WlanCredentialStore {
     private let service = "dev.tokenteam.iwut.wlan"
     private let account = "credentials"
 

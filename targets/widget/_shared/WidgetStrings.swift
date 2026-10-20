@@ -1,16 +1,11 @@
 import Foundation
 
-/// Localization helper for the widget. Resolves strings using the in-app
-/// language synced from React Native via App Group `UserDefaults` (key:
-/// `lang`), falling back to the device locale when nothing has been synced
-/// yet (e.g. widget added before first app launch).
 enum WidgetStrings {
     static func localized(_ key: String) -> String {
         let bundle = preferredBundle()
         return bundle.localizedString(forKey: key, value: nil, table: nil)
     }
 
-    /// Returns the localized day-of-week label for ISO weekday 1..7 (Mon..Sun).
     static func dayOfWeek(_ day: Int) -> String {
         switch day {
         case 1: return localized("widget.weekday.mon")
@@ -29,8 +24,6 @@ enum WidgetStrings {
         let tag = defaults?.string(forKey: "lang") ?? ""
         guard !tag.isEmpty else { return .main }
 
-        // Try the exact tag first (e.g. "zh-Hans"), then the base language
-        // (e.g. "zh") so callers can pass either form.
         let candidates: [String]
         if tag.contains("-") {
             let base = String(tag.split(separator: "-").first ?? "")

@@ -96,6 +96,7 @@ const config: ExpoConfig = {
   plugins: [
     ...(IS_DEV ? ["expo-dev-client"] : []),
     "expo-router",
+    "expo-app-intents",
     "expo-font",
     "expo-status-bar",
     "expo-web-browser",
@@ -184,6 +185,9 @@ const config: ExpoConfig = {
   experiments: {
     typedRoutes: true,
     reactCompiler: true,
+    inlineModules: {
+      watchedDirectories: ["app-intents"],
+    },
   },
   extra: {
     router: {},

@@ -48,14 +48,9 @@ struct ScheduleTimelineProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<ScheduleEntry>) -> Void) {
         let now = Date()
-        let calendar = Calendar.current
+        let calendar = ScheduleHelper.calendar
         let data = ScheduleWidgetData.load()
 
-        // Collect every moment at which the displayed content should change so
-        // we can schedule a dedicated entry for each. Because the view is a
-        // pure function of `entry.date`, scheduling an entry at a transition is
-        // enough to make the widget advance even if the system delays the next
-        // timeline reload.
         var transitionDates: Set<Date> = []
 
         if let data = data {
@@ -64,10 +59,7 @@ struct ScheduleTimelineProvider: TimelineProvider {
                 guard parts.count == 2,
                       let hour = Int(parts[0]),
                       let minute = Int(parts[1]),
-                      // +1 minute so the just-ended course is excluded by the
-                      // `endTime > now` filter at render time.
-                      let endDate = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: now)?
-                        .addingTimeInterval(60),
+                      let endDate = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: now),
                       endDate > now
                 else { continue }
                 transitionDates.insert(endDate)

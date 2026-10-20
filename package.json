@@ -27,6 +27,7 @@
     "@sentry/react-native": "~8.28.0",
     "@shopify/flash-list": "2.3.2",
     "expo": "~58.0.16",
+    "expo-app-intents": "~0.5.10",
     "expo-application": "~58.1.2",
     "expo-asset": "~58.0.17",
     "expo-background-task": "~58.0.11",
