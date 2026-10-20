@@ -1,6 +1,5 @@
 import { File, Paths } from "expo-file-system";
 import { Stack } from "expo-router";
-import * as Sharing from "expo-sharing";
 import { useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -22,6 +21,7 @@ import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { MAX_SECTION, MAX_WEEK } from "@/lib/course-weeks";
 import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
+import { shareFileAsync } from "@/lib/sharing";
 import {
   APP_LOCAL_CALENDAR_ID,
   deleteAppCalendar,
@@ -169,7 +169,7 @@ export default function CalendarSettingsScreen() {
       const { courses, termStart } = useCourseStore.getState();
       const file = new File(Paths.cache, `iwut_courses_${Date.now()}.json`);
       await file.write(JSON.stringify({ courses, termStart }, null, 2));
-      await Sharing.shareAsync(file.uri, {
+      await shareFileAsync(file.uri, {
         UTI: "public.json",
         mimeType: "application/json",
         dialogTitle: t("calendarSet.exportCourses"),
@@ -377,6 +377,7 @@ export default function CalendarSettingsScreen() {
               ) : undefined
             }
             onPress={handleExportCourses}
+            disabled={courseDataAction !== null || pendingCourseData !== null}
           />
           <MenuItem
             icon="file-download"
@@ -389,6 +390,7 @@ export default function CalendarSettingsScreen() {
               ) : undefined
             }
             onPress={handleImportCourses}
+            disabled={courseDataAction !== null || pendingCourseData !== null}
           />
         </MenuGroup>
 

@@ -2,7 +2,6 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Directory, File, Paths } from "expo-file-system";
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams } from "expo-router";
-import * as Sharing from "expo-sharing";
 import { useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -28,6 +27,7 @@ import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { buildCourseDndIntervals } from "@/lib/course-dnd";
 import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
+import { shareFileAsync } from "@/lib/sharing";
 import { collectDiagnostics, formatDiagnostics } from "@/modules/diagnostics";
 import {
   getCourseDndStatus,
@@ -99,6 +99,7 @@ export default function SettingsScreen() {
   const [clearVisible, setClearVisible] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const exportingRef = useRef(false);
   const [reminderSheetVisible, setReminderSheetVisible] = useState(false);
   const [permissionSheetVisible, setPermissionSheetVisible] = useState(false);
   const [customMinutes, setCustomMinutes] = useState("");
@@ -171,7 +172,7 @@ export default function SettingsScreen() {
 
   const handleCacheWebViewRef = (instance: WebView | null) => {
     if (!instance) return;
-    // 延迟清理以等待原生网页视图就绪
+    // 等待原生 WebView 就绪后清理缓存
     setTimeout(() => {
       instance.clearCache(true);
       setTimeout(() => {
@@ -288,6 +289,8 @@ export default function SettingsScreen() {
   };
 
   const handleExportLogs = async () => {
+    if (exportingRef.current) return;
+    exportingRef.current = true;
     setExporting(true);
 
     try {
@@ -315,7 +318,7 @@ export default function SettingsScreen() {
       const zipFile = new File(Paths.cache, zipName);
       await zipFile.write(zipData);
 
-      await Sharing.shareAsync(zipFile.uri, {
+      await shareFileAsync(zipFile.uri, {
         UTI: "public.zip-archive",
         mimeType: "application/zip",
         dialogTitle: t("settings.exportDialogTitle"),
@@ -328,6 +331,7 @@ export default function SettingsScreen() {
         position: "bottom",
       });
     } finally {
+      exportingRef.current = false;
       setExporting(false);
     }
   };
@@ -462,6 +466,7 @@ export default function SettingsScreen() {
             showArrow={false}
             right={exporting ? <ActivityIndicator size="small" /> : undefined}
             onPress={handleExportLogs}
+            disabled={exporting}
           />
         </MenuGroup>
       </ScrollView>

@@ -10,12 +10,14 @@ import {
 } from "@/services/announcements";
 
 const MIN_FETCH_INTERVAL_MS = 5 * 60 * 1000;
+const RETRY_INTERVAL_MS = 30 * 1000;
 
 interface AnnouncementStore {
   announcements: Announcement[];
   dismissedIds: string[];
   fetching: boolean;
   fetchedAt: number | null;
+  attemptedAt: number | null;
   fetch: (options?: { force?: boolean }) => Promise<void>;
   dismiss: (id: string) => void;
 }
@@ -27,19 +29,24 @@ export const useAnnouncementStore = create<AnnouncementStore>()(
       dismissedIds: [],
       fetching: false,
       fetchedAt: null,
+      attemptedAt: null,
       fetch: async (options) => {
         if (get().fetching) return;
         const fetchedAt = get().fetchedAt;
+        const attemptedAt = get().attemptedAt;
         if (
           !options?.force &&
-          fetchedAt !== null &&
-          Date.now() - fetchedAt < MIN_FETCH_INTERVAL_MS
+          ((fetchedAt !== null &&
+            Date.now() - fetchedAt < MIN_FETCH_INTERVAL_MS) ||
+            (attemptedAt !== null &&
+              Date.now() - attemptedAt < RETRY_INTERVAL_MS))
         ) {
           return;
         }
-        set({ fetching: true });
+        set({ fetching: true, attemptedAt: Date.now() });
         try {
           const list = await fetchAnnouncements();
+          if (list === null) return;
           const validIds = new Set(list.map((a) => a.id));
           const dismissedIds = get().dismissedIds.filter((id) =>
             validIds.has(id),

@@ -129,7 +129,7 @@ function parseAnnouncement(raw: unknown): Announcement | null {
   };
 }
 
-export async function fetchAnnouncements(): Promise<Announcement[]> {
+export async function fetchAnnouncements(): Promise<Announcement[] | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 5000);
 
@@ -137,11 +137,16 @@ export async function fetchAnnouncements(): Promise<Announcement[]> {
     const res = await fetch(`${CONFIG_REPO_CDN}/announcements.json`, {
       signal: controller.signal,
     });
-    if (!res.ok) return [];
-    const data: unknown = await res.json();
+    if (!res.ok) return null;
+    let data: unknown;
+    try {
+      data = await res.json();
+    } catch {
+      return null;
+    }
 
-    if (!isObject(data) || data.version !== SUPPORTED_VERSION) return [];
-    if (!Array.isArray(data.announcements)) return [];
+    if (!isObject(data) || data.version !== SUPPORTED_VERSION) return null;
+    if (!Array.isArray(data.announcements)) return null;
 
     const parsed: Announcement[] = [];
     const seenIds = new Set<string>();
@@ -151,7 +156,7 @@ export async function fetchAnnouncements(): Promise<Announcement[]> {
       seenIds.add(a.id);
       parsed.push(a);
     }
-    return parsed;
+    return data.announcements.length > 0 && parsed.length === 0 ? null : parsed;
   } finally {
     clearTimeout(timer);
   }

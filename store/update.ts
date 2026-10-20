@@ -17,6 +17,7 @@ import {
 } from "@/services/update-config";
 
 const MIN_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+const RETRY_INTERVAL_MS = 30 * 1000;
 export const REQUIRED_MAX_DISMISS = 3;
 
 type UpdateCheckResult =
@@ -43,6 +44,7 @@ interface UpdateStore {
 
   checking: boolean;
   checkedAt: number | null;
+  attemptedAt: number | null;
 
   modalOpen: boolean;
 
@@ -70,6 +72,7 @@ export const useUpdateStore = create<UpdateStore>()(
 
       checking: false,
       checkedAt: null,
+      attemptedAt: null,
       modalOpen: false,
 
       openModal: () => set({ modalOpen: true }),
@@ -114,14 +117,17 @@ export const useUpdateStore = create<UpdateStore>()(
       check: (options) => {
         if (pendingCheck) return pendingCheck;
         const checkedAt = get().checkedAt;
+        const attemptedAt = get().attemptedAt;
         if (
           !options?.force &&
-          checkedAt !== null &&
-          Date.now() - checkedAt < MIN_CHECK_INTERVAL_MS
+          ((checkedAt !== null &&
+            Date.now() - checkedAt < MIN_CHECK_INTERVAL_MS) ||
+            (attemptedAt !== null &&
+              Date.now() - attemptedAt < RETRY_INTERVAL_MS))
         ) {
           return Promise.resolve({ status: "skipped" });
         }
-        set({ checking: true });
+        set({ checking: true, attemptedAt: Date.now() });
         pendingCheck = (async (): Promise<UpdateCheckResult> => {
           try {
             const manifest = await fetchUpdateManifest();
@@ -187,7 +193,6 @@ export const useUpdateStore = create<UpdateStore>()(
       name: "update",
       storage: zustandStorage,
       partialize: (s) => ({
-        // 仅持久化用户操作
         dismissedRecommendedVersions: s.dismissedRecommendedVersions,
         requiredDismissCounts: s.requiredDismissCounts,
       }),
