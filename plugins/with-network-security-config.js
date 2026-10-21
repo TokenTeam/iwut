@@ -9,10 +9,6 @@ const path = require("path");
 
 const CONFIG_SOURCE = require.resolve("./network_security_config.xml");
 
-/**
- * 将 network_security_config.xml 注入 Android 工程，
- * 把明文 HTTP 限制在校园网相关域名（替代全局 usesCleartextTraffic）
- */
 function withNetworkSecurityConfig(config) {
   config = withDangerousMod(config, [
     "android",

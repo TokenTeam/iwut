@@ -134,7 +134,7 @@ const config: ExpoConfig = {
         android: {
           buildExpoModulesCoreFromSource: true,
           buildArchs: ["arm64-v8a"],
-          useLegacyPackaging: true,
+          useLegacyPackaging: false,
           enableMinifyInReleaseBuilds: true,
           enableShrinkResourcesInReleaseBuilds: true,
           extraProguardRules: readFileSync(
