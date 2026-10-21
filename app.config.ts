@@ -18,7 +18,7 @@ const config: ExpoConfig = {
       ? "掌上吾理 Pro"
       : "掌上吾理",
   slug: "iwut",
-  version: "0.3.26",
+  version: "0.3.27",
   runtimeVersion: {
     policy: "appVersion",
   },
