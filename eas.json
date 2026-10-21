@@ -21,7 +21,8 @@
       "bun": "1.4.2",
       "env": {
         "EAS_BUILD_PROFILE": "preview",
-        "EXPO_PUBLIC_DEBUG": "1"
+        "EXPO_PUBLIC_DEBUG": "1",
+        "SENTRY_ALLOW_FAILURE": "true"
       }
     },
     "production": {
@@ -31,7 +32,8 @@
       "bun": "1.4.2",
       "env": {
         "EAS_BUILD_PROFILE": "production",
-        "EXPO_PUBLIC_DEBUG": "0"
+        "EXPO_PUBLIC_DEBUG": "0",
+        "SENTRY_ALLOW_FAILURE": "true"
       },
       "android": {
         "buildType": "apk"
