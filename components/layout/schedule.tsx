@@ -579,7 +579,7 @@ export function Schedule({
     const previousSize = pagerSizeRef.current;
     if (previousSize.width === width && previousSize.height === height) return;
     pagerSizeRef.current = { width, height };
-    if (__DEV__ && previousSize.height > 0) {
+    if (previousSize.height > 0) {
       log.debug("container resized", {
         previous: previousSize,
         current: { width, height },
@@ -587,16 +587,14 @@ export function Schedule({
     }
     if (firstLayoutTimeRef.current === null) {
       firstLayoutTimeRef.current = Date.now();
-      if (__DEV__) {
-        log.debug("container ready", {
-          sinceCommitInMs:
-            commitTimeRef.current === null
-              ? null
-              : firstLayoutTimeRef.current - commitTimeRef.current,
-          width,
-          height,
-        });
-      }
+      log.debug("container ready", {
+        sinceCommitInMs:
+          commitTimeRef.current === null
+            ? null
+            : firstLayoutTimeRef.current - commitTimeRef.current,
+        width,
+        height,
+      });
     }
     setPagerSize((previous) =>
       previous.width === width && previous.height === height
@@ -638,15 +636,13 @@ export function Schedule({
     )
       return;
     pagerVisibleRef.current = true;
-    if (__DEV__) {
-      log.debug("pager visible", {
-        sinceCommitInMs:
-          commitTimeRef.current === null
-            ? null
-            : Date.now() - commitTimeRef.current,
-        week: selectedWeekRef.current,
-      });
-    }
+    log.debug("pager visible", {
+      sinceCommitInMs:
+        commitTimeRef.current === null
+          ? null
+          : Date.now() - commitTimeRef.current,
+      week: selectedWeekRef.current,
+    });
     setPagerReady(true);
     onReadyRef.current?.();
   }, [selectedWeekRef, onReadyRef]);
@@ -723,20 +719,18 @@ export function Schedule({
   const handlePagerLoaded = useCallback(
     ({ elapsedTimeInMs }: { elapsedTimeInMs: number }) => {
       pagerLoadedRef.current = true;
-      if (__DEV__) {
-        log.debug("pager loaded", {
-          elapsedTimeInMs,
-          sinceCommitInMs:
-            commitTimeRef.current === null
-              ? null
-              : Date.now() - commitTimeRef.current,
-          sinceContainerReadyInMs:
-            firstLayoutTimeRef.current === null
-              ? null
-              : Date.now() - firstLayoutTimeRef.current,
-          week: selectedWeekRef.current,
-        });
-      }
+      log.debug("pager loaded", {
+        elapsedTimeInMs,
+        sinceCommitInMs:
+          commitTimeRef.current === null
+            ? null
+            : Date.now() - commitTimeRef.current,
+        sinceContainerReadyInMs:
+          firstLayoutTimeRef.current === null
+            ? null
+            : Date.now() - firstLayoutTimeRef.current,
+        week: selectedWeekRef.current,
+      });
       revealPagerIfAligned();
       syncPagerWeek();
     },

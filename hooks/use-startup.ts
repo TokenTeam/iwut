@@ -2,8 +2,8 @@ import { router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useStartupStore } from "@/store/startup";
 import { logger } from "@/lib/logger";
+import { useStartupStore } from "@/store/startup";
 
 const RENDER_WAIT_MS = 2000;
 const log = logger.extend("Startup");
@@ -64,15 +64,13 @@ export function useStartup({
       secondFrame = requestAnimationFrame(() => {
         if (hiding.current) return;
         hiding.current = true;
-        if (__DEV__) {
-          const { homeReady, courseReady } = useStartupStore.getState();
-          log.debug("splash released", {
-            activeTab,
-            homeReady,
-            courseReady,
-            timedOut,
-          });
-        }
+        const { homeReady, courseReady } = useStartupStore.getState();
+        log.debug("splash released", {
+          activeTab,
+          homeReady,
+          courseReady,
+          timedOut,
+        });
         void SplashScreen.hideAsync()
           .catch(() => {})
           .finally(() => setReleased(true));
