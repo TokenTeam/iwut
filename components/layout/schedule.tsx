@@ -34,6 +34,17 @@ import { MAX_WEEK } from "@/lib/course-weeks";
 import { getTermWeekDayNumbers, getTermWeekMonthLabel } from "@/lib/date";
 import { useT } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
+import {
+  buildCurrentWeekCourses,
+  buildOtherWeekSchedule,
+  buildScheduleLayout,
+  buildSchedulePixelLayout,
+  getScheduleConflicts,
+  indexScheduleCourses,
+  type CourseSectionRange,
+  type ScheduleLayoutInfo,
+  type SchedulePixelLayout,
+} from "@/lib/schedule-grid";
 import type { Course } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 
@@ -43,11 +54,7 @@ import {
   QuickAddCourseModal,
   type QuickAddSlot,
 } from "./quick-add-course-modal";
-import {
-  DayColumn,
-  type CourseSectionRange,
-  type ScheduleCellTheme,
-} from "./schedule-day-column";
+import { DayColumn, type ScheduleCellTheme } from "./schedule-day-column";
 
 const log = logger.extend("Schedule");
 
@@ -74,6 +81,8 @@ const SECTION_GROUPS_COMPACT: number[][] = [
   [11, 12],
   [14, 15, 16],
 ];
+const FULL_LAYOUT = buildScheduleLayout(SECTION_GROUPS_FULL);
+const COMPACT_LAYOUT = buildScheduleLayout(SECTION_GROUPS_COMPACT);
 
 interface SidebarLabelText {
   morning: string;
@@ -232,56 +241,23 @@ function blendColorOver(color: string, surfaceColor: string): string {
   });
 }
 
-function buildDayCourses(courses: Course[]): Course[][] {
-  const days: Course[][] = Array.from({ length: 7 }, () => []);
-  for (const c of courses) {
-    const d = c.day - 1;
-    if (d >= 0 && d < 7) {
-      days[d].push(c);
-    }
-  }
-  return days;
-}
-
-interface LayoutInfo {
-  sectionTop: Record<number, number>;
-  sectionPct: number;
-  groups: number[][];
-  sidebarLabels: SidebarLabel[];
-}
-
-function computeLayout(
-  groups: number[][],
-  sidebarLabels: SidebarLabel[],
-): LayoutInfo {
-  const totalSections = groups.reduce((sum, g) => sum + g.length, 0);
-  const sectionPct = 100 / totalSections;
-
-  const sectionTop: Record<number, number> = {};
-  let y = 0;
-  for (const group of groups) {
-    for (const sec of group) {
-      sectionTop[sec] = y;
-      y += sectionPct;
-    }
-  }
-
-  return { sectionTop, sectionPct, groups, sidebarLabels };
-}
-
 interface WeekPanelProps {
   week: number;
-  courses: Course[];
+  courseDays: ReturnType<typeof indexScheduleCourses>;
   termStart?: string;
   today?: number;
   showDates: boolean;
   showOtherWeekCourses: boolean;
-  layout: LayoutInfo;
-  colWidth: number;
-  headerHeight: number;
+  layout: ScheduleLayoutInfo;
+  pixelLayout: SchedulePixelLayout;
   dayLabels: string[];
-  cellTheme: ScheduleCellTheme;
-  cellBgFor: (courseName: string, isOther: boolean) => string;
+  currentTheme: ScheduleCellTheme;
+  otherTheme: ScheduleCellTheme;
+  locatorBg: string;
+  isDark: boolean;
+  mutedColor: string;
+  courseBackgrounds: ReadonlyMap<string, string>;
+  otherWeekBg: string;
   onCoursePress: (
     course: Course,
     conflicts: Course[],
@@ -297,79 +273,47 @@ interface WeekPanelProps {
 
 const WeekPanel = React.memo(function WeekPanel({
   week,
-  courses,
+  courseDays,
   termStart,
   today,
   showDates,
   showOtherWeekCourses,
   layout,
-  colWidth,
-  headerHeight,
+  pixelLayout,
   dayLabels,
-  cellTheme,
-  cellBgFor,
+  currentTheme,
+  otherTheme,
+  locatorBg,
+  isDark,
+  mutedColor,
+  courseBackgrounds,
+  otherWeekBg,
   onCoursePress,
   onCourseLongPress,
   onAddSlot,
 }: WeekPanelProps) {
-  const isInWeek = useCallback(
-    (c: Course) => c.weekStart <= week && c.weekEnd >= week,
-    [week],
+  const currentDays = useMemo(
+    () => buildCurrentWeekCourses(courseDays, week),
+    [courseDays, week],
   );
-
-  const currentDayCourses = useMemo(
-    () => buildDayCourses(courses.filter(isInWeek)),
-    [courses, isInWeek],
+  const weekDays = useMemo(
+    () =>
+      buildOtherWeekSchedule(
+        courseDays,
+        currentDays,
+        week,
+        showOtherWeekCourses,
+      ),
+    [courseDays, currentDays, week, showOtherWeekCourses],
   );
-
-  const otherDayCoursesAll = useMemo(() => {
-    if (!showOtherWeekCourses) return Array.from({ length: 7 }, () => []);
-    return buildDayCourses(courses.filter((c) => !isInWeek(c)));
-  }, [courses, isInWeek, showOtherWeekCourses]);
-
-  // 隐藏与本周课重叠的非本周课，但保留在冲突列表中
-  const otherDayCoursesVisible = useMemo(() => {
-    const result: Course[][] = Array.from({ length: 7 }, () => []);
-    for (let d = 0; d < 7; d++) {
-      const occupied: { start: number; end: number }[] = currentDayCourses[
-        d
-      ].map((c) => ({ start: c.sectionStart, end: c.sectionEnd }));
-      const sorted = [...otherDayCoursesAll[d]].sort(
-        (a, b) => a.sectionStart - b.sectionStart,
-      );
-      for (const c of sorted) {
-        const overlap = occupied.some(
-          (o) => o.start <= c.sectionEnd && c.sectionStart <= o.end,
-        );
-        if (overlap) continue;
-        occupied.push({ start: c.sectionStart, end: c.sectionEnd });
-        result[d].push(c);
-      }
-    }
-    return result;
-  }, [currentDayCourses, otherDayCoursesAll]);
+  const weekDaysRef = useLatest(weekDays);
 
   const getConflicts = useCallback(
     (course: Course, range: CourseSectionRange) => {
-      const dayIdx = course.day - 1;
-      const allForDay = [
-        ...(currentDayCourses[dayIdx] ?? []),
-        ...(otherDayCoursesAll[dayIdx] ?? []),
-      ];
-      const conflicts = allForDay.filter(
-        (other) =>
-          other.sectionStart <= range.sectionEnd &&
-          range.sectionStart <= other.sectionEnd,
-      );
-      conflicts.sort((a, b) => {
-        const aCurrent = isInWeek(a) ? 0 : 1;
-        const bCurrent = isInWeek(b) ? 0 : 1;
-        if (aCurrent !== bCurrent) return aCurrent - bCurrent;
-        return a.weekStart - b.weekStart;
-      });
-      return conflicts.length > 0 ? conflicts : [course];
+      const day = weekDaysRef.current[course.day - 1];
+      return day ? getScheduleConflicts(day, course, range, week) : [course];
     },
-    [currentDayCourses, otherDayCoursesAll, isInWeek],
+    [weekDaysRef, week],
   );
 
   const dayNumbers = useMemo(
@@ -392,22 +336,26 @@ const WeekPanel = React.memo(function WeekPanel({
   );
 
   return (
-    <View style={{ height: "100%", flexDirection: "row" }}>
+    <View style={{ width: pixelLayout.width, height: pixelLayout.height }}>
       {Array.from({ length: 7 }, (_, dayIdx) => (
         <DayColumn
           key={dayIdx}
           dayIdx={dayIdx}
-          width={colWidth}
-          headerHeight={headerHeight}
+          pixelLayout={pixelLayout}
           dayLabel={dayLabels[dayIdx]}
           dayNumber={dayNumbers ? dayNumbers[dayIdx] : null}
           isToday={dayIdx + 1 === today}
           showDates={showDates}
           layout={layout}
-          theme={cellTheme}
-          currentCourses={currentDayCourses[dayIdx]}
-          otherCourses={otherDayCoursesVisible[dayIdx]}
-          cellBgFor={cellBgFor}
+          currentTheme={currentTheme}
+          otherTheme={otherTheme}
+          locatorBg={locatorBg}
+          isDark={isDark}
+          mutedColor={mutedColor}
+          currentCourses={currentDays[dayIdx]}
+          otherCourses={weekDays[dayIdx].visibleOther}
+          courseBackgrounds={courseBackgrounds}
+          otherWeekBg={otherWeekBg}
           onCoursePress={handlePress}
           onCourseLongPress={handleLongPress}
           onAddSlot={onAddSlot}
@@ -509,7 +457,8 @@ export function Schedule({
   const monthLabelSuffix = localT("common.monthSuffix");
   const otherWeekTag = localT("schedule.otherWeekTag");
 
-  const layout = useMemo(() => {
+  const layout = showMidday ? FULL_LAYOUT : COMPACT_LAYOUT;
+  const sidebarLabels = useMemo(() => {
     const text: SidebarLabelText = {
       morning: localT("schedule.sidebar.morning"),
       midday: localT("schedule.sidebar.midday"),
@@ -518,14 +467,15 @@ export function Schedule({
       night: localT("schedule.sidebar.night"),
     };
     return showMidday
-      ? computeLayout(SECTION_GROUPS_FULL, getSidebarLabelsFull(text))
-      : computeLayout(SECTION_GROUPS_COMPACT, getSidebarLabelsCompact(text));
+      ? getSidebarLabelsFull(text)
+      : getSidebarLabelsCompact(text);
   }, [showMidday, localT]);
 
   const colorMap = useMemo(
     () => buildColorMap(courses, paletteColors.length),
     [courses, paletteColors.length],
   );
+  const courseDays = useMemo(() => indexScheduleCourses(courses), [courses]);
 
   const isInCurrentWeek = useCallback(
     (c: Course) => c.weekStart <= week && c.weekEnd >= week,
@@ -549,6 +499,16 @@ export function Schedule({
   const colWidth = scrollWeekend
     ? (availableWidth - PEEK_WIDTH) / visibleCols
     : availableWidth / visibleCols;
+  const pixelLayout = useMemo(
+    () =>
+      buildSchedulePixelLayout(
+        layout,
+        colWidth,
+        pagerSize.height,
+        headerHeight,
+      ),
+    [layout, colWidth, pagerSize.height, headerHeight],
+  );
 
   const nameFontSize = scrollWeekend ? 12 : 10;
   const roomFontSize = scrollWeekend ? 10 : 9;
@@ -892,16 +852,25 @@ export function Schedule({
     });
   };
 
-  const cellTheme: ScheduleCellTheme = useMemo(
+  const currentTheme: ScheduleCellTheme = useMemo(
     () => ({
       nameFontSize,
       roomFontSize,
-      otherWeekBorderColor,
-      otherWeekTextColor,
-      otherWeekTag,
-      locatorBg,
-      isDark,
-      mutedColor,
+      borderColor: "transparent",
+      nameColor: "#fff",
+      roomColor: "rgba(255,255,255,0.85)",
+      tag: "",
+    }),
+    [nameFontSize, roomFontSize],
+  );
+  const otherTheme: ScheduleCellTheme = useMemo(
+    () => ({
+      nameFontSize,
+      roomFontSize,
+      borderColor: otherWeekBorderColor,
+      nameColor: otherWeekTextColor,
+      roomColor: otherWeekTextColor,
+      tag: otherWeekTag,
     }),
     [
       nameFontSize,
@@ -909,82 +878,98 @@ export function Schedule({
       otherWeekBorderColor,
       otherWeekTextColor,
       otherWeekTag,
-      locatorBg,
-      isDark,
-      mutedColor,
     ],
   );
 
-  const cellBgFor = useCallback(
-    (courseName: string, isOther: boolean) => {
-      if (isOther) return otherWeekBg;
-      const courseColor = colorOf(courseName);
+  const courseBackgrounds = useMemo(() => {
+    const backgrounds = new Map<string, string>();
+    for (const course of courses) {
+      if (backgrounds.has(course.name)) continue;
+      const courseColor = colorOf(course.name);
       const stableCourseColor = hasBgImage
         ? blendColorOver(courseColor, scheduleSurfaceColor)
         : courseColor;
-      return withColorOpacity(stableCourseColor, courseCellOpacity);
-    },
-    [otherWeekBg, colorOf, hasBgImage, scheduleSurfaceColor, courseCellOpacity],
-  );
+      backgrounds.set(
+        course.name,
+        withColorOpacity(stableCourseColor, courseCellOpacity),
+      );
+    }
+    return backgrounds;
+  }, [courses, colorOf, hasBgImage, scheduleSurfaceColor, courseCellOpacity]);
 
   const renderPanel = useCallback(
     (panelWeek: number) => (
       <WeekPanel
         week={panelWeek}
-        courses={courses}
+        courseDays={courseDays}
         termStart={termStart}
         today={panelWeek === currentWeek ? today : undefined}
         showDates={showDates}
         showOtherWeekCourses={showOtherWeekCourses}
         layout={layout}
-        colWidth={colWidth}
-        headerHeight={headerHeight}
+        pixelLayout={pixelLayout}
         dayLabels={dayLabels}
-        cellTheme={cellTheme}
-        cellBgFor={cellBgFor}
+        currentTheme={currentTheme}
+        otherTheme={otherTheme}
+        locatorBg={locatorBg}
+        isDark={isDark}
+        mutedColor={mutedColor}
+        courseBackgrounds={courseBackgrounds}
+        otherWeekBg={otherWeekBg}
         onCoursePress={handleCoursePress}
         onCourseLongPress={handleCourseLongPress}
         onAddSlot={handleAddSlot}
       />
     ),
     [
-      courses,
+      courseDays,
       termStart,
       currentWeek,
       today,
       showDates,
       showOtherWeekCourses,
       layout,
-      colWidth,
-      headerHeight,
+      pixelLayout,
       dayLabels,
-      cellTheme,
-      cellBgFor,
+      currentTheme,
+      otherTheme,
+      locatorBg,
+      isDark,
+      mutedColor,
+      courseBackgrounds,
+      otherWeekBg,
       handleCoursePress,
       handleCourseLongPress,
       handleAddSlot,
     ],
   );
 
-  const renderPagerItem = useCallback(
+  const renderInitialPagerItem = useCallback(
     ({ item }: { item: number }) => (
       <View
         style={{ width: availableWidth, height: pagerSize.height }}
         onLayout={pagerReady ? undefined : syncPagerWeek}
       >
         {/* 首屏只构建当前周，其他周先用等尺寸容器参与测量 */}
-        {preloadWeeks || item === week ? renderPanel(item) : null}
+        {item === week ? renderPanel(item) : null}
       </View>
     ),
     [
       availableWidth,
       pagerSize.height,
       renderPanel,
-      preloadWeeks,
       week,
       pagerReady,
       syncPagerWeek,
     ],
+  );
+  const renderReadyPagerItem = useCallback(
+    ({ item }: { item: number }) => (
+      <View style={{ width: availableWidth, height: pagerSize.height }}>
+        {renderPanel(item)}
+      </View>
+    ),
+    [availableWidth, pagerSize.height, renderPanel],
   );
 
   return (
@@ -1027,7 +1012,7 @@ export function Schedule({
             ) : null}
           </View>
           <View style={{ flex: 1 }}>
-            {layout.sidebarLabels.map((sl) => {
+            {sidebarLabels.map((sl) => {
               const topVal = layout.sectionTop[sl.firstSection];
               const heightVal =
                 layout.sectionTop[sl.lastSection] + layout.sectionPct - topVal;
@@ -1069,6 +1054,7 @@ export function Schedule({
             <ScrollView
               horizontal
               ref={setWeekendScrollRef}
+              // 周末模式只滚动星期列，切周由顶部控件处理。
               // 列表不参与容器高度计算，避免内容测量反过来撑大网格
               style={styles.fill}
               contentContainerStyle={{
@@ -1096,9 +1082,11 @@ export function Schedule({
               showsHorizontalScrollIndicator={false}
               keyExtractor={weekKeyExtractor}
               initialScrollIndex={week - 1}
-              renderItem={renderPagerItem}
+              renderItem={
+                preloadWeeks ? renderReadyPagerItem : renderInitialPagerItem
+              }
               onLoad={handlePagerLoaded}
-              onScroll={handlePagerScroll}
+              onScroll={pagerReady ? undefined : handlePagerScroll}
               scrollEventThrottle={16}
               onContentSizeChange={handlePagerContentSizeChange}
               onMomentumScrollEnd={onPagerMomentumEnd}

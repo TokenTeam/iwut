@@ -1,37 +1,32 @@
 import { useMappingHelper } from "@shopify/flash-list";
-import React, { memo, useMemo } from "react";
+import { memo, useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 
+import {
+  buildCurrentScheduleCells,
+  buildOtherScheduleCells,
+  getScheduleCellRect,
+  type CourseSectionRange,
+  type ScheduleCourseCell,
+  type ScheduleLayoutInfo,
+  type SchedulePixelLayout,
+  type ScheduleRect,
+} from "@/lib/schedule-grid";
 import type { Course } from "@/store/course";
-
-export type CourseSectionRange = Pick<Course, "sectionStart" | "sectionEnd">;
-
-export interface ScheduleLayoutInfo {
-  sectionTop: Record<number, number>;
-  sectionPct: number;
-  groups: number[][];
-}
 
 export interface ScheduleCellTheme {
   nameFontSize: number;
   roomFontSize: number;
-  otherWeekBorderColor: string;
-  otherWeekTextColor: string;
-  otherWeekTag: string;
-  locatorBg: string;
-  isDark: boolean;
-  mutedColor: string;
-}
-
-function pct(n: number): `${number}%` {
-  return `${n}%` as `${number}%`;
+  borderColor: string;
+  nameColor: string;
+  roomColor: string;
+  tag: string;
 }
 
 const CourseCell = memo(function CourseCell({
   course,
   isOther,
-  topVal,
-  heightVal,
+  rect,
   bg,
   theme,
   stackCount = 1,
@@ -41,8 +36,7 @@ const CourseCell = memo(function CourseCell({
 }: {
   course: Course;
   isOther: boolean;
-  topVal: number;
-  heightVal: number;
+  rect: ScheduleRect;
   bg: string;
   theme: ScheduleCellTheme;
   stackCount?: number;
@@ -60,19 +54,19 @@ const CourseCell = memo(function CourseCell({
 }) {
   const span = sectionRange.sectionEnd - sectionRange.sectionStart + 1;
   const nameLines = 2 * span - 1;
-  const nameColor = isOther ? theme.otherWeekTextColor : "#fff";
-  const roomColor = isOther
-    ? theme.otherWeekTextColor
-    : "rgba(255,255,255,0.85)";
 
   return (
     <Pressable
       style={{
         position: "absolute",
-        top: pct(topVal),
-        height: pct(heightVal),
-        left: 0,
-        right: 0,
+        ...rect,
+        backgroundColor: bg,
+        borderWidth: isOther ? 1 : 0,
+        borderColor: theme.borderColor,
+        borderRadius: 6,
+        padding: 4,
+        overflow: "hidden",
+        flexDirection: "column",
       }}
       onPress={() => onPress(course, isOther, sectionRange)}
       onLongPress={() => onLongPress(course, isOther, sectionRange)}
@@ -80,109 +74,103 @@ const CourseCell = memo(function CourseCell({
       <View
         style={{
           flex: 1,
-          margin: 2,
-          backgroundColor: bg,
-          borderWidth: isOther ? 1 : 0,
-          borderColor: isOther ? theme.otherWeekBorderColor : "transparent",
-          borderRadius: 6,
-          padding: 4,
+          minHeight: 0,
           overflow: "hidden",
-          flexDirection: "column",
         }}
       >
-        <View
-          style={{
-            flex: 1,
-            minHeight: 0,
-            overflow: "hidden",
-          }}
-        >
-          <Text
-            numberOfLines={nameLines}
-            style={{
-              fontSize: theme.nameFontSize,
-              fontWeight: "bold",
-              color: nameColor,
-              lineHeight: theme.nameFontSize + 4,
-            }}
-          >
-            {course.name}
-          </Text>
-          {isOther && (
-            <Text
-              style={{
-                fontSize: theme.roomFontSize,
-                color: roomColor,
-              }}
-            >
-              {theme.otherWeekTag}
-            </Text>
-          )}
-        </View>
         <Text
+          numberOfLines={nameLines}
           style={{
-            fontSize: theme.roomFontSize,
-            color: roomColor,
-            flexShrink: 0,
-            marginTop: 2,
+            fontSize: theme.nameFontSize,
+            fontWeight: "bold",
+            color: theme.nameColor,
+            lineHeight: theme.nameFontSize + 4,
           }}
         >
-          {course.room}
+          {course.name}
         </Text>
-        {stackCount > 1 && (
-          <View
+        {isOther && (
+          <Text
             style={{
-              position: "absolute",
-              top: 3,
-              right: 3,
-              minWidth: 15,
-              height: 15,
-              borderRadius: 8,
-              paddingHorizontal: 3,
-              backgroundColor: "rgba(0,0,0,0.35)",
-              alignItems: "center",
-              justifyContent: "center",
+              fontSize: theme.roomFontSize,
+              color: theme.roomColor,
             }}
           >
-            <Text style={{ fontSize: 9, fontWeight: "700", color: "#fff" }}>
-              {stackCount}
-            </Text>
-          </View>
+            {theme.tag}
+          </Text>
         )}
       </View>
+      <Text
+        style={{
+          fontSize: theme.roomFontSize,
+          color: theme.roomColor,
+          flexShrink: 0,
+          marginTop: 2,
+        }}
+      >
+        {course.room}
+      </Text>
+      {stackCount > 1 && (
+        <View
+          style={{
+            position: "absolute",
+            top: 3,
+            right: 3,
+            minWidth: 15,
+            height: 15,
+            borderRadius: 8,
+            paddingHorizontal: 3,
+            backgroundColor: "rgba(0,0,0,0.35)",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text style={{ fontSize: 9, fontWeight: "700", color: "#fff" }}>
+            {stackCount}
+          </Text>
+        </View>
+      )}
     </Pressable>
   );
 });
 
 export const DayColumn = memo(function DayColumn({
   dayIdx,
-  width,
-  headerHeight,
+  pixelLayout,
   dayLabel,
   dayNumber,
   isToday,
   showDates,
   layout,
-  theme,
+  currentTheme,
+  otherTheme,
+  locatorBg,
+  isDark,
+  mutedColor,
   currentCourses,
   otherCourses,
-  cellBgFor,
+  courseBackgrounds,
+  otherWeekBg,
   onCoursePress,
   onCourseLongPress,
   onAddSlot,
 }: {
   dayIdx: number;
-  width: number;
-  headerHeight: number;
+  pixelLayout: SchedulePixelLayout;
   dayLabel: string;
   dayNumber: number | null;
   isToday: boolean;
   showDates: boolean;
   layout: ScheduleLayoutInfo;
-  theme: ScheduleCellTheme;
+  currentTheme: ScheduleCellTheme;
+  otherTheme: ScheduleCellTheme;
+  locatorBg: string;
+  isDark: boolean;
+  mutedColor: string;
   currentCourses: Course[];
   otherCourses: Course[];
-  cellBgFor: (courseName: string, isOther: boolean) => string;
+  courseBackgrounds: ReadonlyMap<string, string>;
+  otherWeekBg: string;
   onCoursePress: (
     course: Course,
     isOther: boolean,
@@ -195,69 +183,52 @@ export const DayColumn = memo(function DayColumn({
   ) => void;
   onAddSlot: (day: number, sectionStart: number, sectionEnd: number) => void;
 }) {
-  const { isDark, mutedColor } = theme;
   const { getMappingKey } = useMappingHelper();
 
-  const currentGroups = useMemo(() => {
-    const visibleSections = layout.groups.flat();
-    const entries = currentCourses.flatMap((course) => {
-      const sections = visibleSections.filter(
-        (section) =>
-          section >= course.sectionStart && section <= course.sectionEnd,
-      );
-      if (sections.length === 0) return [];
-      return [
-        {
-          course,
-          count: 1,
-          sectionStart: Math.min(...sections),
-          sectionEnd: Math.max(...sections),
-        },
-      ];
-    });
-    entries.sort((a, b) => a.sectionStart - b.sectionStart);
-
-    const groups: typeof entries = [];
-    for (const entry of entries) {
-      const previous = groups[groups.length - 1];
-      if (previous && entry.sectionStart <= previous.sectionEnd) {
-        previous.sectionEnd = Math.max(previous.sectionEnd, entry.sectionEnd);
-        previous.count++;
-      } else {
-        groups.push(entry);
-      }
-    }
-    return groups;
-  }, [currentCourses, layout.groups]);
+  const currentCells = useMemo(
+    () => buildCurrentScheduleCells(currentCourses, layout),
+    [currentCourses, layout],
+  );
+  const otherCells = useMemo(
+    () => buildOtherScheduleCells(otherCourses, layout),
+    [otherCourses, layout],
+  );
+  const positionedCurrentCells = useMemo(
+    () =>
+      currentCells.map((cell) => ({
+        ...cell,
+        rect: getScheduleCellRect(cell, pixelLayout),
+      })),
+    [currentCells, pixelLayout],
+  );
+  const positionedOtherCells = useMemo(
+    () =>
+      otherCells.map((cell) => ({
+        ...cell,
+        rect: getScheduleCellRect(cell, pixelLayout),
+      })),
+    [otherCells, pixelLayout],
+  );
 
   const renderCell = (
-    course: Course,
+    cell: ScheduleCourseCell & { rect: ScheduleRect },
     key: string,
     isOther: boolean,
-    stackCount = 1,
-    sectionRange: CourseSectionRange = course,
   ) => {
-    // 紧凑模式隐藏 6、7、13 节，跨越这些节次的课程仍需显示可见部分。
-    let start = sectionRange.sectionStart;
-    let end = sectionRange.sectionEnd;
-    while (start <= end && layout.sectionTop[start] === undefined) start++;
-    while (end >= start && layout.sectionTop[end] === undefined) end--;
-    if (start > end) return null;
-
-    const topVal = layout.sectionTop[start];
-    const heightVal = layout.sectionTop[end] + layout.sectionPct - topVal;
-
     return (
       <CourseCell
         key={key}
-        course={course}
+        course={cell.course}
         isOther={isOther}
-        topVal={topVal}
-        heightVal={heightVal}
-        bg={cellBgFor(course.name, isOther)}
-        theme={theme}
-        stackCount={stackCount}
-        sectionRange={sectionRange}
+        rect={cell.rect}
+        bg={
+          isOther
+            ? otherWeekBg
+            : (courseBackgrounds.get(cell.course.name) ?? "transparent")
+        }
+        theme={isOther ? otherTheme : currentTheme}
+        stackCount={cell.count}
+        sectionRange={cell.range}
         onPress={onCoursePress}
         onLongPress={onCourseLongPress}
       />
@@ -265,10 +236,18 @@ export const DayColumn = memo(function DayColumn({
   };
 
   return (
-    <View style={{ width }}>
+    <View
+      style={{
+        position: "absolute",
+        left: pixelLayout.dayLeft[dayIdx],
+        top: 0,
+        width: pixelLayout.columnWidth,
+        height: pixelLayout.height,
+      }}
+    >
       <View
         style={{
-          height: headerHeight,
+          height: pixelLayout.headerHeight,
           justifyContent: "center",
           alignItems: "center",
         }}
@@ -318,55 +297,46 @@ export const DayColumn = memo(function DayColumn({
         )}
       </View>
 
-      <View style={{ flex: 1 }}>
-        {layout.groups.map((group) => {
-          const topVal = layout.sectionTop[group[0]];
-          const heightVal =
-            layout.sectionTop[group[group.length - 1]] +
-            layout.sectionPct -
-            topVal;
-          const sectionStart = group[0];
-          const sectionEnd = group[group.length - 1];
+      <View
+        style={{
+          position: "absolute",
+          top: pixelLayout.headerHeight,
+          left: 0,
+          width: pixelLayout.columnWidth,
+          height: pixelLayout.gridHeight,
+        }}
+      >
+        {pixelLayout.slots.map((slot) => {
           return (
-            <View
-              key={group[0]}
-              style={{
+            <Pressable
+              key={slot.sectionStart}
+              style={({ pressed }) => ({
                 position: "absolute",
-                top: pct(topVal),
-                height: pct(heightVal),
-                left: 0,
-                right: 0,
-              }}
-            >
-              <Pressable
-                style={({ pressed }) => ({
-                  flex: 1,
-                  margin: 2,
-                  backgroundColor: theme.locatorBg,
-                  borderRadius: 6,
-                  opacity: pressed ? 0.6 : 1,
-                })}
-                onPress={() => onAddSlot(dayIdx + 1, sectionStart, sectionEnd)}
-              />
-            </View>
+                ...slot.rect,
+                backgroundColor: locatorBg,
+                borderRadius: 6,
+                opacity: pressed ? 0.6 : 1,
+              })}
+              onPress={() =>
+                onAddSlot(dayIdx + 1, slot.sectionStart, slot.sectionEnd)
+              }
+            />
           );
         })}
 
-        {otherCourses.map((course, ci) =>
+        {positionedOtherCells.map((cell, ci) =>
           renderCell(
-            course,
-            `other-${getMappingKey(`${course.name}-${course.sectionStart}-${course.weekStart}-${ci}`, ci)}`,
+            cell,
+            `other-${getMappingKey(`${cell.course.name}-${cell.course.sectionStart}-${cell.course.weekStart}-${ci}`, ci)}`,
             true,
           ),
         )}
 
-        {currentGroups.map((group, ci) =>
+        {positionedCurrentCells.map((cell, ci) =>
           renderCell(
-            group.course,
-            `cur-${getMappingKey(group.sectionStart, ci)}`,
+            cell,
+            `cur-${getMappingKey(cell.range.sectionStart, ci)}`,
             false,
-            group.count,
-            group,
           ),
         )}
       </View>
