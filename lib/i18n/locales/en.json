@@ -258,6 +258,8 @@
     "bindSuccess": "Linked",
     "bindSuccessSub": "Account {username} linked",
     "bindFailed": "Link failed",
+    "bindPasswordError": "Incorrect password",
+    "bindPasswordErrorSub": "Please link your WHUT account again",
     "bindFailedSub": "iWUT is temporarily unavailable, please try again later",
     "bindProfileUnavailable": "Account verified",
     "bindProfileUnavailableSub": "Your profile is not available yet, but you can continue and import your timetable",

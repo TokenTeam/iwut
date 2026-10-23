@@ -5,9 +5,11 @@ import {
   useState,
   type RefObject,
 } from "react";
+import Toast from "react-native-toast-message";
 import type { WebView, WebViewMessageEvent } from "react-native-webview";
 
 import { SmsPrompt } from "@/components/ui/sms-prompt";
+import { t } from "@/lib/i18n";
 import { useUserBindStore } from "@/store/user-bind";
 
 const LOGIN_URL_PATTERN = "zhlgd.whut.edu.cn/tpass/login";
@@ -19,6 +21,7 @@ function buildAgentScript(username: string, password: string) {
   if (window.__zhlgdAuto) { window.__zhlgdAuto.kick(); return; }
   var USER=${u}, PASS=${p};
   var passwordFilled=false;
+  var passwordRejected=false;
   var smsReportedAt=0;
   var nativeSetter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;
   function setVal(el,v){
@@ -34,7 +37,7 @@ function buildAgentScript(username: string, password: string) {
     if (tab && !/active/.test(tab.className||'')) { try{tab.click();}catch(e){} }
     setVal(u,USER); setVal(p,PASS);
     var btn=document.querySelector('#index_login_btn');
-    if (btn) setTimeout(function(){ try{btn.click();}catch(e){} },120);
+    if (btn) setTimeout(function(){ if(passwordRejected) return; try{btn.click();}catch(e){} },120);
     passwordFilled=true;
   }
   function reportSmsIfNeeded(){
@@ -58,6 +61,18 @@ function buildAgentScript(username: string, password: string) {
     }catch(e){}
   }
   function tick(){
+    if (passwordRejected) return;
+    var error=document.querySelector('#errormsghide');
+    if (error && /密码错误|Incorrect Password/.test(error.textContent||'')) {
+      passwordRejected=true;
+      window.__zhlgdAuto.stop();
+      try{
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type:'zhlgd_password_error'
+        }));
+      }catch(e){}
+      return;
+    }
     if (document.querySelector('#PM1')) {
       reportSmsIfNeeded();
     } else if (document.querySelector('#un') && document.querySelector('#pd')) {
@@ -69,17 +84,19 @@ function buildAgentScript(username: string, password: string) {
   }
   window.__zhlgdAuto={
     fillSms:function(code){
+      if (passwordRejected) return false;
       var pm=document.querySelector('#PM1');
       if (!pm) return false;
       setVal(pm,String(code));
       var btn=document.querySelector('#index_login_btn');
-      if (btn) setTimeout(function(){ try{btn.click();}catch(e){} },80);
+      if (btn) setTimeout(function(){ if(passwordRejected) return; try{btn.click();}catch(e){} },80);
       smsReportedAt=Date.now();
       return true;
     },
     kick:function(){
-      passwordFilled=false; smsReportedAt=0;
+      if (passwordRejected) return;
       if(!timer){ timer=setInterval(tick,300); }
+      tick();
     },
     stop:function(){ if(timer){ clearInterval(timer); timer=null; } }
   };
@@ -102,29 +119,26 @@ const INITIAL_SMS: SmsState = {
 
 export function useZhlgdAutoLogin(
   webviewRef: RefObject<WebView | null>,
-  options?: { onCancel?: () => void },
+  options?: { onCancel?: () => void; onPasswordError?: () => void },
 ) {
   const creds = useRef<{ username: string; password: string } | null>(null);
-  const lastFilledUrl = useRef("");
+  const passwordRejected = useRef(false);
   const currentLoginUrl = useRef("");
   const [sms, setSms] = useState<SmsState>(INITIAL_SMS);
   const [code, setCode] = useState("");
   const onCancel = options?.onCancel;
+  const onPasswordError = options?.onPasswordError;
 
-  const injectAutoLogin = useCallback(
-    (url: string) => {
-      if (!useUserBindStore.getState().isBound) {
-        creds.current = null;
-        return;
-      }
-      if (!creds.current || lastFilledUrl.current === url) return;
-      lastFilledUrl.current = url;
-      webviewRef.current?.injectJavaScript(
-        buildAgentScript(creds.current.username, creds.current.password),
-      );
-    },
-    [webviewRef],
-  );
+  const injectAutoLogin = useCallback(() => {
+    if (!useUserBindStore.getState().isBound) {
+      creds.current = null;
+      return;
+    }
+    if (!creds.current || passwordRejected.current) return;
+    webviewRef.current?.injectJavaScript(
+      buildAgentScript(creds.current.username, creds.current.password),
+    );
+  }, [webviewRef]);
 
   useEffect(() => {
     let active = true;
@@ -135,7 +149,7 @@ export function useZhlgdAutoLogin(
       if (!active) return;
       creds.current = credentials;
       if (credentials && currentLoginUrl.current) {
-        injectAutoLogin(currentLoginUrl.current);
+        injectAutoLogin();
       }
     });
 
@@ -149,7 +163,6 @@ export function useZhlgdAutoLogin(
       const url = e.nativeEvent.url;
       if (!url.includes(LOGIN_URL_PATTERN)) {
         currentLoginUrl.current = "";
-        lastFilledUrl.current = "";
         setSms((s) => (s.visible ? INITIAL_SMS : s));
         setCode("");
         // SPA 式跳转不会重建 JS 上下文，离开登录页后停掉轮询定时器
@@ -160,27 +173,48 @@ export function useZhlgdAutoLogin(
       }
 
       currentLoginUrl.current = url;
-      injectAutoLogin(url);
+      injectAutoLogin();
     },
     [injectAutoLogin, webviewRef],
   );
 
-  const onMessage = useCallback((e: WebViewMessageEvent): boolean => {
-    let msg: { type?: string; phoneTail?: string } | null = null;
-    try {
-      msg = JSON.parse(e.nativeEvent.data);
-    } catch {
-      return false;
-    }
-    if (!msg || msg.type !== "zhlgd_sms_required") return false;
-    setSms({
-      visible: true,
-      phoneTail: msg.phoneTail || "",
-      submitting: false,
-    });
-    setCode("");
-    return true;
-  }, []);
+  const onMessage = useCallback(
+    (e: WebViewMessageEvent): boolean => {
+      let msg: { type?: string; phoneTail?: string } | null = null;
+      try {
+        msg = JSON.parse(e.nativeEvent.data);
+      } catch {
+        return false;
+      }
+      if (!msg) return false;
+      if (msg.type === "zhlgd_password_error") {
+        if (!e.nativeEvent.url.includes(LOGIN_URL_PATTERN)) return false;
+        if (passwordRejected.current) return true;
+        passwordRejected.current = true;
+        creds.current = null;
+        setSms(INITIAL_SMS);
+        setCode("");
+        Toast.show({
+          type: "error",
+          text1: t("user.bindPasswordError"),
+          text2: t("user.bindPasswordErrorSub"),
+          position: "bottom",
+        });
+        onPasswordError?.();
+        return true;
+      }
+      if (msg.type !== "zhlgd_sms_required") return false;
+      if (passwordRejected.current) return true;
+      setSms({
+        visible: true,
+        phoneTail: msg.phoneTail || "",
+        submitting: false,
+      });
+      setCode("");
+      return true;
+    },
+    [onPasswordError],
+  );
 
   const submitSms = useCallback(() => {
     const trimmed = code.trim();

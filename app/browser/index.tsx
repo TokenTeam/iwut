@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useNavigation } from "expo-router";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import {
   useCallback,
   useEffect,
@@ -47,7 +47,15 @@ export default function BrowserScreen() {
     onLoadEnd: autoLoginOnLoadEnd,
     onMessage: autoLoginOnMessage,
     smsNode,
-  } = useZhlgdAutoLogin(webview);
+  } = useZhlgdAutoLogin(webview, {
+    onPasswordError: () => {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace("/(tabs)/function");
+      }
+    },
+  });
   const progressBar = useWebViewProgressBar();
 
   useWebViewBackHandler(webview, canGoBack);

@@ -53,7 +53,7 @@ export default function ExamImportScreen() {
   const injectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const finish = useCallback(
-    (success: boolean, message?: string, count?: number) => {
+    (success: boolean, message?: string, count?: number, notify = true) => {
       if (finished.current) return;
       finished.current = true;
       webview.current?.clearCache(true);
@@ -69,7 +69,7 @@ export default function ExamImportScreen() {
               : undefined,
           position: "bottom",
         });
-      } else {
+      } else if (notify) {
         Toast.show({
           type: "error",
           text1: t("exam.importFail"),
@@ -94,6 +94,7 @@ export default function ExamImportScreen() {
     smsNode,
   } = useZhlgdAutoLogin(webview, {
     onCancel: () => finish(false, t("course.smsCancelled")),
+    onPasswordError: () => finish(false, undefined, undefined, false),
   });
 
   const stripeProgress = useSharedValue(0);

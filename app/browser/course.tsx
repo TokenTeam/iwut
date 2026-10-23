@@ -80,7 +80,7 @@ export default function CourseImportScreen() {
     [],
   );
   const finish = useCallback(
-    (success: boolean, message?: string) => {
+    (success: boolean, message?: string, notify = true) => {
       if (finished.current) return;
       finished.current = true;
       webview.current?.clearCache(true);
@@ -93,7 +93,7 @@ export default function CourseImportScreen() {
           text2: t("course.importSuccessSub"),
           position: "bottom",
         });
-      } else {
+      } else if (notify) {
         Toast.show({
           type: "error",
           text1: t("course.importFail"),
@@ -126,6 +126,7 @@ export default function CourseImportScreen() {
     smsNode,
   } = useZhlgdAutoLogin(webview, {
     onCancel: () => finish(false, t("course.smsCancelled")),
+    onPasswordError: () => finish(false, undefined, false),
   });
 
   const stripeProgress = useSharedValue(0);
