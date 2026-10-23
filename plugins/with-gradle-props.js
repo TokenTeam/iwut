@@ -20,10 +20,6 @@ const withGradleProps = createBuildGradlePropsConfigPlugin(
       propValueGetter: () => "true",
     },
     {
-      propName: "org.gradle.parallel",
-      propValueGetter: () => "true",
-    },
-    {
       propName: "org.gradle.daemon",
       propValueGetter: () => "false",
     },
