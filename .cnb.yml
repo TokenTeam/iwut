@@ -77,21 +77,6 @@ main:
             bun install --frozen-lockfile
             bunx expo customize tsconfig.json
             bun run check
-        - type: cnb:trigger
-          options:
-            slug: TokenTeam/iwut
-            branch: main
-            sha: $CNB_COMMIT
-            event: api_trigger_build
-            env:
-              BUILD_PROFILES: preview
-
-  api_trigger_build:
-    - <<: *android
-      stages:
-        - *build
-        - *attachments
-        - *upload
 
   web_trigger_ota:
     - <<: *runtime
