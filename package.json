@@ -127,6 +127,7 @@
     "expo-blur@58.0.5": "patches/expo-blur@58.0.5.patch",
     "expo-calendar@58.0.6": "patches/expo-calendar@58.0.6.patch",
     "react-native-webview@14.0.1": "patches/react-native-webview@14.0.1.patch",
-    "@react-native-masked-view/masked-view@0.3.2": "patches/@react-native-masked-view%2Fmasked-view@0.3.2.patch"
+    "@react-native-masked-view/masked-view@0.3.2": "patches/@react-native-masked-view%2Fmasked-view@0.3.2.patch",
+    "react-native-nitro-modules@0.36.5": "patches/react-native-nitro-modules@0.36.5.patch"
   }
 }
