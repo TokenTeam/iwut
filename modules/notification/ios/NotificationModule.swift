@@ -39,35 +39,27 @@ public class NotificationModule: Module {
             }
         }
 
-        AsyncFunction("showCountdown") { (id: Int, _: String, title: String, body: String, targetTimeMs: Double, _: Bool, autoDismiss: Bool) in
+        AsyncFunction("showCountdown") { (id: Int, _: String, title: String, body: String, targetTimeMs: Double, _: Bool, _: Bool) in
             let targetDate = Date(timeIntervalSince1970: targetTimeMs / 1000.0)
 
             if #available(iOS 16.2, *) {
                 try await self.startOrUpdateLiveActivity(id: id, title: title, body: body, targetDate: targetDate)
             } else {
-                self.showLocalNotification(id: id, title: title, body: body, triggerDate: nil, autoDismiss: autoDismiss)
+                try await self.showLocalNotification(id: id, title: title, body: body, triggerDate: nil)
             }
         }
 
-        AsyncFunction("scheduleCountdown") { (id: Int, _: String, title: String, body: String, triggerAtMs: Double, targetTimeMs: Double, _: Bool, autoDismiss: Bool) in
+        AsyncFunction("scheduleCountdown") { (id: Int, _: String, title: String, body: String, triggerAtMs: Double, targetTimeMs: Double, _: Bool, _: Bool) in
             let triggerDate = Date(timeIntervalSince1970: triggerAtMs / 1000.0)
-            let targetDate = Date(timeIntervalSince1970: targetTimeMs / 1000.0)
+            guard targetTimeMs.isFinite,
+                  Date(timeIntervalSince1970: targetTimeMs / 1000.0) > Date.now else { return }
 
-            if #available(iOS 16.2, *) {
-                let now = Date()
-                if triggerDate <= now {
-                    try await self.startOrUpdateLiveActivity(id: id, title: title, body: body, targetDate: targetDate)
-                } else {
-                    self.scheduleLiveActivityViaNotification(id: id, title: title, body: body, triggerDate: triggerDate, targetDate: targetDate)
-                }
-            } else {
-                self.showLocalNotification(id: id, title: title, body: body, triggerDate: triggerDate, autoDismiss: autoDismiss)
-            }
+            try await self.showLocalNotification(id: id, title: title, body: body, triggerDate: triggerDate)
         }
 
         AsyncFunction("scheduleNotification") { (id: Int, _: String, title: String, body: String, triggerAtMs: Double) in
             let triggerDate = Date(timeIntervalSince1970: triggerAtMs / 1000.0)
-            self.showLocalNotification(id: id, title: title, body: body, triggerDate: triggerDate, autoDismiss: false)
+            try await self.showLocalNotification(id: id, title: title, body: body, triggerDate: triggerDate)
         }
 
         AsyncFunction("cancel") { (id: Int) in
@@ -83,10 +75,29 @@ public class NotificationModule: Module {
             }
             await self.cancelAllLocalNotifications()
         }
+
+        AsyncFunction("cancelScheduled") { () in
+            await self.cancelPendingLocalNotifications()
+        }
+
+        AsyncFunction("clearExpiredLiveActivities") { () in
+            if #available(iOS 16.2, *) {
+                let now = Date.now
+                for activity in Activity<CountdownActivityAttributes>.activities where activity.content.state.targetTime <= now {
+                    await activity.end(nil, dismissalPolicy: .immediate)
+                    self.removeActivityMapping(activityId: activity.id)
+                }
+            }
+        }
     }
 
     @available(iOS 16.2, *)
     private func startOrUpdateLiveActivity(id: Int, title: String, body: String, targetDate: Date) async throws {
+        guard targetDate > Date.now else {
+            await self.endLiveActivity(id: id)
+            return
+        }
+
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
 
         let state = CountdownActivityAttributes.ContentState(targetTime: targetDate)
@@ -142,30 +153,7 @@ public class NotificationModule: Module {
         self.clearAllActivityMappings()
     }
 
-    @available(iOS 16.2, *)
-    private func scheduleLiveActivityViaNotification(id: Int, title: String, body: String, triggerDate: Date, targetDate: Date) {
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = body
-        content.sound = .default
-        content.userInfo = [
-            "liveActivityId": id,
-            "targetTimeMs": targetDate.timeIntervalSince1970 * 1000,
-            "isLiveActivityTrigger": true,
-        ]
-
-        let interval = triggerDate.timeIntervalSinceNow
-        guard interval > 0 else { return }
-
-        let identifier = "notification_\(id)"
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
-        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
-        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [identifier])
-        UNUserNotificationCenter.current().add(request)
-    }
-
-    private func showLocalNotification(id: Int, title: String, body: String, triggerDate: Date?, autoDismiss: Bool) {
+    private func showLocalNotification(id: Int, title: String, body: String, triggerDate: Date?) async throws {
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
@@ -182,9 +170,7 @@ public class NotificationModule: Module {
 
         let identifier = "notification_\(id)"
         let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
-        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [identifier])
-        UNUserNotificationCenter.current().add(request)
+        try await UNUserNotificationCenter.current().add(request)
     }
 
     private func cancelLocalNotification(id: Int) {
@@ -192,7 +178,7 @@ public class NotificationModule: Module {
         UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ["notification_\(id)"])
     }
 
-    private func cancelAllLocalNotifications() async {
+    private func cancelPendingLocalNotifications() async {
         let center = UNUserNotificationCenter.current()
 
         let pending: [UNNotificationRequest] = await withCheckedContinuation { continuation in
@@ -202,7 +188,11 @@ public class NotificationModule: Module {
         if !pendingIds.isEmpty {
             center.removePendingNotificationRequests(withIdentifiers: pendingIds)
         }
+    }
 
+    private func cancelAllLocalNotifications() async {
+        await self.cancelPendingLocalNotifications()
+        let center = UNUserNotificationCenter.current()
         let delivered: [UNNotification] = await withCheckedContinuation { continuation in
             center.getDeliveredNotifications { continuation.resume(returning: $0) }
         }
@@ -241,6 +231,12 @@ public class NotificationModule: Module {
         var map = defaults.dictionary(forKey: Self.activityMapKey) as? [String: String] ?? [:]
         map.removeValue(forKey: String(id))
         defaults.set(map, forKey: Self.activityMapKey)
+    }
+
+    private func removeActivityMapping(activityId: String) {
+        guard let defaults = UserDefaults(suiteName: Self.suiteName) else { return }
+        let map = defaults.dictionary(forKey: Self.activityMapKey) as? [String: String] ?? [:]
+        defaults.set(map.filter { $0.value != activityId }, forKey: Self.activityMapKey)
     }
 
     private func clearAllActivityMappings() {

@@ -172,7 +172,6 @@ export default function SettingsScreen() {
 
   const handleCacheWebViewRef = (instance: WebView | null) => {
     if (!instance) return;
-    // 等待原生 WebView 就绪后清理缓存
     setTimeout(() => {
       instance.clearCache(true);
       setTimeout(() => {
@@ -193,32 +192,49 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleCourseReminderChange = async (value: boolean) => {
-    if (value) {
-      const granted = await ensureCourseNotificationPermission();
-      if (!granted) {
-        setPermissionSheetVisible(true);
-        return;
-      }
-    }
+  const showReminderError = (error: unknown) => {
+    reportError(error, { module: "course-notification", action: "settings" });
+    Toast.show({
+      type: "error",
+      text1: t("notif.scheduleFailed"),
+      position: "bottom",
+    });
+  };
 
-    setCourseReminder(value);
-    await scheduleWeeklyReminders();
-    await syncBackgroundRefresh();
+  const handleCourseReminderChange = async (value: boolean) => {
+    try {
+      if (value) {
+        const granted = await ensureCourseNotificationPermission();
+        if (!granted) {
+          setPermissionSheetVisible(true);
+          return;
+        }
+      }
+
+      setCourseReminder(value);
+      await scheduleWeeklyReminders();
+      await syncBackgroundRefresh();
+    } catch (error) {
+      showReminderError(error);
+    }
   };
 
   const handleExamReminderChange = async (value: boolean) => {
-    if (value) {
-      const granted = await ensureCourseNotificationPermission();
-      if (!granted) {
-        setPermissionSheetVisible(true);
-        return;
+    try {
+      if (value) {
+        const granted = await ensureCourseNotificationPermission();
+        if (!granted) {
+          setPermissionSheetVisible(true);
+          return;
+        }
       }
-    }
 
-    setExamReminder(value);
-    await scheduleWeeklyReminders();
-    await syncBackgroundRefresh();
+      setExamReminder(value);
+      await scheduleWeeklyReminders();
+      await syncBackgroundRefresh();
+    } catch (error) {
+      showReminderError(error);
+    }
   };
 
   const handleReminderMinutesChange = async (value: number) => {
@@ -227,7 +243,11 @@ export default function SettingsScreen() {
     setCustomMinutes("");
     setReminderSheetVisible(false);
     if (courseReminder) {
-      await scheduleWeeklyReminders();
+      try {
+        await scheduleWeeklyReminders();
+      } catch (error) {
+        showReminderError(error);
+      }
     }
   };
 

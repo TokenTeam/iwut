@@ -1,5 +1,5 @@
-import CookieManager from "@preeternal/react-native-cookie-manager";
 import { Ionicons } from "@expo/vector-icons";
+import CookieManager from "@preeternal/react-native-cookie-manager";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
@@ -111,6 +111,12 @@ export default function OnboardingScreen() {
       setCourseReminder(value);
       await scheduleWeeklyReminders();
       if (value) await registerBackgroundRefresh();
+    } catch {
+      Toast.show({
+        type: "error",
+        text1: t("notif.scheduleFailed"),
+        position: "bottom",
+      });
     } finally {
       setNotificationBusy(false);
     }

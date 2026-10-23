@@ -44,6 +44,8 @@ interface NotificationNativeModule {
   cancel(id: number): Promise<void>;
 
   cancelAll(): Promise<void>;
+  cancelScheduled?: () => Promise<void>;
+  clearExpiredLiveActivities?: () => Promise<void>;
 }
 
 const NativeModule =
@@ -58,6 +60,9 @@ export const scheduleNotification =
   NativeModule.scheduleNotification ?? (async () => {});
 export const cancel = NativeModule.cancel;
 export const cancelAll = NativeModule.cancelAll;
+export const cancelScheduled = NativeModule.cancelScheduled ?? cancelAll;
+export const clearExpiredLiveActivities =
+  NativeModule.clearExpiredLiveActivities ?? (async () => {});
 
 export interface CourseDndStatus {
   policyAccess: boolean;

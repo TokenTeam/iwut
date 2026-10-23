@@ -638,6 +638,7 @@
     "externalOpenFailedSub": "No app available to handle {scheme}"
   },
   "notif": {
+    "scheduleFailed": "Could not schedule reminders. Check system permissions and try again.",
     "channelName": "Class reminders",
     "channelDesc": "Shows countdown notifications before class starts",
     "examChannelName": "Exam reminders",

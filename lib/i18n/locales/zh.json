@@ -638,6 +638,7 @@
     "externalOpenFailedSub": "没有可处理 {scheme} 的应用"
   },
   "notif": {
+    "scheduleFailed": "创建失败，请检查系统权限后重试",
     "channelName": "课程提醒",
     "channelDesc": "在课程开始前显示倒计时通知",
     "examChannelName": "考试提醒",

@@ -14,7 +14,7 @@ struct CountdownActivityWidget: Widget {
                         .lineLimit(1)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text(timerInterval: Date.now...context.state.targetTime, countsDown: true)
+                    Text(timerInterval: min(Date.now, context.state.targetTime)...context.state.targetTime, countsDown: true)
                         .font(.title3.monospacedDigit())
                         .frame(width: 72)
                         .multilineTextAlignment(.trailing)
@@ -55,7 +55,7 @@ private struct LockScreenView: View {
                     .lineLimit(1)
             }
             Spacer()
-            Text(timerInterval: Date.now...context.state.targetTime, countsDown: true)
+            Text(timerInterval: min(Date.now, context.state.targetTime)...context.state.targetTime, countsDown: true)
                 .font(.title2.monospacedDigit())
                 .foregroundStyle(.indigo)
                 .multilineTextAlignment(.trailing)

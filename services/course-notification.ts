@@ -1,12 +1,15 @@
 import * as BackgroundTask from "expo-background-task";
 import * as TaskManager from "expo-task-manager";
-import { PermissionsAndroid, Platform } from "react-native";
+import { AppState, PermissionsAndroid, Platform } from "react-native";
 
 import { getCurrentWeek, getTermClassTimeMs } from "@/lib/date";
 import { t } from "@/lib/i18n";
+import { reportError } from "@/lib/report";
 import { createTaskQueue } from "@/lib/task-queue";
 import {
-  cancelAll,
+  cancel,
+  cancelScheduled,
+  clearExpiredLiveActivities,
   createChannel,
   requestAuthorization,
   scheduleCountdown,
@@ -24,6 +27,18 @@ const EXAM_CHANNEL_ID = "exam_reminder";
 const BACKGROUND_TASK_NAME = "course-reminder-refresh";
 const SCHEDULE_WEEKS = 2;
 const LIVE_ACTIVITY_ID = 9999;
+const reminderQueue = createTaskQueue();
+let liveActivityTimer: ReturnType<typeof setTimeout> | null = null;
+
+function enqueueReminderTask(
+  action: string,
+  task: () => Promise<void>,
+): Promise<void> {
+  return reminderQueue(task).catch((error) => {
+    reportError(error, { module: "course-notification", action });
+    throw error;
+  });
+}
 
 export async function ensureCourseNotificationPermission(): Promise<boolean> {
   if (Platform.OS === "android") {
@@ -133,9 +148,7 @@ export async function unregisterBackgroundRefresh(): Promise<void> {
 
 export async function initNotificationChannel(): Promise<void> {
   if (Platform.OS === "android") {
-    // Android caches the channel name/description after first creation, so
-    // language changes won't update an already-created channel. Fresh installs
-    // (or new channels) still pick up the current locale.
+    // Android 已有通知渠道的名称和描述不会随语言切换更新
     await createChannel(
       CHANNEL_ID,
       t("notif.channelName"),
@@ -149,14 +162,26 @@ export async function initNotificationChannel(): Promise<void> {
   }
 }
 
-export async function showUpcomingLiveActivity(): Promise<void> {
+export function showUpcomingLiveActivity(): Promise<void> {
+  return enqueueReminderTask("sync-live-activity", syncUpcomingLiveActivity);
+}
+
+async function syncUpcomingLiveActivity(): Promise<void> {
   if (Platform.OS !== "ios") return;
 
-  const { courseReminder, reminderMinutes } = useSettingsStore.getState();
-  if (!courseReminder) return;
+  if (liveActivityTimer) {
+    clearTimeout(liveActivityTimer);
+    liveActivityTimer = null;
+  }
+  await clearExpiredLiveActivities();
+  if (AppState.currentState !== "active") return;
 
+  const { courseReminder, reminderMinutes } = useSettingsStore.getState();
   const { courses, termStart } = useCourseStore.getState();
-  if (!termStart || courses.length === 0) return;
+  if (!courseReminder || !termStart || courses.length === 0) {
+    await cancel(LIVE_ACTIVITY_ID);
+    return;
+  }
 
   const currentWeek = getCurrentWeek(termStart);
   const now = Date.now();
@@ -164,6 +189,7 @@ export async function showUpcomingLiveActivity(): Promise<void> {
 
   let nearest: { name: string; info: string; classStartMs: number } | null =
     null;
+  let nextTransition: number | null = null;
 
   for (const course of courses) {
     if (currentWeek < course.weekStart || currentWeek > course.weekEnd)
@@ -183,6 +209,11 @@ export async function showUpcomingLiveActivity(): Promise<void> {
 
     const triggerAtMs = classStartMs - windowMs;
 
+    if (classStartMs > now) {
+      const transition = triggerAtMs > now ? triggerAtMs : classStartMs;
+      if (nextTransition === null || transition < nextTransition)
+        nextTransition = transition;
+    }
     if (now >= triggerAtMs && now < classStartMs) {
       if (!nearest || classStartMs < nearest.classStartMs) {
         nearest = {
@@ -204,33 +235,46 @@ export async function showUpcomingLiveActivity(): Promise<void> {
       true,
       true,
     );
+  } else {
+    await cancel(LIVE_ACTIVITY_ID);
+  }
+
+  if (nextTransition !== null) {
+    liveActivityTimer = setTimeout(
+      () => {
+        liveActivityTimer = null;
+        void showUpcomingLiveActivity().catch(() => {});
+      },
+      Math.max(1, nextTransition - Date.now()),
+    );
   }
 }
 
-// "先 cancelAll 再逐条调度"必须串行执行，并发调用会注册重复通知
-const reminderQueue = createTaskQueue();
-
 export function scheduleWeeklyReminders(): Promise<void> {
-  return reminderQueue(doScheduleWeeklyReminders);
+  return enqueueReminderTask("schedule-reminders", doScheduleWeeklyReminders);
 }
 
 async function doScheduleWeeklyReminders(): Promise<void> {
   const { courseReminder, examReminder, reminderMinutes } =
     useSettingsStore.getState();
 
-  // 课程与考试提醒共用同一套通知 id 空间，先整体清空再统一重排，
-  // 避免两者各自 cancelAll 时互相误删。
-  await cancelAll();
+  // iOS 重排通知时保留当前实时活动
+  await initNotificationChannel();
+  await cancelScheduled();
 
   const scheduledIds = new Set<number>();
   const now = Date.now();
 
-  if (courseReminder) {
-    await scheduleCourseReminders(scheduledIds, reminderMinutes, now);
-  }
+  try {
+    if (courseReminder) {
+      await scheduleCourseReminders(scheduledIds, reminderMinutes, now);
+    }
 
-  if (examReminder) {
-    await scheduleExamReminders(scheduledIds, now);
+    if (examReminder) {
+      await scheduleExamReminders(scheduledIds, now);
+    }
+  } finally {
+    await syncUpcomingLiveActivity();
   }
 }
 
@@ -264,12 +308,26 @@ async function scheduleCourseReminders(
 
       const triggerAtMs = classStartMs - reminderMinutes * 60 * 1000;
 
-      if (triggerAtMs <= now) continue;
+      if (classStartMs <= now) continue;
+      if (Platform.OS === "ios" && triggerAtMs <= now) continue;
 
       const id = reserveReminderId(
         getReminderId(termStart, week, course, classStartMs),
         scheduledIds,
       );
+
+      if (triggerAtMs <= now) {
+        await showCountdown(
+          id,
+          CHANNEL_ID,
+          course.name,
+          `${course.room} · ${startTimeStr}`,
+          classStartMs,
+          true,
+          true,
+        );
+        continue;
+      }
 
       await scheduleCountdown(
         id,
