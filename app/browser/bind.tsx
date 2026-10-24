@@ -7,7 +7,7 @@ import { useOnboardingStore } from "@/store/onboarding";
 import { useUserBindStore } from "@/store/user-bind";
 import CookieManager from "@preeternal/react-native-cookie-manager";
 import { router, Stack } from "expo-router";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import Toast from "react-native-toast-message";
 import { WebView } from "react-native-webview";
@@ -19,9 +19,52 @@ import type {
 const TALENT_HOST = "talent.whut.edu.cn";
 const TALENT_ROOT_URL = `https://${TALENT_HOST}/`;
 const TALENT_APP_PATH = "/information-center/center/index.html?appId=2";
+const TALENT_APP_URL = `https://${TALENT_HOST}${TALENT_APP_PATH}`;
 const TALENT_CAS_URL = `https://zhlgd.whut.edu.cn/tpass/login?service=${encodeURIComponent(
   TALENT_ROOT_URL,
 )}`;
+
+interface TalentLoginFailure {
+  url?: string;
+  statusCode?: number;
+  description?: string;
+}
+
+function isTalentUrl(url?: string): boolean {
+  if (!url) return false;
+  try {
+    return new URL(url).hostname === TALENT_HOST;
+  } catch {
+    return false;
+  }
+}
+
+function isRecoverableTalentRootError({
+  url,
+  statusCode,
+  description,
+}: TalentLoginFailure): boolean {
+  if (!url) return false;
+
+  try {
+    const parsed = new URL(url);
+    // Let the server consume the CAS ticket before recovering the bare root.
+    if (
+      parsed.origin !== TALENT_ROOT_URL.slice(0, -1) ||
+      parsed.username ||
+      parsed.password ||
+      parsed.pathname !== "/" ||
+      parsed.search
+    ) {
+      return false;
+    }
+  } catch {
+    return false;
+  }
+
+  if (statusCode !== undefined) return statusCode === 404;
+  return /\bnet::ERR_HTTP_RESPONSE_CODE_FAILURE\b/.test(description ?? "");
+}
 
 const INJECTED_JS = `(function(){
   function simplifyLogin(){
@@ -164,6 +207,11 @@ export default function BindScreen() {
   useMarkRouteInteractive();
   const t = useT();
   const webview = useRef<WebView>(null);
+  const [webviewAttempt, setWebviewAttempt] = useState({
+    id: 0,
+    uri: TALENT_CAS_URL,
+  });
+  const activeAttemptId = useRef(0);
   const pendingCredentials = useRef<{
     username: string;
     password: string;
@@ -171,14 +219,19 @@ export default function BindScreen() {
   const flowFinished = useRef(false);
   const preserveSession = useRef(false);
 
-  const handleLoadEnd = useCallback(() => {
-    webview.current?.injectJavaScript(INJECTED_JS);
+  const setWebviewRef = useCallback((view: WebView | null) => {
+    if (!view) webview.current?.clearCache(true);
+    webview.current = view;
   }, []);
 
+  const handleLoadEnd = useCallback(() => {
+    if (webviewAttempt.id !== activeAttemptId.current || flowFinished.current)
+      return;
+    webview.current?.injectJavaScript(INJECTED_JS);
+  }, [webviewAttempt.id]);
+
   useEffect(() => {
-    const currentWebView = webview.current;
     return () => {
-      currentWebView?.clearCache(true);
       if (!preserveSession.current) {
         CookieManager.clearAll(true).catch(() => {});
       }
@@ -197,21 +250,41 @@ export default function BindScreen() {
     if (router.canGoBack()) router.back();
   };
 
+  const recoverAppEntry = (failure: TalentLoginFailure) => {
+    // Native callbacks from the old WebView may arrive after recovery starts.
+    if (webviewAttempt.id !== activeAttemptId.current || flowFinished.current)
+      return true;
+    if (webviewAttempt.id !== 0 || !isRecoverableTalentRootError(failure))
+      return false;
+
+    // Recreate the WebView to discard its built-in error state. Cookie storage
+    // and pending credentials belong to this screen and survive the recovery.
+    activeAttemptId.current += 1;
+    setWebviewAttempt({ id: activeAttemptId.current, uri: TALENT_APP_URL });
+    return true;
+  };
+
   const onError = (event: WebViewErrorEvent) => {
+    if (recoverAppEntry(event.nativeEvent)) {
+      event.preventDefault();
+      return;
+    }
     const { url } = event.nativeEvent;
-    if (url && url.includes(TALENT_HOST)) {
+    if (isTalentUrl(url)) {
       handleFailure();
     }
   };
 
   const onHttpError = (event: WebViewHttpErrorEvent) => {
+    if (recoverAppEntry(event.nativeEvent)) return;
     const { url, statusCode } = event.nativeEvent;
-    if (url && url.includes(TALENT_HOST) && statusCode >= 500) {
+    if (isTalentUrl(url) && statusCode >= 400) {
       handleFailure();
     }
   };
 
   const onMessage = async (event: { nativeEvent: { data: string } }) => {
+    if (webviewAttempt.id !== activeAttemptId.current) return;
     try {
       const msg = JSON.parse(event.nativeEvent.data);
       if (msg.type === "credentials") {
@@ -271,8 +344,9 @@ export default function BindScreen() {
         <Stack.Screen options={{ title: t("user.bindScreenTitle") }} />
 
         <WebView
-          ref={webview}
-          source={{ uri: TALENT_CAS_URL }}
+          key={webviewAttempt.id}
+          ref={setWebviewRef}
+          source={{ uri: webviewAttempt.uri }}
           style={{ flex: 1 }}
           automaticallyAdjustContentInsets={false}
           contentInsetAdjustmentBehavior="never"
