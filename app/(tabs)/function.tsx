@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { TabBackground } from "@/components/layout/tab-background";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { IS_DEV } from "@/constants/is-dev";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -159,6 +160,7 @@ export default function FunctionScreen() {
 
   return (
     <View style={{ flex: 1 }}>
+      <TabBackground />
       <View style={{ flex: 1, paddingTop: insets.top }}>
         <View style={{ flex: 1 }}>
           <ScrollView

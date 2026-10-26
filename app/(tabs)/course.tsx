@@ -34,6 +34,7 @@ import {
 } from "@/components/layout/course-importer";
 import { LabImportSheet } from "@/components/layout/lab-import-sheet";
 import { Schedule } from "@/components/layout/schedule";
+import { TabBackground } from "@/components/layout/tab-background";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { MorphingIcon } from "@/components/ui/morphing-icon";
@@ -107,6 +108,7 @@ function TabContent({
           updateLayout("height", event.nativeEvent.layout.height);
         }}
       >
+        <TabBackground />
         <SafeAreaView
           pointerEvents="none"
           edges={{ bottom: true }}
@@ -146,7 +148,12 @@ function TabContent({
     );
   }
 
-  return <View style={{ flex: 1 }}>{enabled ? children : null}</View>;
+  return (
+    <View style={{ flex: 1 }}>
+      <TabBackground />
+      {enabled ? children : null}
+    </View>
+  );
 }
 
 export default function CourseScreen() {

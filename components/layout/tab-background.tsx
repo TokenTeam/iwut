@@ -6,10 +6,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { DEFAULT_SCHEDULE_VISUAL, useScheduleStore } from "@/store/schedule";
 
-/**
- * Tabs shared background. Mounted above the tab navigator so switching tabs
- * does not remount/reload the image layer.
- */
 export function TabBackground() {
   const segments = useSegments();
   const backgroundImageUri = useScheduleStore((s) => s.backgroundImageUri);

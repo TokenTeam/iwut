@@ -1,5 +1,5 @@
-import { NativeTabs } from "expo-router/native-tabs";
 import { router } from "expo-router";
+import { NativeTabs } from "expo-router/native-tabs";
 import { useEffect } from "react";
 
 import { useHaptics } from "@/hooks/use-haptics";
@@ -61,7 +61,10 @@ export default function IosTabLayout() {
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="function" contentStyle={sceneStyle}>
         <NativeTabs.Trigger.Icon
-          sf={{ default: "square.grid.2x2", selected: "square.grid.2x2.fill" }}
+          sf={{
+            default: "square.grid.2x2",
+            selected: "square.grid.2x2.fill",
+          }}
           selectedColor={TAB_COLORS.function}
         />
         <NativeTabs.Trigger.Label

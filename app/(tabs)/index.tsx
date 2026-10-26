@@ -16,11 +16,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CourseDetailModal } from "@/components/layout/course-detail-modal";
 import { HomeMenu } from "@/components/layout/home-menu";
+import { TabBackground } from "@/components/layout/tab-background";
 import { CourseShareSheet } from "@/components/share/course-share-sheet";
 import { AnnouncementBanner } from "@/components/ui/announcement-banner";
 import { getDayLabels } from "@/constants/weekdays";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useTabViewport } from "@/hooks/use-tab-viewport";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useMinuteNow } from "@/hooks/use-minute-now";
@@ -28,6 +28,7 @@ import {
   AnimatedPagerView,
   usePagerPosition,
 } from "@/hooks/use-pager-position";
+import { useTabViewport } from "@/hooks/use-tab-viewport";
 import { buildColorMap, getCourseColor } from "@/lib/course-colors";
 import {
   getCurrentDayOfWeek,
@@ -482,6 +483,7 @@ export default function HomeScreen() {
 
   return (
     <View style={{ flex: 1 }} onLayout={handleHomeLayout}>
+      <TabBackground />
       <View style={{ flex: 1, paddingTop: insets.top }}>
         <View className="flex-1">
           <View className="px-6 pb-2 pt-8">

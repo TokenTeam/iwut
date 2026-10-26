@@ -72,7 +72,6 @@ import {
 } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
-import { TabBackground } from "@/components/layout/tab-background";
 import { AppBlurTargetProvider } from "@/components/ui/app-blur-target";
 import { UpdateModal } from "@/components/ui/update-modal";
 import { Colors, Themes } from "@/constants/theme";
@@ -300,7 +299,6 @@ function RootLayout() {
           <ThemeProvider
             value={Themes[colorScheme === "dark" ? "dark" : "default"]}
           >
-            <TabBackground />
             <Stack
               screenOptions={{
                 headerBackButtonDisplayMode: "minimal",
