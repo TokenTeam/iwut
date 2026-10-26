@@ -12,13 +12,15 @@ const ALLOW_UNRESTRICTED_HTTP =
   !PROFILE || PROFILE === "development" || PROFILE === "preview";
 
 const config: ExpoConfig = {
-  name: IS_DEV
-    ? "掌上吾理 Dev"
-    : process.env.EAS_BUILD_PLATFORM === "ios"
-      ? "掌上吾理 Pro"
-      : "掌上吾理",
+  name:
+    process.env.EAS_BUILD_PLATFORM === "ios"
+      ? "iwut"
+      : IS_DEV
+        ? "掌上吾理 Dev"
+        : "掌上吾理",
   slug: "iwut",
-  version: "0.3.27",
+  version: "0.3.28",
+  githubUrl: "https://github.com/TokenTeam/iwut",
   runtimeVersion: {
     policy: "appVersion",
   },
@@ -41,12 +43,13 @@ const config: ExpoConfig = {
   platforms: ["ios", "android"],
   orientation: "portrait",
   icon: "./assets/images/icon.png",
-  scheme: "iwut",
+  scheme: ["iwut"],
   userInterfaceStyle: "automatic",
   ios: {
     bundleIdentifier: IS_DEV ? "dev.tokenteam.iwut.dev" : "dev.tokenteam.iwut",
     supportsTablet: true,
     infoPlist: {
+      CFBundleDisplayName: IS_DEV ? "掌上吾理 Dev" : "掌上吾理 Pro",
       ITSAppUsesNonExemptEncryption: false,
       NSSupportsLiveActivities: true,
       NSLocationWhenInUseUsageDescription:
