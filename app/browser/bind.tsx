@@ -2,6 +2,7 @@ import { StackScreenContent } from "@/components/layout/stack-screen-content";
 import { IS_DEV } from "@/constants/is-dev";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
+import { logger } from "@/lib/logger";
 import { reportError } from "@/lib/report";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useUserBindStore } from "@/store/user-bind";
@@ -19,7 +20,6 @@ import type {
 const TALENT_HOST = "talent.whut.edu.cn";
 const TALENT_ROOT_URL = `https://${TALENT_HOST}/`;
 const TALENT_APP_PATH = "/information-center/center/index.html?appId=2";
-const TALENT_APP_URL = `https://${TALENT_HOST}${TALENT_APP_PATH}`;
 const TALENT_CAS_URL = `https://zhlgd.whut.edu.cn/tpass/login?service=${encodeURIComponent(
   TALENT_ROOT_URL,
 )}`;
@@ -30,13 +30,67 @@ interface TalentLoginFailure {
   description?: string;
 }
 
-function isTalentUrl(url?: string): boolean {
-  if (!url) return false;
+const DIAGNOSTIC_ENDPOINTS = [
+  "loginUser",
+  "studentInfo",
+  "colleges",
+  "education",
+  "talentPage",
+  "casPage",
+] as const;
+const DIAGNOSTIC_KINDS = [
+  "http",
+  "invalid-json",
+  "invalid-response",
+  "network",
+  "load",
+] as const;
+
+function createBindErrorReporter(
+  report: (error: Error, context: Record<string, unknown>) => void,
+) {
+  const reported = new Set<string>();
+  return (raw: unknown) => {
+    if (!raw || typeof raw !== "object") return;
+    const candidate = raw as Record<string, unknown>;
+    const endpoint = DIAGNOSTIC_ENDPOINTS.find(
+      (value) => value === candidate.endpoint,
+    );
+    const kind = DIAGNOSTIC_KINDS.find((value) => value === candidate.kind);
+    if (!endpoint || !kind) return;
+    const key = kind === "network" ? `${endpoint}:network` : endpoint;
+    if (reported.has(key)) return;
+    reported.add(key);
+
+    const context: Record<string, unknown> = { module: "bind", endpoint, kind };
+    for (const key of ["statusCode", "attempt", "code"]) {
+      const value = candidate[key];
+      if (typeof value === "number" && Number.isSafeInteger(value)) {
+        context[key] = value;
+      }
+    }
+    const error = new Error(`Bind ${endpoint}: ${kind}`);
+    if (kind === "network") {
+      Object.assign(error, { code: "NETWORK_FAILURE" });
+    } else if (kind === "load") {
+      error.name = "WebViewLoadError";
+      Object.assign(error, { code: context.code });
+      if (candidate.domain === "NSURLErrorDomain") {
+        Object.assign(error, { domain: "NSURLErrorDomain" });
+        context.domain = "NSURLErrorDomain";
+      }
+    }
+    report(error, context);
+  };
+}
+
+function getLoginPage(url?: string) {
+  if (!url) return;
   try {
-    return new URL(url).hostname === TALENT_HOST;
-  } catch {
-    return false;
-  }
+    const host = new URL(url).hostname;
+    if (host === TALENT_HOST) return "talentPage";
+    if (host === "zhlgd.whut.edu.cn") return "casPage";
+  } catch {}
 }
 
 function isRecoverableTalentRootError({
@@ -48,7 +102,7 @@ function isRecoverableTalentRootError({
 
   try {
     const parsed = new URL(url);
-    // Let the server consume the CAS ticket before recovering the bare root.
+    // 带 ticket 的请求仍需由服务端处理
     if (
       parsed.origin !== TALENT_ROOT_URL.slice(0, -1) ||
       parsed.username ||
@@ -67,6 +121,45 @@ function isRecoverableTalentRootError({
 }
 
 const INJECTED_JS = `(function(){
+  function diagnostic(endpoint,kind,statusCode){
+    window.ReactNativeWebView.postMessage(JSON.stringify({
+      type:'diagnostic',endpoint:endpoint,kind:kind,
+      statusCode:statusCode,attempt:window.__talentTries
+    }));
+  }
+  function isRecord(value){
+    return value!==null && typeof value==='object' && !Array.isArray(value);
+  }
+  function isDictionary(value){
+    return Array.isArray(value) && value.every(isRecord);
+  }
+  function getJson(endpoint,url){
+    return fetch(url,{credentials:'include',headers:{accept:'application/json'}})
+      .then(function(response){
+        if(!response.ok){
+          diagnostic(endpoint,'http',response.status);
+          throw new Error('http');
+        }
+        return response.json().catch(function(){
+          diagnostic(endpoint,'invalid-json',response.status);
+          throw new Error('invalid-json');
+        });
+      },function(){
+        diagnostic(endpoint,'network');
+        throw new Error('network');
+      });
+  }
+  function getDictionary(endpoint,url){
+    return getJson(endpoint,url).then(function(value){
+      var data=isRecord(value)?value.data:value;
+      if((isRecord(value) && value.code!==undefined && value.code!==0) ||
+        !isDictionary(data)){
+        diagnostic(endpoint,'invalid-response');
+        return null;
+      }
+      return data;
+    }).catch(function(){return null;});
+  }
   function simplifyLogin(){
     if(!document.head){setTimeout(simplifyLogin,100);return;}
     var css=document.createElement('style');
@@ -123,21 +216,20 @@ const INJECTED_JS = `(function(){
   function fetchTalentInfo(){
     if(location.hostname!=='talent.whut.edu.cn')return;
     if(window.__talentInfoSent)return;
-    function profileUnavailable(){
+    function finish(type){
       if(window.__talentInfoSent)return;
       window.__talentInfoSent=true;
-      window.ReactNativeWebView.postMessage(JSON.stringify({type:'profileUnavailable'}));
+      window.ReactNativeWebView.postMessage(JSON.stringify({type:type}));
     }
     window.__talentTries=(window.__talentTries||0)+1;
     var giveUp=window.__talentTries>=8;
     function retry(){
-      if(giveUp){profileUnavailable();return false;}
+      if(giveUp){
+        finish('bindingFailed');
+        return false;
+      }
       setTimeout(fetchTalentInfo,1000);
       return true;
-    }
-    function getJson(url,opts){
-      return fetch(url, Object.assign({credentials:'include',headers:{'accept':'application/json'}}, opts||{}))
-        .then(function(r){return r.json();});
     }
     function pick(arr,code){
       if(!arr||!arr.length)return '';
@@ -146,41 +238,50 @@ const INJECTED_JS = `(function(){
       }
       return '';
     }
-    getJson('/information-center/xd/user/getLoginUserNew/2').then(function(u){
-      if(u&&u.code===50005){profileUnavailable();return;}
-      if(!u||u.code!==0||!u.data||!u.data.sn){retry();return;}
+    getJson('loginUser','/information-center/xd/user/getLoginUserNew/2').then(function(u){
+      if(u&&u.code===50005){finish('profileUnavailable');return;}
+      if(!isRecord(u)||u.code!==0||!isRecord(u.data)||!u.data.sn){
+        diagnostic('loginUser','invalid-response');retry();return;
+      }
       var sn=String(u.data.sn);
       var name=u.data.name||'';
       Promise.all([
-        getJson('/information-center/xd/user/findStudentInfoWechat/'+encodeURIComponent(sn)).catch(function(){return null;}),
-        getJson('/information-center/xd/commons/getColleges').catch(function(){return null;}),
-        getJson('/information-center/xd/commons/getDictionByName/'+encodeURIComponent('\u5b66\u751f\u7c7b\u578b')).catch(function(){return null;})
+        getJson('studentInfo','/information-center/xd/user/findStudentInfoWechat/'+encodeURIComponent(sn)).catch(function(){return undefined;}),
+        getDictionary('colleges','/information-center/xd/commons/getColleges'),
+        getDictionary('education','/information-center/xd/commons/getDictionByName/'+encodeURIComponent('\u5b66\u751f\u7c7b\u578b'))
       ]).then(function(rs){
         var stu=rs[0];
-        if(stu&&stu.code===50005){profileUnavailable();return;}
-        if(!giveUp && (!stu||stu.status!==true||!stu.data||!stu.data.expandField)){
+        if(stu&&stu.code===50005){finish('profileUnavailable');return;}
+        if(!isRecord(stu)||stu.status!==true||!isRecord(stu.data)||
+          !isRecord(stu.data.expandField)){
+          if(stu!==undefined)diagnostic('studentInfo','invalid-response');
           retry();return;
         }
         var cardId='',college='',eduLevel='';
         try{
-          var ef=(stu&&stu.data&&stu.data.expandField)||{};
+          var ef=stu.data.expandField;
+          if(['\u5b66\u7c4d\u4fe1\u606f','\u57fa\u672c\u4fe1\u606f'].some(function(key){
+            return ef[key]!==undefined && !isDictionary(ef[key]);
+          })){
+            diagnostic('studentInfo','invalid-response');retry();return;
+          }
           var xj=ef['\u5b66\u7c4d\u4fe1\u606f']||[];
           cardId=pick(ef['\u57fa\u672c\u4fe1\u606f'],'card_no');
           var eduCode=pick(xj,'education_code');
-          var eduDict=(rs[2]&&(rs[2].data||rs[2]))||[];
-          if(eduCode&&Array.isArray(eduDict)){
+          var eduDict=rs[2]||[];
+          if(eduCode){
             for(var j=0;j<eduDict.length;j++){
               if(eduDict[j].code===eduCode){eduLevel=eduDict[j].name||'';break;}
             }
           }
           var collegeCode=pick(xj,'college_code');
-          var colleges=(rs[1]&&(rs[1].data||rs[1]))||[];
-          if(collegeCode&&Array.isArray(colleges)){
+          var colleges=rs[1]||[];
+          if(collegeCode){
             for(var i=0;i<colleges.length;i++){
               if(colleges[i].sn===collegeCode){college=colleges[i].name||'';break;}
             }
           }
-        }catch(e){}
+        }catch(e){diagnostic('studentInfo','invalid-response');retry();return;}
         window.__talentInfoSent=true;
         window.ReactNativeWebView.postMessage(JSON.stringify({
           type:'info',
@@ -218,6 +319,7 @@ export default function BindScreen() {
   } | null>(null);
   const flowFinished = useRef(false);
   const preserveSession = useRef(false);
+  const reportBindError = useRef(createBindErrorReporter(reportError)).current;
 
   const setWebviewRef = useCallback((view: WebView | null) => {
     if (!view) webview.current?.clearCache(true);
@@ -251,16 +353,21 @@ export default function BindScreen() {
   };
 
   const recoverAppEntry = (failure: TalentLoginFailure) => {
-    // Native callbacks from the old WebView may arrive after recovery starts.
+    // 忽略旧 WebView 的延迟回调
     if (webviewAttempt.id !== activeAttemptId.current || flowFinished.current)
       return true;
     if (webviewAttempt.id !== 0 || !isRecoverableTalentRootError(failure))
       return false;
 
-    // Recreate the WebView to discard its built-in error state. Cookie storage
-    // and pending credentials belong to this screen and survive the recovery.
+    // 重建 WebView，清除内置错误页
     activeAttemptId.current += 1;
-    setWebviewAttempt({ id: activeAttemptId.current, uri: TALENT_APP_URL });
+    logger.extend("Bind").info("Recovering talent root 404", {
+      attempt: activeAttemptId.current,
+    });
+    setWebviewAttempt({
+      id: activeAttemptId.current,
+      uri: `https://${TALENT_HOST}${TALENT_APP_PATH}`,
+    });
     return true;
   };
 
@@ -270,7 +377,15 @@ export default function BindScreen() {
       return;
     }
     const { url } = event.nativeEvent;
-    if (isTalentUrl(url)) {
+    const endpoint = getLoginPage(url);
+    if (endpoint) {
+      reportBindError({
+        endpoint,
+        kind: "load",
+        code: event.nativeEvent.code,
+        domain: event.nativeEvent.domain,
+        attempt: webviewAttempt.id,
+      });
       handleFailure();
     }
   };
@@ -278,7 +393,14 @@ export default function BindScreen() {
   const onHttpError = (event: WebViewHttpErrorEvent) => {
     if (recoverAppEntry(event.nativeEvent)) return;
     const { url, statusCode } = event.nativeEvent;
-    if (isTalentUrl(url) && statusCode >= 400) {
+    const endpoint = getLoginPage(url);
+    if (endpoint && statusCode >= 400) {
+      reportBindError({
+        endpoint,
+        kind: "http",
+        statusCode,
+        attempt: webviewAttempt.id,
+      });
       handleFailure();
     }
   };
@@ -287,7 +409,11 @@ export default function BindScreen() {
     if (webviewAttempt.id !== activeAttemptId.current) return;
     try {
       const msg = JSON.parse(event.nativeEvent.data);
-      if (msg.type === "credentials") {
+      if (msg.type === "diagnostic") {
+        reportBindError(msg);
+      } else if (msg.type === "bindingFailed") {
+        handleFailure();
+      } else if (msg.type === "credentials") {
         pendingCredentials.current = {
           username: msg.username,
           password: msg.password,
