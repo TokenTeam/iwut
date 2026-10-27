@@ -333,7 +333,12 @@
     "sentryTestConfirm": "确认发送",
     "sentryTestSent": "测试事件已发送",
     "sentryTestFailed": "测试事件发送失败",
-    "sentryUnavailable": "Dev Client 中未启用 Sentry"
+    "sentryUnavailable": "Dev Client 中未启用 Sentry",
+    "clearAllData": "清除所有数据",
+    "clearAllDataDesc": "将清除课程、账号凭据及所有已保存的应用设置，并返回首次设置页面。日志、文件缓存和遥测授权不受影响。此操作不可恢复。",
+    "clearAllDataConfirm": "确认清除",
+    "dataCleared": "应用数据已清除",
+    "clearAllDataFailed": "清除失败，请重试"
   },
   "appearance": {
     "title": "外观设置",

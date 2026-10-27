@@ -333,7 +333,12 @@
     "sentryTestConfirm": "Confirm",
     "sentryTestSent": "Test event sent",
     "sentryTestFailed": "Failed to send test event",
-    "sentryUnavailable": "Sentry is disabled in the dev client"
+    "sentryUnavailable": "Sentry is disabled in the dev client",
+    "clearAllData": "Clear all data",
+    "clearAllDataDesc": "This will delete courses, exams, grades, account credentials, and all saved app settings, then return to initial setup. Logs, file caches, and telemetry consent are unaffected. This cannot be undone.",
+    "clearAllDataConfirm": "Clear",
+    "dataCleared": "App data cleared",
+    "clearAllDataFailed": "Failed to clear data. Please try again."
   },
   "appearance": {
     "title": "Appearance",

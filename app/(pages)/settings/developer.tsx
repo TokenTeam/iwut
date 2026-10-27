@@ -1,5 +1,5 @@
 import * as Sentry from "@sentry/react-native";
-import { Redirect, Stack } from "expo-router";
+import { Redirect, Stack, useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import { ActivityIndicator, ScrollView, Switch, View } from "react-native";
 import Toast from "react-native-toast-message";
@@ -11,6 +11,7 @@ import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import { useDeveloperOptionsStore } from "@/store/developer-options";
+import { clearAllStoreData } from "@/store/reset";
 import { useTelemetryStore } from "@/store/telemetry";
 
 const log = logger.extend("Developer");
@@ -18,6 +19,10 @@ const log = logger.extend("Developer");
 export default function DeveloperSettingsScreen() {
   useMarkRouteInteractive();
   const t = useT();
+  const router = useRouter();
+  const [clearConfirmVisible, setClearConfirmVisible] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const clearingRef = useRef(false);
   const [sendingSentryTest, setSendingSentryTest] = useState(false);
   const [sentryConfirmVisible, setSentryConfirmVisible] = useState(false);
   const sendingSentryTestRef = useRef(false);
@@ -25,6 +30,32 @@ export default function DeveloperSettingsScreen() {
   const setEnabled = useDeveloperOptionsStore((s) => s.setEnabled);
 
   if (!IS_DEV || !enabled) return <Redirect href="/(tabs)/user" />;
+
+  const handleClearAllData = async () => {
+    if (clearingRef.current) return;
+    clearingRef.current = true;
+    setClearing(true);
+    setClearConfirmVisible(false);
+    try {
+      await clearAllStoreData();
+      router.replace("/onboarding");
+      Toast.show({
+        type: "success",
+        text1: t("developer.dataCleared"),
+        position: "bottom",
+      });
+    } catch (error) {
+      log.error("Failed to clear App data", error);
+      Toast.show({
+        type: "error",
+        text1: t("developer.clearAllDataFailed"),
+        position: "bottom",
+      });
+    } finally {
+      clearingRef.current = false;
+      setClearing(false);
+    }
+  };
 
   const handleSentryTest = async () => {
     if (sendingSentryTestRef.current) return;
@@ -125,7 +156,27 @@ export default function DeveloperSettingsScreen() {
             }
           />
         </MenuGroup>
+        <MenuGroup title={t("settings.storage")}>
+          <MenuItem
+            icon="delete-forever"
+            iconBg="#FF3B30"
+            label={t("developer.clearAllData")}
+            showArrow={false}
+            disabled={clearing}
+            right={clearing ? <ActivityIndicator size="small" /> : undefined}
+            onPress={() => setClearConfirmVisible(true)}
+          />
+        </MenuGroup>
       </ScrollView>
+      <ConfirmSheet
+        visible={clearConfirmVisible}
+        onClose={() => setClearConfirmVisible(false)}
+        title={t("developer.clearAllData")}
+        description={t("developer.clearAllDataDesc")}
+        confirmText={t("developer.clearAllDataConfirm")}
+        destructive
+        onConfirm={() => void handleClearAllData()}
+      />
       <ConfirmSheet
         visible={sentryConfirmVisible}
         onClose={() => setSentryConfirmVisible(false)}
