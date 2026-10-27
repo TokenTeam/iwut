@@ -45,6 +45,22 @@ const DIAGNOSTIC_KINDS = [
   "network",
   "load",
 ] as const;
+const DIAGNOSTIC_REASONS = [
+  "session-timeout",
+  "student-response",
+  "expand-field",
+  "student-fields",
+  "student-parsing",
+] as const;
+const RESPONSE_TYPES = [
+  "undefined",
+  "null",
+  "array",
+  "object",
+  "string",
+  "number",
+  "boolean",
+] as const;
 
 function createBindErrorReporter(
   report: (error: Error, context: Record<string, unknown>) => void,
@@ -69,6 +85,16 @@ function createBindErrorReporter(
         context[key] = value;
       }
     }
+    const reason = DIAGNOSTIC_REASONS.find(
+      (value) => value === candidate.reason,
+    );
+    if (reason) context.reason = reason;
+    for (const key of ["responseType", "dataType", "expandFieldType"]) {
+      const value = RESPONSE_TYPES.find((value) => value === candidate[key]);
+      if (value) context[key] = value;
+    }
+    if (typeof candidate.status === "boolean")
+      context.status = candidate.status;
     const error = new Error(`Bind ${endpoint}: ${kind}`);
     if (kind === "network") {
       Object.assign(error, { code: "NETWORK_FAILURE" });
@@ -121,11 +147,37 @@ function isRecoverableTalentRootError({
 }
 
 const INJECTED_JS = `(function(){
-  function diagnostic(endpoint,kind,statusCode){
-    window.ReactNativeWebView.postMessage(JSON.stringify({
-      type:'diagnostic',endpoint:endpoint,kind:kind,
+  if(window.__talentBindInitialized)return;
+  var isLogin=location.hostname==='zhlgd.whut.edu.cn' && location.pathname==='/tpass/login';
+  if(!isLogin && location.hostname!=='talent.whut.edu.cn')return;
+  window.__talentBindInitialized=true;
+  var fetching=false;
+  function send(type,data){
+    window.ReactNativeWebView.postMessage(JSON.stringify(Object.assign({type:type},data)));
+  }
+  function valueType(value){
+    if(value===null)return 'null';
+    if(Array.isArray(value))return 'array';
+    return typeof value;
+  }
+  function diagnostic(endpoint,kind,statusCode,reason,response){
+    var message={
+      endpoint:endpoint,kind:kind,
       statusCode:statusCode,attempt:window.__talentTries
-    }));
+    };
+    if(reason){
+      message.reason=reason;
+      message.responseType=valueType(response);
+      if(isRecord(response)){
+        if(typeof response.code==='number')message.code=response.code;
+        if(typeof response.status==='boolean')message.status=response.status;
+        message.dataType=valueType(response.data);
+        if(isRecord(response.data)){
+          message.expandFieldType=valueType(response.data.expandField);
+        }
+      }
+    }
+    send('diagnostic',message);
   }
   function isRecord(value){
     return value!==null && typeof value==='object' && !Array.isArray(value);
@@ -164,15 +216,8 @@ const INJECTED_JS = `(function(){
     if(!document.head){setTimeout(simplifyLogin,100);return;}
     var css=document.createElement('style');
     css.textContent=
-      '.login_banner{display:none!important}'+
-      '.login_box_tab{display:none!important}'+
-      '.code-login{display:none!important}'+
-      '.qq_bar{display:none!important}'+
-      '.login_box_notice{display:none!important}'+
-      '.new_student{display:none!important}'+
-      '.dit-line{display:none!important}'+
-      '.browser{display:none!important}'+
-      '#footer,.footer-login{display:none!important}'+
+      '.login_banner,.login_box_tab,.code-login,.qq_bar,.login_box_notice,'+
+      '.new_student,.dit-line,.browser,#footer,.footer-login{display:none!important}'+
       '.content_login_box{float:none!important;margin:0 auto!important}';
     document.head.appendChild(css);
 
@@ -192,18 +237,16 @@ const INJECTED_JS = `(function(){
     var u=document.querySelector('#un');
     var p=document.querySelector('#pd');
     if(!u||!p){setTimeout(track,300);return;}
-    function send(){
+    function capture(){
       if(u.value&&p.value){
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type:'credentials',username:u.value,password:p.value
-        }));
+        send('credentials',{username:u.value,password:p.value});
       }
     }
-    u.addEventListener('input',send);
-    p.addEventListener('input',send);
+    u.addEventListener('input',capture);
+    p.addEventListener('input',capture);
     var btn=document.querySelector('#index_login_btn');
-    if(btn)btn.addEventListener('click',send);
-    document.addEventListener('submit',send,true);
+    if(btn)btn.addEventListener('click',capture);
+    document.addEventListener('submit',capture,true);
   }
   function ensureAppEntry(){
     if(location.hostname!=='talent.whut.edu.cn')return false;
@@ -215,28 +258,36 @@ const INJECTED_JS = `(function(){
   }
   function fetchTalentInfo(){
     if(location.hostname!=='talent.whut.edu.cn')return;
-    if(window.__talentInfoSent)return;
-    function finish(type){
+    if(window.__talentInfoSent || fetching)return;
+    fetching=true;
+    function finish(type,data){
       if(window.__talentInfoSent)return;
       window.__talentInfoSent=true;
-      window.ReactNativeWebView.postMessage(JSON.stringify({type:type}));
+      send(type,data);
     }
     window.__talentTries=(window.__talentTries||0)+1;
     var giveUp=window.__talentTries>=8;
     function retry(){
       if(giveUp){
         finish('bindingFailed');
-        return false;
+        return;
       }
       setTimeout(fetchTalentInfo,1000);
-      return true;
+    }
+    function retryStudent(reason,stu,onlyFinal){
+      if(stu!==undefined && (!onlyFinal || giveUp)){
+        diagnostic('studentInfo','invalid-response',undefined,reason,stu);
+      }
+      retry();
     }
     function pick(arr,code){
-      if(!arr||!arr.length)return '';
-      for(var i=0;i<arr.length;i++){
-        if(arr[i].fieldCode===code)return String(arr[i].fieldValue==null?'':arr[i].fieldValue);
-      }
-      return '';
+      var field=(arr||[]).find(function(item){return item.fieldCode===code;});
+      return field?String(field.fieldValue==null?'':field.fieldValue):'';
+    }
+    function lookupName(rows,key,code){
+      if(!code)return '';
+      var row=(rows||[]).find(function(item){return item[key]===code;});
+      return row?row.name||'':'';
     }
     getJson('loginUser','/information-center/xd/user/getLoginUserNew/2').then(function(u){
       if(u&&u.code===50005){finish('profileUnavailable');return;}
@@ -245,22 +296,24 @@ const INJECTED_JS = `(function(){
       }
       var sn=String(u.data.sn);
       var name=u.data.name||'';
-      Promise.all([
+      return Promise.all([
         getJson('studentInfo','/information-center/xd/user/findStudentInfoWechat/'+encodeURIComponent(sn)).catch(function(){return undefined;}),
         getDictionary('colleges','/information-center/xd/commons/getColleges'),
         getDictionary('education','/information-center/xd/commons/getDictionByName/'+encodeURIComponent('\u5b66\u751f\u7c7b\u578b'))
       ]).then(function(rs){
         var stu=rs[0];
         if(stu&&stu.code===50005){finish('profileUnavailable');return;}
+        if(isRecord(stu) && stu.code===50000 && stu.status===false &&
+          stu.data===null && stu.message==='\u767b\u5f55\u8d85\u65f6'){
+          retryStudent('session-timeout',stu,true);return;
+        }
         if(!isRecord(stu)||stu.status!==true||!isRecord(stu.data)||stu.code!==0){
-          if(stu!==undefined)diagnostic('studentInfo','invalid-response');
-          retry();return;
+          retryStudent('student-response',stu);return;
         }
         var expandField=stu.data.expandField;
         if(expandField!==null && expandField!==undefined &&
           !isRecord(expandField)){
-          diagnostic('studentInfo','invalid-response');
-          retry();return;
+          retryStudent('expand-field',stu);return;
         }
         var cardId='',college='',eduLevel='';
         try{
@@ -269,43 +322,28 @@ const INJECTED_JS = `(function(){
           if(['\u5b66\u7c4d\u4fe1\u606f','\u57fa\u672c\u4fe1\u606f'].some(function(key){
             return ef[key]!==undefined && !isDictionary(ef[key]);
           })){
-            diagnostic('studentInfo','invalid-response');retry();return;
+            retryStudent('student-fields',stu);return;
           }
           var xj=ef['\u5b66\u7c4d\u4fe1\u606f']||[];
           cardId=pick(ef['\u57fa\u672c\u4fe1\u606f'],'card_no');
-          var eduCode=pick(xj,'education_code');
-          var eduDict=rs[2]||[];
-          if(eduCode){
-            for(var j=0;j<eduDict.length;j++){
-              if(eduDict[j].code===eduCode){eduLevel=eduDict[j].name||'';break;}
-            }
-          }
-          var collegeCode=pick(xj,'college_code');
-          var colleges=rs[1]||[];
-          if(collegeCode){
-            for(var i=0;i<colleges.length;i++){
-              if(colleges[i].sn===collegeCode){college=colleges[i].name||'';break;}
-            }
-          }
-        }catch(e){diagnostic('studentInfo','invalid-response');retry();return;}
-        window.__talentInfoSent=true;
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type:'info',
+          eduLevel=lookupName(rs[2],'code',pick(xj,'education_code'));
+          college=lookupName(rs[1],'sn',pick(xj,'college_code'));
+        }catch(e){retryStudent('student-parsing',stu);return;}
+        finish('info',{
           name:name,
           studentId:sn,
           cardId:cardId,
           college:college,
           eduLevel:eduLevel
-        }));
+        });
       });
-    }).catch(function(){retry();});
+    }).catch(function(){retry();}).finally(function(){fetching=false;});
   }
 
-  if(/tpass\\/login/.test(window.location.href)){
+  if(isLogin){
     simplifyLogin();
-  }
-  if(!ensureAppEntry()){
     track();
+  }else if(!ensureAppEntry()){
     fetchTalentInfo();
   }
 })();true;`;

@@ -17,6 +17,7 @@ import Toast from "react-native-toast-message";
 
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
+import { IWUT_WEB_URL } from "@/constants/api";
 import { IS_DEV } from "@/constants/is-dev";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -264,6 +265,7 @@ function AccountWelcome({
   onSkip: () => void;
 }>) {
   const t = useT();
+  const haptic = useHaptics();
   const muted = isDark ? "#A3A3A3" : "#737373";
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -383,25 +385,60 @@ function AccountWelcome({
         </Pressable>
       </View>
 
-      {IS_DEV && (
-        <Pressable
-          hitSlop={12}
-          onPress={onSkip}
-          style={({ pressed }) => ({
-            position: "absolute",
-            bottom: insets.bottom + 18,
-            left: 24,
-            right: 24,
-            alignItems: "center",
-            paddingVertical: 6,
-            opacity: pressed ? 0.55 : 1,
-          })}
-        >
-          <Text style={{ color: muted, fontSize: 12 }}>
-            {t("onboarding.skipLogin")}
+      <View
+        style={{
+          position: "absolute",
+          bottom: insets.bottom + 18,
+          left: 24,
+          right: 24,
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        {IS_DEV && (
+          <Pressable
+            hitSlop={12}
+            onPress={onSkip}
+            style={({ pressed }) => ({
+              paddingVertical: 6,
+              opacity: pressed ? 0.55 : 1,
+            })}
+          >
+            <Text style={{ color: muted, fontSize: 12 }}>
+              {t("onboarding.skipLogin")}
+            </Text>
+          </Pressable>
+        )}
+        <View className="flex-row items-center">
+          <Pressable
+            accessibilityRole="link"
+            hitSlop={8}
+            onPress={() => {
+              haptic();
+              Linking.openURL(IWUT_WEB_URL);
+            }}
+          >
+            <Text className="text-sm leading-5" style={{ color: muted }}>
+              {t("about.website")}
+            </Text>
+          </Pressable>
+          <Text className="px-1.5 text-sm leading-5" style={{ color: muted }}>
+            {"\u00b7"}
           </Text>
-        </Pressable>
-      )}
+          <Pressable
+            accessibilityRole="link"
+            hitSlop={8}
+            onPress={() => {
+              haptic();
+              Linking.openURL("https://github.com/tokenteam/iwut");
+            }}
+          >
+            <Text className="text-sm leading-5" style={{ color: muted }}>
+              {t("about.github")}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
     </View>
   );
 }
