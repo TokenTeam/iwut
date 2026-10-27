@@ -9,8 +9,8 @@ $version = (Get-Content "$root\package.json" -Raw | ConvertFrom-Json).version
 
 if (Test-Path $dist) { Remove-Item $dist -Recurse -Force }
 
-npx expo export --platform ios --platform android --output-dir dist --source-maps
-npx expo config --type public --json | Set-Content dist\expoConfig.json
+bunx expo export --platform ios --platform android --output-dir dist --source-maps
+bunx expo config --type public --json | Set-Content dist\expoConfig.json
 bunx sentry-expo-upload-sourcemaps dist
 
 Push-Location $dist
