@@ -252,15 +252,20 @@ const INJECTED_JS = `(function(){
       ]).then(function(rs){
         var stu=rs[0];
         if(stu&&stu.code===50005){finish('profileUnavailable');return;}
-        if(!isRecord(stu)||stu.status!==true||!isRecord(stu.data)||
-          !(isRecord(stu.data.expandField)||(stu.code===0&&stu.data.expandField===null))){
+        if(!isRecord(stu)||stu.status!==true||!isRecord(stu.data)||stu.code!==0){
           if(stu!==undefined)diagnostic('studentInfo','invalid-response');
+          retry();return;
+        }
+        var expandField=stu.data.expandField;
+        if(expandField!==null && expandField!==undefined &&
+          !isRecord(expandField)){
+          diagnostic('studentInfo','invalid-response');
           retry();return;
         }
         var cardId='',college='',eduLevel='';
         try{
-          // 接口成功但没有扩展资料时，仍可用已验证的身份信息完成绑定。
-          var ef=stu.data.expandField||{};
+          // 接口成功但没有扩展资料时，仍可用已验证的身份信息完成绑定
+          var ef=expandField||{};
           if(['\u5b66\u7c4d\u4fe1\u606f','\u57fa\u672c\u4fe1\u606f'].some(function(key){
             return ef[key]!==undefined && !isDictionary(ef[key]);
           })){
