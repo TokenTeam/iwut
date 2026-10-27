@@ -66,6 +66,8 @@ export function ScrollPicker({
             className="items-center justify-center"
           >
             <Text
+              numberOfLines={1}
+              style={{ alignSelf: "stretch", textAlign: "center" }}
               className={
                 index === selectedIndex
                   ? "text-lg font-semibold text-neutral-900 dark:text-neutral-100"

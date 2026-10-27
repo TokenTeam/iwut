@@ -265,7 +265,10 @@ export const DayColumn = memo(function DayColumn({
             }}
           >
             <Text
+              numberOfLines={1}
               style={{
+                alignSelf: "stretch",
+                textAlign: "center",
                 fontSize: 12,
                 fontWeight: isToday ? "800" : "600",
                 color: isToday ? "#fff" : isDark ? "#d4d4d4" : "#525252",
@@ -274,7 +277,10 @@ export const DayColumn = memo(function DayColumn({
               {dayLabel}
             </Text>
             <Text
+              numberOfLines={1}
               style={{
+                alignSelf: "stretch",
+                textAlign: "center",
                 fontSize: 11,
                 fontWeight: isToday ? "700" : "500",
                 fontVariant: ["tabular-nums"],
@@ -286,7 +292,10 @@ export const DayColumn = memo(function DayColumn({
           </View>
         ) : (
           <Text
+            numberOfLines={1}
             style={{
+              alignSelf: "stretch",
+              textAlign: "center",
               fontSize: 12,
               fontWeight: isToday ? "800" : "600",
               color: isToday ? "#3b82f6" : isDark ? "#d4d4d4" : "#525252",
