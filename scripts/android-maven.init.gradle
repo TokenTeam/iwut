@@ -1,0 +1,29 @@
+if (System.getenv("USE_MAVEN_MIRROR") != "true") {
+    return
+}
+
+def prioritizeMirror = { repositories ->
+    def mirror = repositories.maven {
+        name = "Tencent"
+        url = "https://mirrors.cloud.tencent.com/nexus/repository/maven-public/"
+        content { excludeGroup("com.github.Dimezis") }
+    }
+    repositories.remove(mirror)
+    repositories.addFirst(mirror)
+
+    repositories.whenObjectAdded { repository ->
+        if (repository != mirror) {
+            repositories.remove(mirror)
+            repositories.addFirst(mirror)
+        }
+    }
+}
+
+gradle.beforeSettings { settings ->
+    prioritizeMirror(settings.pluginManagement.repositories)
+    prioritizeMirror(settings.dependencyResolutionManagement.repositories)
+}
+gradle.beforeProject { project ->
+    prioritizeMirror(project.buildscript.repositories)
+    prioritizeMirror(project.repositories)
+}

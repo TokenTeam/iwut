@@ -15,6 +15,15 @@ branch:
                 value: preview
               - name: Production
                 value: production
+          USE_MAVEN_MIRROR:
+            name: Use Tencent Cloud Maven mirror
+            type: switch
+            default: "false"
+            options:
+              - name: "Yes"
+                value: "true"
+              - name: "No"
+                value: "false"
           UPLOAD:
             name: Upload to Cloudflare R2
             type: switch

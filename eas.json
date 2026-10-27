@@ -7,36 +7,40 @@
       "environment": "development",
       "developmentClient": true,
       "distribution": "internal",
-      "bun": "1.4.2",
       "env": {
         "EAS_BUILD_PROFILE": "development",
         "EXPO_PUBLIC_DEBUG": "1",
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
+      "android": {
+        "gradleCommand": ":app:assembleDebug --init-script ../scripts/android-maven.init.gradle"
       }
     },
     "preview": {
       "environment": "preview",
       "channel": "preview",
       "distribution": "internal",
-      "bun": "1.4.2",
       "env": {
         "EAS_BUILD_PROFILE": "preview",
         "EXPO_PUBLIC_DEBUG": "1",
         "SENTRY_ALLOW_FAILURE": "true"
+      },
+      "android": {
+        "gradleCommand": ":app:assembleRelease --init-script ../scripts/android-maven.init.gradle"
       }
     },
     "production": {
       "environment": "production",
       "channel": "production",
       "autoIncrement": true,
-      "bun": "1.4.2",
       "env": {
         "EAS_BUILD_PROFILE": "production",
         "EXPO_PUBLIC_DEBUG": "0",
         "SENTRY_ALLOW_FAILURE": "true"
       },
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease --init-script ../scripts/android-maven.init.gradle"
       }
     }
   },
