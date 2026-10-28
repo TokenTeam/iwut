@@ -269,16 +269,10 @@ const INJECTED_JS = `(function(){
     var giveUp=window.__talentTries>=8;
     function retry(){
       if(giveUp){
-        finish('bindingFailed');
+        finish('profileUnavailable',{identityUnavailable:true});
         return;
       }
       setTimeout(fetchTalentInfo,1000);
-    }
-    function retryStudent(reason,stu,onlyFinal){
-      if(stu!==undefined && (!onlyFinal || giveUp)){
-        diagnostic('studentInfo','invalid-response',undefined,reason,stu);
-      }
-      retry();
     }
     function pick(arr,code){
       var field=(arr||[]).find(function(item){return item.fieldCode===code;});
@@ -296,6 +290,17 @@ const INJECTED_JS = `(function(){
       }
       var sn=String(u.data.sn);
       var name=u.data.name||'';
+      function retryStudent(reason,stu,onlyFinal){
+        if(stu!==undefined && (!onlyFinal || giveUp)){
+          diagnostic('studentInfo','invalid-response',undefined,reason,stu);
+        }
+        if(giveUp){
+          // 只使用本轮已验证的身份，解析失败时不保留半份附加资料。
+          finish('info',{name:name,studentId:sn,cardId:'',college:'',eduLevel:''});
+          return;
+        }
+        retry();
+      }
       return Promise.all([
         getJson('studentInfo','/information-center/xd/user/findStudentInfoWechat/'+encodeURIComponent(sn)).catch(function(){return undefined;}),
         getDictionary('colleges','/information-center/xd/commons/getColleges'),
@@ -363,6 +368,7 @@ export default function BindScreen() {
   } | null>(null);
   const flowFinished = useRef(false);
   const preserveSession = useRef(false);
+  const screenActive = useRef(true);
   const reportBindError = useRef(createBindErrorReporter(reportError)).current;
 
   const setWebviewRef = useCallback((view: WebView | null) => {
@@ -371,26 +377,32 @@ export default function BindScreen() {
   }, []);
 
   const handleLoadEnd = useCallback(() => {
-    if (webviewAttempt.id !== activeAttemptId.current || flowFinished.current)
+    if (
+      !screenActive.current ||
+      webviewAttempt.id !== activeAttemptId.current ||
+      flowFinished.current
+    )
       return;
     webview.current?.injectJavaScript(INJECTED_JS);
   }, [webviewAttempt.id]);
 
   useEffect(() => {
+    screenActive.current = true;
     return () => {
+      screenActive.current = false;
       if (!preserveSession.current) {
         CookieManager.clearAll(true).catch(() => {});
       }
     };
   }, []);
 
-  const handleFailure = () => {
+  const handleFailure = (message = t("user.bindFailedSub")) => {
     if (flowFinished.current) return;
     flowFinished.current = true;
     Toast.show({
       type: "error",
       text1: t("user.bindFailed"),
-      text2: t("user.bindFailedSub"),
+      text2: message,
       position: "bottom",
     });
     if (router.canGoBack()) router.back();
@@ -398,7 +410,11 @@ export default function BindScreen() {
 
   const recoverAppEntry = (failure: TalentLoginFailure) => {
     // 忽略旧 WebView 的延迟回调
-    if (webviewAttempt.id !== activeAttemptId.current || flowFinished.current)
+    if (
+      !screenActive.current ||
+      webviewAttempt.id !== activeAttemptId.current ||
+      flowFinished.current
+    )
       return true;
     if (webviewAttempt.id !== 0 || !isRecoverableTalentRootError(failure))
       return false;
@@ -450,11 +466,14 @@ export default function BindScreen() {
   };
 
   const onMessage = async (event: { nativeEvent: { data: string } }) => {
-    if (webviewAttempt.id !== activeAttemptId.current) return;
+    if (!screenActive.current || webviewAttempt.id !== activeAttemptId.current)
+      return;
     try {
       const msg = JSON.parse(event.nativeEvent.data);
       if (msg.type === "diagnostic") {
         reportBindError(msg);
+      } else if (flowFinished.current) {
+        return;
       } else if (msg.type === "bindingFailed") {
         handleFailure();
       } else if (msg.type === "credentials") {
@@ -463,36 +482,58 @@ export default function BindScreen() {
           password: msg.password,
         };
       } else if (msg.type === "profileUnavailable") {
-        if (flowFinished.current) return;
         flowFinished.current = true;
         preserveSession.current = true;
         useOnboardingStore.getState().reset();
         Toast.show({
           type: "info",
-          text1: t("user.bindProfileUnavailable"),
-          text2: t("user.bindProfileUnavailableSub"),
+          text1: t(
+            msg.identityUnavailable === true
+              ? "user.bindIdentityUnavailable"
+              : "user.bindProfileUnavailable",
+          ),
+          text2: t(
+            msg.identityUnavailable === true
+              ? "user.bindIdentityUnavailableSub"
+              : "user.bindProfileUnavailableSub",
+          ),
           position: "bottom",
         });
         router.replace({
           pathname: "/onboarding",
           params: { step: "setup" },
         });
-      } else if (msg.type === "info" && pendingCredentials.current) {
-        if (flowFinished.current) return;
+      } else if (msg.type === "info") {
+        if (!pendingCredentials.current) {
+          reportError(new Error("Bind credentials unavailable"), {
+            module: "bind",
+          });
+          handleFailure(t("user.bindCredentialsUnavailable"));
+          return;
+        }
         flowFinished.current = true;
-        preserveSession.current = true;
         const { username, password } = pendingCredentials.current;
 
-        await useUserBindStore
-          .getState()
-          .bind(
-            username,
-            msg.name,
-            password,
-            msg.cardId,
-            msg.college,
-            msg.eduLevel,
-          );
+        try {
+          await useUserBindStore
+            .getState()
+            .bind(
+              username,
+              msg.name,
+              password,
+              msg.cardId,
+              msg.college,
+              msg.eduLevel,
+            );
+        } catch (error) {
+          reportError(error, { module: "bind" });
+          if (!screenActive.current) return;
+          flowFinished.current = false;
+          handleFailure(t("user.bindSaveFailed"));
+          return;
+        }
+        if (!screenActive.current) return;
+        preserveSession.current = true;
 
         Toast.show({
           type: "success",
