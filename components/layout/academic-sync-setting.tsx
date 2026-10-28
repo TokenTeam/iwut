@@ -1,5 +1,5 @@
-import { Host, Switch as NativeSwitch } from "@expo/ui";
 import { useMemo, useState } from "react";
+import { Switch } from "react-native";
 import Toast from "react-native-toast-message";
 
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
@@ -79,13 +79,11 @@ export function AcademicSyncSetting({
         }
         showArrow={false}
         right={
-          <Host matchContents style={{ minWidth: 52, minHeight: 32 }}>
-            <NativeSwitch
-              value={enabled}
-              onValueChange={handleChange}
-              testID="auto-refresh-courses"
-            />
-          </Host>
+          <Switch
+            value={enabled}
+            onValueChange={handleChange}
+            testID="auto-refresh-courses"
+          />
         }
       />
       <ConfirmSheet
