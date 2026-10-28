@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Linking,
   Pressable,
+  ScrollView,
   Switch,
   Text,
   useWindowDimensions,
@@ -15,6 +16,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
+import { AcademicSyncSetting } from "@/components/layout/academic-sync-setting";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { IWUT_WEB_URL } from "@/constants/api";
@@ -484,7 +486,7 @@ function SetupScreen({
         paddingTop: insets.top + 32,
       }}
     >
-      <View style={{ flex: 1 }}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         <View style={{ paddingHorizontal: 8 }}>
           <Text
             style={{
@@ -570,6 +572,7 @@ function SetupScreen({
           </MenuGroup>
 
           <MenuGroup title={t("onboarding.optionsSection")}>
+            <AcademicSyncSetting />
             <MenuItem
               icon="notifications-active"
               iconBg="#FF9500"
@@ -608,7 +611,7 @@ function SetupScreen({
             />
           </MenuGroup>
         </View>
-      </View>
+      </ScrollView>
 
       <View style={{ marginTop: 28 }}>
         <PrimaryButton

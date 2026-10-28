@@ -1,4 +1,3 @@
-import { Host, Switch as NativeSwitch } from "@expo/ui";
 import { File, Paths } from "expo-file-system";
 import { Stack } from "expo-router";
 import { useMemo, useRef, useState } from "react";
@@ -13,6 +12,7 @@ import {
 } from "react-native";
 import Toast from "react-native-toast-message";
 
+import { AcademicSyncSetting } from "@/components/layout/academic-sync-setting";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -34,7 +34,6 @@ import {
 import { useCourseStore, type Course } from "@/store/course";
 import { useScheduleStore } from "@/store/schedule";
 import { useSettingsStore } from "@/store/settings";
-import { useUserBindStore } from "@/store/user-bind";
 
 interface CourseData {
   courses: Course[];
@@ -134,65 +133,6 @@ export default function CalendarSettingsScreen() {
   const calendarSync = useSettingsStore((s) => s.calendarSync);
   const setCalendarSync = useSettingsStore((s) => s.setCalendarSync);
   const syncedCalendarIds = useSettingsStore((s) => s.syncedCalendarIds);
-  const autoRefreshCourses = useSettingsStore((s) => s.autoRefreshCourses);
-  const lastSyncAt = useCourseStore((s) => s.lastAutoRefreshSuccessAt);
-  const lastSyncDate = useMemo(
-    () =>
-      lastSyncAt !== null && Number.isFinite(lastSyncAt)
-        ? new Intl.DateTimeFormat("zh-CN", {
-            timeZone: "Asia/Shanghai",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-            hourCycle: "h23",
-          }).format(lastSyncAt)
-        : null,
-    [lastSyncAt],
-  );
-  const setAutoRefreshCourses = useSettingsStore(
-    (s) => s.setAutoRefreshCourses,
-  );
-  const [confirmAutoRefreshVisible, setConfirmAutoRefreshVisible] =
-    useState(false);
-  const handleAutoRefreshChange = (
-    value: boolean,
-    conflictConfirmed = false,
-  ) => {
-    const user = useUserBindStore.getState();
-    if (value && !user.isBound) {
-      Toast.show({
-        type: "info",
-        text1: t("course.needBindTitle"),
-        text2: t("course.needBindSub"),
-        position: "bottom",
-      });
-      return;
-    }
-    if (
-      value &&
-      useCourseStore.getState().importOrigin?.studentId !== user.studentId
-    ) {
-      Toast.show({
-        type: "info",
-        text1: t("calendarSet.autoRefreshNeedsImport"),
-        position: "bottom",
-      });
-      return;
-    }
-    if (
-      value &&
-      !conflictConfirmed &&
-      useCourseStore
-        .getState()
-        .courses.some((course) => course.source === "manual")
-    ) {
-      setConfirmAutoRefreshVisible(true);
-      return;
-    }
-    setAutoRefreshCourses(value);
-  };
-
   const [syncing, setSyncing] = useState(false);
   const [courseDataAction, setCourseDataAction] = useState<
     "export" | "import" | null
@@ -429,31 +369,7 @@ export default function CalendarSettingsScreen() {
         </MenuGroup>
 
         <MenuGroup title={t("calendarSet.dataGroup")}>
-          <MenuItem
-            icon="sync"
-            iconBg="#178f8b"
-            label={t("calendarSet.academicSync")}
-            value={
-              autoRefreshCourses
-                ? (lastSyncDate ?? t("calendarSet.neverSynced"))
-                : undefined
-            }
-            onPress={() =>
-              handleAutoRefreshChange(
-                !useSettingsStore.getState().autoRefreshCourses,
-              )
-            }
-            showArrow={false}
-            right={
-              <Host matchContents style={{ minWidth: 52, minHeight: 32 }}>
-                <NativeSwitch
-                  value={autoRefreshCourses}
-                  onValueChange={handleAutoRefreshChange}
-                  testID="auto-refresh-courses"
-                />
-              </Host>
-            }
-          />
+          <AcademicSyncSetting showLastSync />
           <MenuItem
             icon="file-upload"
             iconBg="#FF9500"
@@ -549,17 +465,6 @@ export default function CalendarSettingsScreen() {
           />
         </MenuGroup>
       </ScrollView>
-
-      <ConfirmSheet
-        visible={confirmAutoRefreshVisible}
-        onClose={() => setConfirmAutoRefreshVisible(false)}
-        title={t("calendarSet.academicSync")}
-        description={t("calendarSet.autoRefreshConflictWarning")}
-        onConfirm={() => {
-          setConfirmAutoRefreshVisible(false);
-          handleAutoRefreshChange(true, true);
-        }}
-      />
 
       <ConfirmSheet
         visible={pendingCourseData !== null}
