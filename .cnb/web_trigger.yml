@@ -15,8 +15,8 @@ branch:
                 value: preview
               - name: Production
                 value: production
-          USE_MAVEN_MIRROR:
-            name: Use Tencent Cloud Maven mirror
+          USE_ANDROID_MIRROR:
+            name: Use Android mirror
             type: switch
             default: "false"
             options:

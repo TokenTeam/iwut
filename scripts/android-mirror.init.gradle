@@ -1,0 +1,40 @@
+if (System.getenv("USE_ANDROID_MIRROR") != "true") {
+    return
+}
+
+def mirror = { repositories, boolean plugin = false ->
+    def aliyun = repositories.maven {
+        name = "Aliyun"
+        url = plugin
+            ? "https://maven.aliyun.com/repository/gradle-plugin/"
+            : "https://maven.aliyun.com/repository/public/"
+        content { excludeGroup("com.github.Dimezis") }
+    }
+    def tencent = repositories.maven {
+        name = "Tencent"
+        url = "https://mirrors.cloud.tencent.com/nexus/repository/maven-public/"
+        content { excludeGroup("com.github.Dimezis") }
+    }
+    def prioritize = {
+        repositories.remove(tencent)
+        repositories.remove(aliyun)
+        repositories.addFirst(tencent)
+        repositories.addFirst(aliyun)
+    }
+    prioritize()
+
+    repositories.whenObjectAdded { repository ->
+        if (repository != aliyun && repository != tencent) {
+            prioritize()
+        }
+    }
+}
+
+gradle.beforeSettings { settings ->
+    mirror(settings.pluginManagement.repositories, true)
+    mirror(settings.dependencyResolutionManagement.repositories)
+}
+gradle.beforeProject { project ->
+    mirror(project.buildscript.repositories)
+    mirror(project.repositories)
+}

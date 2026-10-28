@@ -13,7 +13,7 @@
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       },
       "android": {
-        "gradleCommand": ":app:assembleDebug --stacktrace --init-script ../scripts/android-maven.init.gradle"
+        "gradleCommand": ":app:assembleDebug --stacktrace --init-script ../scripts/android-mirror.init.gradle"
       }
     },
     "preview": {
@@ -26,7 +26,7 @@
         "SENTRY_ALLOW_FAILURE": "true"
       },
       "android": {
-        "gradleCommand": ":app:assembleRelease --stacktrace --init-script ../scripts/android-maven.init.gradle"
+        "gradleCommand": ":app:assembleRelease --stacktrace --init-script ../scripts/android-mirror.init.gradle"
       }
     },
     "production": {
@@ -40,7 +40,7 @@
       },
       "android": {
         "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease --stacktrace --init-script ../scripts/android-maven.init.gradle"
+        "gradleCommand": ":app:assembleRelease --stacktrace --init-script ../scripts/android-mirror.init.gradle"
       }
     }
   },
