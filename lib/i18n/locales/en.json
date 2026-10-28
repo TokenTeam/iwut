@@ -368,6 +368,11 @@
   "calendarSet": {
     "title": "Schedule",
     "courseGroup": "Courses",
+    "dataGroup": "Data",
+    "academicSync": "Academic system sync",
+    "neverSynced": "Not synced",
+    "autoRefreshNeedsImport": "Import your timetable once first",
+    "autoRefreshConflictWarning": "Manually added courses may conflict with courses updated by sync, continue?",
     "courseManage": "Manage courses",
     "exportCourses": "Export course data",
     "importCourses": "Import course data",

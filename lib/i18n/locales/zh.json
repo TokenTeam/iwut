@@ -368,6 +368,11 @@
   "calendarSet": {
     "title": "课表设置",
     "courseGroup": "课程",
+    "dataGroup": "数据",
+    "academicSync": "教务系统同步",
+    "neverSynced": "暂未同步",
+    "autoRefreshNeedsImport": "请先手动导入一次课表",
+    "autoRefreshConflictWarning": "已有手动添加的课程，开启同步后可能发生课程冲突，是否继续？",
     "courseManage": "课程管理",
     "exportCourses": "导出课程数据",
     "importCourses": "导入课程数据",

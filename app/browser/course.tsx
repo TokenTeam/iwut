@@ -30,27 +30,21 @@ import {
   WebViewHttpStatusError,
   WebViewLoadError,
 } from "@/lib/webview-error";
+import type { BaseImportType } from "@/services/course-import/auto-refresh";
 import {
-  BACHELOR_HOME_PREFIX,
-  BACHELOR_LOGIN_URL,
-  buildBachelorFetchScript,
-  isBachelorCoursesMessage,
-  normalizeBachelorCoursesMessage,
-} from "@/services/course-import/bachelor-import";
-import {
-  buildMasterFetchScript,
-  isMasterRowsMessage,
-  MASTER_LOGIN_URL,
-  MASTER_MAIN_PREFIX,
-  normalizeMasterRowsMessage,
-} from "@/services/course-import/master-import";
+  buildCourseFetchScript,
+  getCourseImportPage,
+  normalizeCourseImportMessage,
+} from "@/services/course-import/webview-import";
 import { syncWidgetData } from "@/services/widget-sync";
-import { type ImportType, useCourseStore } from "@/store/course";
+import { useCourseStore } from "@/store/course";
 import { useUserBindStore } from "@/store/user-bind";
 
 const log = logger.extend("CourseImport");
 
-function normalizeImportType(type: string | string[] | undefined): ImportType {
+function normalizeImportType(
+  type: string | string[] | undefined,
+): BaseImportType {
   return type === "master" ? "master" : "bachelor";
 }
 
@@ -152,9 +146,11 @@ export default function CourseImportScreen() {
   }));
 
   useEffect(() => {
+    useCourseStore.setState({ manualImportActive: true });
     const currentWebView = webview.current;
     const clearSessionOnExit = shouldClearSessionOnExit.current;
     return () => {
+      useCourseStore.setState({ manualImportActive: false });
       if (injectTimer.current) clearTimeout(injectTimer.current);
       currentWebView?.clearCache(true);
       if (!finished.current) {
@@ -243,19 +239,11 @@ export default function CourseImportScreen() {
         }, 1500);
       };
 
-      if (importType === "bachelor" && url.startsWith(BACHELOR_HOME_PREFIX)) {
+      if (url.startsWith(getCourseImportPage(importType).homePrefix)) {
         setShowImportOverlay(true);
-        const script = buildBachelorFetchScript({
+        const script = buildCourseFetchScript(importType, {
           fetchUserFailed: t("course.fetchUserFailed"),
           noTermData: t("course.noTermData"),
-        });
-        scheduleInjection(script);
-      }
-
-      if (importType === "master" && url.startsWith(MASTER_MAIN_PREFIX)) {
-        setShowImportOverlay(true);
-        const script = buildMasterFetchScript({
-          fetchUserFailed: t("course.fetchUserFailed"),
         });
         scheduleInjection(script);
       }
@@ -293,33 +281,25 @@ export default function CourseImportScreen() {
         return;
       }
 
-      if (isMasterRowsMessage(msg)) {
-        const { courses, term, termStart } = normalizeMasterRowsMessage(msg);
+      const result = normalizeCourseImportMessage(importType, msg);
+      if (result) {
+        const { courses, termStart } = result;
 
         if (courses.length === 0) {
-          finish(false, t("course.noTermData").replace("{term}", term));
+          finish(
+            false,
+            "term" in result && typeof result.term === "string"
+              ? t("course.noTermData").replace("{term}", result.term)
+              : t("course.parseFailed"),
+          );
           return;
         }
 
         const store = useCourseStore.getState();
-        store.setImportedCourses(courses);
-        if (termStart) store.setTermStart(termStart);
-        syncWidgetData().catch(() => {});
-        finish(true);
-        return;
-      }
-
-      if (isBachelorCoursesMessage(msg)) {
-        const { courses, termStart } = normalizeBachelorCoursesMessage(msg);
-
-        if (courses.length === 0) {
-          finish(false, t("course.parseFailed"));
-          return;
-        }
-
-        const store = useCourseStore.getState();
-        store.setImportedCourses(courses);
-        if (termStart) store.setTermStart(termStart);
+        store.applyImportedCourses(courses, termStart, {
+          type: importType,
+          studentId: useUserBindStore.getState().studentId,
+        });
         syncWidgetData().catch(() => {});
         finish(true);
       }
@@ -327,8 +307,7 @@ export default function CourseImportScreen() {
     [importType, finish, autoLoginOnMessage, t],
   );
 
-  const loginUrl =
-    importType === "bachelor" ? BACHELOR_LOGIN_URL : MASTER_LOGIN_URL;
+  const { loginUrl } = getCourseImportPage(importType);
   const importTypeLabel = t(
     importType === "bachelor" ? "course.bachelor" : "course.master",
   );

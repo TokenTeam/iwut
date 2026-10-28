@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 
 import { dedupeCourses } from "@/lib/course-dedupe";
 import { zustandStorage } from "@/lib/storage";
+import type { CourseImportOrigin } from "@/services/course-import/auto-refresh";
 
 export type ImportType = "bachelor" | "master" | "lab";
 
@@ -27,6 +28,15 @@ export interface Course {
 interface CourseStore {
   courses: Course[];
   termStart: string;
+  importOrigin: CourseImportOrigin | null;
+  lastAutoRefreshSuccessAt: number | null;
+  manualImportActive: boolean;
+  applyImportedCourses: (
+    courses: Course[],
+    termStart: string,
+    origin: CourseImportOrigin,
+  ) => void;
+  clearImportOrigin: () => void;
   setImportedCourses: (courses: Course[]) => void;
   setLabCourses: (courses: Course[]) => void;
   setCourses: (courses: Course[]) => void;
@@ -41,6 +51,28 @@ export const useCourseStore = create<CourseStore>()(
     (set, get) => ({
       courses: [],
       termStart: "",
+      importOrigin: null,
+      lastAutoRefreshSuccessAt: null,
+      manualImportActive: false,
+      applyImportedCourses: (imported, termStart, origin) => {
+        const kept = get().courses.filter(
+          (c) => c.source === "manual" || c.source === "lab",
+        );
+        const tagged = imported.map((c) => ({
+          ...c,
+          source: "imported" as const,
+        }));
+        set({
+          courses: dedupeCourses([...tagged, ...kept]),
+          termStart: termStart || get().termStart,
+          importOrigin: origin,
+        });
+      },
+      clearImportOrigin: () =>
+        set({
+          importOrigin: null,
+          lastAutoRefreshSuccessAt: null,
+        }),
       setImportedCourses: (imported: Course[]) => {
         // 导入普通课程时，保留手动添加的课程和实验课
         const kept = get().courses.filter(
@@ -61,7 +93,16 @@ export const useCourseStore = create<CourseStore>()(
         }));
         set({ courses: dedupeCourses([...kept, ...tagged]) });
       },
-      setCourses: (courses: Course[]) => set({ courses }),
+      setCourses: (courses: Course[]) =>
+        set({
+          courses,
+          ...(courses.length === 0
+            ? {
+                importOrigin: null,
+                lastAutoRefreshSuccessAt: null,
+              }
+            : {}),
+        }),
       setTermStart: (termStart: string) => set({ termStart }),
       addCourse: (course: Course) =>
         set({ courses: [...get().courses, course] }),
@@ -78,6 +119,12 @@ export const useCourseStore = create<CourseStore>()(
     {
       name: "course",
       storage: zustandStorage,
+      partialize: (state) => ({
+        courses: state.courses,
+        termStart: state.termStart,
+        importOrigin: state.importOrigin,
+        lastAutoRefreshSuccessAt: state.lastAutoRefreshSuccessAt,
+      }),
     },
   ),
 );

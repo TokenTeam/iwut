@@ -119,7 +119,13 @@ const INITIAL_SMS: SmsState = {
 
 export function useZhlgdAutoLogin(
   webviewRef: RefObject<WebView | null>,
-  options?: { onCancel?: () => void; onPasswordError?: () => void },
+  options?: {
+    onCancel?: () => void;
+    onPasswordError?: () => void;
+    silent?: boolean;
+    onInteractionRequired?: () => void;
+    onCredentialsUnavailable?: () => void;
+  },
 ) {
   const creds = useRef<{ username: string; password: string } | null>(null);
   const passwordRejected = useRef(false);
@@ -128,6 +134,9 @@ export function useZhlgdAutoLogin(
   const [code, setCode] = useState("");
   const onCancel = options?.onCancel;
   const onPasswordError = options?.onPasswordError;
+  const silent = options?.silent ?? false;
+  const onInteractionRequired = options?.onInteractionRequired;
+  const onCredentialsUnavailable = options?.onCredentialsUnavailable;
 
   const injectAutoLogin = useCallback(() => {
     if (!useUserBindStore.getState().isBound) {
@@ -145,18 +154,24 @@ export function useZhlgdAutoLogin(
     const userBind = useUserBindStore.getState();
     if (!userBind.isBound) return;
 
-    userBind.getCredentials().then((credentials) => {
-      if (!active) return;
-      creds.current = credentials;
-      if (credentials && currentLoginUrl.current) {
-        injectAutoLogin();
-      }
-    });
+    userBind
+      .getCredentials()
+      .then((credentials) => {
+        if (!active) return;
+        creds.current = credentials;
+        if (!credentials) onCredentialsUnavailable?.();
+        if (credentials && currentLoginUrl.current) {
+          injectAutoLogin();
+        }
+      })
+      .catch(() => {
+        if (active) onCredentialsUnavailable?.();
+      });
 
     return () => {
       active = false;
     };
-  }, [injectAutoLogin]);
+  }, [injectAutoLogin, onCredentialsUnavailable]);
 
   const onLoadEnd = useCallback(
     (e: { nativeEvent: { url: string } }) => {
@@ -165,7 +180,7 @@ export function useZhlgdAutoLogin(
         currentLoginUrl.current = "";
         setSms((s) => (s.visible ? INITIAL_SMS : s));
         setCode("");
-        // SPA 式跳转不会重建 JS 上下文，离开登录页后停掉轮询定时器
+        // 单页跳转会保留脚本上下文，离开登录页后停止轮询
         webviewRef.current?.injectJavaScript(
           "window.__zhlgdAuto && window.__zhlgdAuto.stop && window.__zhlgdAuto.stop();true;",
         );
@@ -194,17 +209,27 @@ export function useZhlgdAutoLogin(
         creds.current = null;
         setSms(INITIAL_SMS);
         setCode("");
-        Toast.show({
-          type: "error",
-          text1: t("user.bindPasswordError"),
-          text2: t("user.bindPasswordErrorSub"),
-          position: "bottom",
-        });
+        if (!silent) {
+          Toast.show({
+            type: "error",
+            text1: t("user.bindPasswordError"),
+            text2: t("user.bindPasswordErrorSub"),
+            position: "bottom",
+          });
+        }
         onPasswordError?.();
         return true;
       }
       if (msg.type !== "zhlgd_sms_required") return false;
+      if (!e.nativeEvent.url.includes(LOGIN_URL_PATTERN)) return false;
       if (passwordRejected.current) return true;
+      if (silent) {
+        webviewRef.current?.injectJavaScript(
+          "window.__zhlgdAuto && window.__zhlgdAuto.stop();true;",
+        );
+        onInteractionRequired?.();
+        return true;
+      }
       setSms({
         visible: true,
         phoneTail: msg.phoneTail || "",
@@ -213,7 +238,7 @@ export function useZhlgdAutoLogin(
       setCode("");
       return true;
     },
-    [onPasswordError],
+    [onPasswordError, onInteractionRequired, silent, webviewRef],
   );
 
   const submitSms = useCallback(() => {
