@@ -15,7 +15,7 @@ if ! command -v java &> /dev/null; then
     curl -fsSL "https://get.sdkman.io" | bash
   fi
   . "$SDKMAN_DIR/bin/sdkman-init.sh"
-  sdk install java 21.0.7-tem
+  sdk install java 26.0.2.1+1-tem
   export JAVA_HOME="$SDKMAN_DIR/candidates/java/current"
   export PATH="$JAVA_HOME/bin:$PATH"
 else
@@ -38,9 +38,9 @@ if ! command -v bun &> /dev/null; then
 fi
 
 export ANDROID_HOME="${ANDROID_HOME:-/opt/android-sdk}"
-export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
+export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$HOME/.local/bin:$PATH"
 
-if ! command -v sdkmanager &> /dev/null; then
+if ! command -v android &> /dev/null; then
   PKGS=()
   for cmd in unzip wget; do
     command -v "$cmd" &> /dev/null || PKGS+=("$cmd")
@@ -55,25 +55,24 @@ if ! command -v sdkmanager &> /dev/null; then
   fi
   mkdir -p "$ANDROID_HOME/cmdline-tools"
   wget https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip -O /tmp/tools.zip
-  unzip /tmp/tools.zip -d "$ANDROID_HOME/cmdline-tools"
-  mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+  unzip -o /tmp/tools.zip -d "$ANDROID_HOME/cmdline-tools"
+  mkdir -p "$ANDROID_HOME/cmdline-tools/latest"
+  cp -a "$ANDROID_HOME/cmdline-tools/cmdline-tools/." "$ANDROID_HOME/cmdline-tools/latest/"
   rm /tmp/tools.zip
 fi
 
 SDK_PACKAGES=()
 for package in \
   "platform-tools" \
-  "platforms;android-36" \
-  "build-tools;36.0.0" \
-  "ndk;27.1.12297006"; do
-  package_dir=${package//;/\/}
-  if [ ! -f "$ANDROID_HOME/$package_dir/package.xml" ]; then
+  "platforms/android-37.0" \
+  "build-tools/37.0.0" \
+  "ndk/27.1.12297006"; do
+  if [ ! -f "$ANDROID_HOME/$package/package.xml" ]; then
     SDK_PACKAGES+=("$package")
   fi
 done
 if [ "${#SDK_PACKAGES[@]}" -gt 0 ]; then
-  yes | sdkmanager --sdk_root="$ANDROID_HOME" --licenses || true
-  sdkmanager --sdk_root="$ANDROID_HOME" "${SDK_PACKAGES[@]}"
+  android --sdk="$ANDROID_HOME" sdk install "${SDK_PACKAGES[@]}"
 fi
 
 if ! command -v eas &> /dev/null; then
