@@ -1,7 +1,5 @@
 import { execSync } from "child_process";
 import type { ExpoConfig } from "expo/config";
-import { readFileSync } from "fs";
-import { join } from "path";
 
 const PROFILE = process.env.EAS_BUILD_PROFILE;
 const COMMIT = execSync("git rev-parse --short HEAD").toString().trim();
@@ -140,10 +138,6 @@ const config: ExpoConfig = {
           useLegacyPackaging: false,
           enableMinifyInReleaseBuilds: true,
           enableShrinkResourcesInReleaseBuilds: true,
-          extraProguardRules: readFileSync(
-            join(__dirname, "plugins/android-proguard-rules.pro"),
-            "utf8",
-          ),
           usesCleartextTraffic: ALLOW_UNRESTRICTED_HTTP,
         },
       },
