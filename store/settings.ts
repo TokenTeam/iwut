@@ -10,16 +10,17 @@ import { syncWidgetLang } from "@/services/widget-sync";
 interface SettingsStore {
   hapticFeedback: boolean;
   openCourseOnLaunch: boolean;
+  autoRefreshCourses: boolean;
   courseReminder: boolean;
   courseDnd: boolean;
   examReminder: boolean;
   reminderMinutes: number;
   calendarSync: boolean;
-  /** Calendar IDs the user chose to sync courses into. */
   syncedCalendarIds: string[];
   language: Lang;
   setHapticFeedback: (value: boolean) => void;
   setOpenCourseOnLaunch: (value: boolean) => void;
+  setAutoRefreshCourses: (value: boolean) => void;
   setCourseReminder: (value: boolean) => void;
   setCourseDnd: (value: boolean) => void;
   setExamReminder: (value: boolean) => void;
@@ -34,6 +35,7 @@ export const useSettingsStore = create<SettingsStore>()(
     (set) => ({
       hapticFeedback: true,
       openCourseOnLaunch: false,
+      autoRefreshCourses: false,
       courseReminder: false,
       courseDnd: false,
       examReminder: false,
@@ -44,6 +46,8 @@ export const useSettingsStore = create<SettingsStore>()(
       setHapticFeedback: (value: boolean) => set({ hapticFeedback: value }),
       setOpenCourseOnLaunch: (value: boolean) =>
         set({ openCourseOnLaunch: value }),
+      setAutoRefreshCourses: (value: boolean) =>
+        set({ autoRefreshCourses: value }),
       setCourseReminder: (value: boolean) => set({ courseReminder: value }),
       setCourseDnd: (value: boolean) => set({ courseDnd: value }),
       setExamReminder: (value: boolean) => set({ examReminder: value }),
@@ -52,25 +56,15 @@ export const useSettingsStore = create<SettingsStore>()(
       setSyncedCalendarIds: (ids: string[]) => set({ syncedCalendarIds: ids }),
       setLanguage: (value: Lang) => {
         set({ language: value });
-        // Sync OS-level locale first so the App display name (launcher icon
-        // label) and system permission dialogs follow the in-app choice.
-        // "system" clears the override and falls back to the device language.
         const tag = value === "zh" ? "zh-Hans" : value === "en" ? "en" : null;
         void setApplicationLocales(tag).catch(() => {
-          // Native module unavailable in some environments (e.g. Expo Go);
-          // RN-side translations still work, the native surfaces just stay
-          // on the previous OS locale.
+          // 原生模块不可用时，仍更新应用内翻译
         });
-        // Resolve and notify RN-side listeners. `setLang("system")` reads the
-        // device-level locale via the native module, so it does not depend on
-        // the async `setApplicationLocales` call above having completed.
         setLang(value);
-        // Push the resolved language to native widgets and refresh them so
-        // their text matches the new language immediately.
         void syncWidgetLang()
           .then(() => reloadWidgets())
           .catch(() => {
-            // Widget module may not be available in every build target.
+            // 部分构建不包含小组件模块
           });
       },
     }),
@@ -80,10 +74,7 @@ export const useSettingsStore = create<SettingsStore>()(
       onRehydrateStorage: () => (state) => {
         if (state?.language) {
           setLang(state.language);
-          // Re-apply the OS-level override on every cold start so the launcher
-          // label / permission dialogs stay aligned with the user's in-app
-          // choice (Android persists per-app locales itself, but iOS reads
-          // AppleLanguages from UserDefaults which we manage here).
+          // 冷启动时恢复应用语言覆盖
           const tag =
             state.language === "zh"
               ? "zh-Hans"

@@ -1,9 +1,10 @@
-import * as SecureStore from "expo-secure-store";
 import CookieManager from "@preeternal/react-native-cookie-manager";
+import * as SecureStore from "expo-secure-store";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { zustandStorage } from "@/lib/storage";
+import { useCourseStore } from "@/store/course";
 
 interface UserBindStore {
   isBound: boolean;
@@ -45,7 +46,7 @@ export const useUserBindStore = create<UserBindStore>()(
         college,
         eduLevel,
       ) => {
-        // 先确保密码写入成功，再更新绑定状态，避免读到 isBound 但无凭据
+        // 密码写入成功后再标记绑定
         await SecureStore.setItemAsync("zhlgd_password", password);
         set({
           isBound: true,
@@ -58,6 +59,7 @@ export const useUserBindStore = create<UserBindStore>()(
       },
 
       unbind: async () => {
+        useCourseStore.getState().clearImportOrigin();
         await SecureStore.deleteItemAsync("zhlgd_password");
         await CookieManager.clearAll(true);
         set({

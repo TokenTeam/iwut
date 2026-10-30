@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import Toast from "react-native-toast-message";
 
+import { AcademicSyncSetting } from "@/components/layout/academic-sync-setting";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -132,7 +133,6 @@ export default function CalendarSettingsScreen() {
   const calendarSync = useSettingsStore((s) => s.calendarSync);
   const setCalendarSync = useSettingsStore((s) => s.setCalendarSync);
   const syncedCalendarIds = useSettingsStore((s) => s.syncedCalendarIds);
-
   const [syncing, setSyncing] = useState(false);
   const [courseDataAction, setCourseDataAction] = useState<
     "export" | "import" | null
@@ -366,6 +366,10 @@ export default function CalendarSettingsScreen() {
             }
             href="/settings/course/manage"
           />
+        </MenuGroup>
+
+        <MenuGroup title={t("calendarSet.dataGroup")}>
+          <AcademicSyncSetting showLastSync />
           <MenuItem
             icon="file-upload"
             iconBg="#FF9500"

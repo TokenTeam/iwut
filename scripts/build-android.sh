@@ -57,7 +57,7 @@ if ! command -v android &> /dev/null; then
   wget https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip -O /tmp/tools.zip
   unzip -o /tmp/tools.zip -d "$ANDROID_HOME/cmdline-tools"
   mkdir -p "$ANDROID_HOME/cmdline-tools/latest"
-  cp -a "$ANDROID_HOME/cmdline-tools/cmdline-tools/." "$ANDROID_HOME/cmdline-tools/latest/"
+  cp -R "$ANDROID_HOME/cmdline-tools/cmdline-tools/." "$ANDROID_HOME/cmdline-tools/latest/"
   rm /tmp/tools.zip
 fi
 

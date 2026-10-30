@@ -73,6 +73,7 @@ import {
 import Toast from "react-native-toast-message";
 
 import { AppBlurTargetProvider } from "@/components/ui/app-blur-target";
+import { CourseAutoRefresh } from "@/components/layout/course-auto-refresh";
 import { UpdateModal } from "@/components/ui/update-modal";
 import { Colors, Themes } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -296,30 +297,39 @@ function RootLayout() {
           }}
           onLayout={onLayoutRootView}
         >
-          <ThemeProvider
-            value={Themes[colorScheme === "dark" ? "dark" : "default"]}
+          <CourseAutoRefresh />
+          <View
+            style={{
+              flex: 1,
+              backgroundColor:
+                Colors[colorScheme === "dark" ? "dark" : "light"].background,
+            }}
           >
-            <Stack
-              screenOptions={{
-                headerBackButtonDisplayMode: "minimal",
-              }}
+            <ThemeProvider
+              value={Themes[colorScheme === "dark" ? "dark" : "default"]}
             >
-              <Stack.Screen
-                name="onboarding"
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="(tabs)"
-                options={{
-                  headerShown: false,
-                  contentStyle: { backgroundColor: "transparent" },
+              <Stack
+                screenOptions={{
+                  headerBackButtonDisplayMode: "minimal",
                 }}
-              />
-            </Stack>
-            <StatusBar style="auto" />
-            <Toast />
-            <UpdateModal />
-          </ThemeProvider>
+              >
+                <Stack.Screen
+                  name="onboarding"
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                  name="(tabs)"
+                  options={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: "transparent" },
+                  }}
+                />
+              </Stack>
+              <StatusBar style="auto" />
+              <Toast />
+              <UpdateModal />
+            </ThemeProvider>
+          </View>
         </View>
       </AppBlurTargetProvider>
     </SafeAreaProvider>

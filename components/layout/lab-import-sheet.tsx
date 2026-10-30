@@ -34,10 +34,6 @@ interface Props {
   onClose: () => void;
 }
 
-/**
- * 实验课程导入弹层。实验教学系统账号密码与智慧理工大一致，
- * 用户只需输入图片验证码。
- */
 export function LabImportSheet({ visible, onClose }: Props) {
   const t = useT();
   const [submitting, setSubmitting] = useState(false);
@@ -48,7 +44,6 @@ export function LabImportSheet({ visible, onClose }: Props) {
       onClose={submitting ? () => {} : onClose}
       title={t("course.labImportTitle")}
     >
-      {/* 关闭时卸载内容，重新打开时回到初始状态 */}
       {visible && (
         <LabImportBody
           onClose={onClose}
@@ -102,9 +97,11 @@ function LabImportBody({
   };
 
   useEffect(() => {
+    useCourseStore.setState({ manualImportActive: true });
     closedRef.current = false;
     loadCaptcha();
     return () => {
+      useCourseStore.setState({ manualImportActive: false });
       closedRef.current = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -165,7 +162,7 @@ function LabImportBody({
       });
       onClose();
     } catch (e) {
-      // 验证码错误时刷新验证码让用户重试，不关闭弹层
+      // 验证码错误时保留弹层，刷新后重试
       if (e instanceof LabApiError && e.code === 400) {
         Toast.show({
           type: "error",
