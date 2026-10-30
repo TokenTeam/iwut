@@ -295,7 +295,7 @@ const INJECTED_JS = `(function(){
           diagnostic('studentInfo','invalid-response',undefined,reason,stu);
         }
         if(giveUp){
-          // 只使用本轮已验证的身份，解析失败时不保留半份附加资料。
+          // 资料异常时只保留已验证的身份
           finish('info',{name:name,studentId:sn,cardId:'',college:'',eduLevel:''});
           return;
         }
@@ -396,13 +396,13 @@ export default function BindScreen() {
     };
   }, []);
 
-  const handleFailure = (message = t("user.bindFailedSub")) => {
+  const handleFailure = () => {
     if (flowFinished.current) return;
     flowFinished.current = true;
     Toast.show({
       type: "error",
       text1: t("user.bindFailed"),
-      text2: message,
+      text2: t("user.bindFailedSub"),
       position: "bottom",
     });
     if (router.canGoBack()) router.back();
@@ -487,16 +487,8 @@ export default function BindScreen() {
         useOnboardingStore.getState().reset();
         Toast.show({
           type: "info",
-          text1: t(
-            msg.identityUnavailable === true
-              ? "user.bindIdentityUnavailable"
-              : "user.bindProfileUnavailable",
-          ),
-          text2: t(
-            msg.identityUnavailable === true
-              ? "user.bindIdentityUnavailableSub"
-              : "user.bindProfileUnavailableSub",
-          ),
+          text1: t("user.bindProfileUnavailable"),
+          text2: t("user.bindProfileUnavailableSub"),
           position: "bottom",
         });
         router.replace({
@@ -508,10 +500,12 @@ export default function BindScreen() {
           reportError(new Error("Bind credentials unavailable"), {
             module: "bind",
           });
-          handleFailure(t("user.bindCredentialsUnavailable"));
+          handleFailure();
           return;
         }
         flowFinished.current = true;
+        // 保存完成前保留会话，避免页面卸载时提前清除 Cookie
+        preserveSession.current = true;
         const { username, password } = pendingCredentials.current;
 
         try {
@@ -527,13 +521,16 @@ export default function BindScreen() {
             );
         } catch (error) {
           reportError(error, { module: "bind" });
-          if (!screenActive.current) return;
+          if (!screenActive.current) {
+            CookieManager.clearAll(true).catch(() => {});
+            return;
+          }
+          preserveSession.current = false;
           flowFinished.current = false;
-          handleFailure(t("user.bindSaveFailed"));
+          handleFailure();
           return;
         }
         if (!screenActive.current) return;
-        preserveSession.current = true;
 
         Toast.show({
           type: "success",
