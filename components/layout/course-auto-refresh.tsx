@@ -24,6 +24,15 @@ import { useUserBindStore } from "@/store/user-bind";
 const log = logger.extend("CourseAutoRefresh");
 const TIMEOUT_MS = 45000;
 
+function describeUrl(value: string): string {
+  try {
+    const url = new URL(value);
+    return `${url.hostname}${url.pathname}`;
+  } catch {
+    return "invalid-url";
+  }
+}
+
 interface RefreshRun {
   startedAt: number;
   origin: CourseImportOrigin;
@@ -41,6 +50,7 @@ export function CourseAutoRefresh() {
   const [appState, setAppState] = useState(AppState.currentState);
   const [run, setRun] = useState<RefreshRun | null>(null);
   const attemptedThisOpen = useRef(false);
+  const route = segments.join("/");
   const allowed =
     Platform.OS !== "web" &&
     enabled &&
@@ -79,9 +89,32 @@ export function CourseAutoRefresh() {
         !store.importOrigin
       ) {
         log.debug("skip auto refresh", {
+          reason:
+            AppState.currentState !== "active"
+              ? "app-not-active"
+              : attemptedThisOpen.current
+                ? "already-attempted-this-open"
+                : store.manualImportActive
+                  ? "manual-import-active"
+                  : !store.termStart
+                    ? "missing-term-start"
+                    : !eligible
+                      ? "not-eligible"
+                      : !store.importOrigin
+                        ? "missing-import-origin"
+                        : "unknown",
           eligible,
           attemptedThisOpen: attemptedThisOpen.current,
           hasTermStart: !!store.termStart,
+          appState: AppState.currentState,
+          route,
+          enabled: useSettingsStore.getState().autoRefreshCourses,
+          isBound: user.isBound,
+          studentIdPresent: !!user.studentId,
+          manualImportActive: store.manualImportActive,
+          originMatchesStudent:
+            store.importOrigin?.studentId === user.studentId,
+          hasImportOrigin: !!store.importOrigin,
         });
         return;
       }
@@ -95,7 +128,7 @@ export function CourseAutoRefresh() {
       });
     }, 0);
     return () => clearTimeout(timer);
-  }, [allowed, origin, studentId]);
+  }, [allowed, origin, route, studentId]);
 
   const finish = useCallback(() => setRun(null), []);
   if (
@@ -123,6 +156,12 @@ function RefreshWebView({
   const currentUrl = useRef("");
   const stage = useRef<"login" | "course" | "fetch">("login");
   const page = getCourseImportPage(run.origin.type);
+  const segments = useSegments();
+  const route = segments.join("/");
+  const routeRef = useRef(route);
+  useEffect(() => {
+    routeRef.current = route;
+  }, [route]);
   const finish = useCallback(
     (reason: string, details?: Record<string, string | number | boolean>) => {
       if (finished.current) return;
@@ -134,6 +173,10 @@ function RefreshWebView({
         type: run.origin.type,
         elapsedMs: Date.now() - run.startedAt,
         stage: stage.current,
+        route: routeRef.current,
+        appState: AppState.currentState,
+        enabled: useSettingsStore.getState().autoRefreshCourses,
+        manualImportActive: useCourseStore.getState().manualImportActive,
         ...details,
       });
       onFinish();
@@ -169,6 +212,10 @@ function RefreshWebView({
           type: run.origin.type,
           stage: stage.current,
           elapsedMs: Date.now() - run.startedAt,
+          route: routeRef.current,
+          appState: AppState.currentState,
+          enabled: useSettingsStore.getState().autoRefreshCourses,
+          manualImportActive: useCourseStore.getState().manualImportActive,
         });
       }
     };
@@ -188,6 +235,11 @@ function RefreshWebView({
           return;
         injected.current = true;
         stage.current = "fetch";
+        log.info("fetch script injected", {
+          type: run.origin.type,
+          url: describeUrl(url),
+          elapsedMs: Date.now() - run.startedAt,
+        });
         webview.current?.injectJavaScript(
           buildCourseFetchScript(run.origin.type, {
             fetchUserFailed: t("course.fetchUserFailed"),
@@ -196,7 +248,7 @@ function RefreshWebView({
         );
       }, 1500);
     },
-    [autoLoginOnLoadEnd, page.homePrefix, run.origin.type],
+    [autoLoginOnLoadEnd, page.homePrefix, run.origin.type, run.startedAt],
   );
 
   const onMessage = useCallback(
@@ -208,7 +260,45 @@ function RefreshWebView({
       } catch {
         return;
       }
-      if (!event.nativeEvent.url.startsWith(page.homePrefix)) return;
+      if (
+        typeof message === "object" &&
+        message !== null &&
+        "type" in message &&
+        message.type === "debug"
+      ) {
+        const detail =
+          "message" in message && typeof message.message === "string"
+            ? message.message
+            : "";
+        const phase = detail.startsWith("script started")
+          ? "script-started"
+          : detail === "changeAppRole ok"
+            ? "role-changed"
+            : detail.startsWith("user=") || detail.startsWith("master user=")
+              ? "current-user-loaded"
+              : detail.startsWith("parsed ")
+                ? "courses-parsed"
+                : "response-received";
+        log.debug("script progress", { phase });
+        return;
+      }
+      let messageHost = "";
+      let expectedHost = "";
+      try {
+        messageHost = new URL(event.nativeEvent.url).hostname;
+        expectedHost = new URL(page.homePrefix).hostname;
+      } catch {}
+      if (!messageHost || messageHost !== expectedHost) {
+        log.warn("message ignored outside course page", {
+          url: describeUrl(event.nativeEvent.url),
+          expectedHost,
+          type:
+            typeof message === "object" && message !== null && "type" in message
+              ? String(message.type)
+              : "unknown",
+        });
+        return;
+      }
       if (
         typeof message === "object" &&
         message !== null &&
@@ -218,7 +308,15 @@ function RefreshWebView({
         finish(
           "script-error",
           "code" in message && typeof message.code === "string"
-            ? { code: message.code }
+            ? {
+                code: message.code,
+                ...("message" in message && typeof message.message === "string"
+                  ? { message: message.message }
+                  : {}),
+                ...("name" in message && typeof message.name === "string"
+                  ? { name: message.name }
+                  : {}),
+              }
             : undefined,
         );
         return;
@@ -243,7 +341,20 @@ function RefreshWebView({
           incomingCourses: result.courses,
         })
       ) {
+        const discardReasons = [
+          AppState.currentState !== "active" && "app-not-active",
+          !useSettingsStore.getState().autoRefreshCourses && "disabled",
+          !user.isBound && "not-bound",
+          user.studentId !== run.origin.studentId && "student-changed",
+          store.importOrigin !== run.origin && "import-origin-changed",
+          store.manualImportActive && "manual-import-active",
+          store.courses !== run.courses && "courses-changed",
+          store.termStart !== run.termStart && "term-start-changed",
+          result.termStart !== run.termStart && "incoming-term-mismatch",
+          result.courses.length === 0 && "empty-result",
+        ].filter((reason): reason is string => !!reason);
         finish("result-discarded", {
+          discardReasons: discardReasons.join(",") || "unknown",
           count: result.courses.length,
           termMatches: result.termStart === run.termStart,
           coursesChanged: store.courses !== run.courses,
@@ -289,7 +400,10 @@ function RefreshWebView({
         }}
         onMessage={onMessage}
         onError={(event) => {
-          finish("load-error", { code: event.nativeEvent.code });
+          finish("load-error", {
+            code: event.nativeEvent.code,
+            description: event.nativeEvent.description,
+          });
         }}
         onHttpError={(event) => {
           finish("http-error", {
