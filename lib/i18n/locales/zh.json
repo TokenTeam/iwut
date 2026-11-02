@@ -1,5 +1,6 @@
 {
   "common": {
+    "openSettingsFailed": "无法打开系统设置",
     "confirm": "确认",
     "cancel": "取消",
     "ok": "确定",
@@ -576,7 +577,8 @@
     "shortcutGroup": "快捷入口",
     "addShortcut": "添加桌面快捷方式",
     "shortcutRequested": "已请求添加桌面快捷方式",
-    "shortcutUnsupported": "当前设备不支持桌面快捷方式",
+    "shortcutSettings": "桌面快捷方式设置",
+    "shortcutSettingsDesc": "如果未出现快捷方式，请在应用设置中检查“桌面快捷方式”或相关权限，允许后重试。不同系统的设置位置可能不同，当前桌面也可能不支持添加快捷方式。",
     "errNotCampus": "非校园网环境，请连接校园网后重试",
     "errNetwork": "网络连接异常，请检查网络连接并重试"
   },
@@ -650,17 +652,20 @@
     "externalOpenFailedSub": "没有可处理 {scheme} 的应用"
   },
   "notif": {
+    "exactAlarmTitle": "需要闹钟和提醒权限",
+    "exactAlarmDesc": "请在系统设置中允许“闹钟和提醒”，然后重新开启课程或考试提醒。",
     "scheduleFailed": "创建失败，请检查系统权限后重试",
     "channelName": "课程提醒",
     "channelDesc": "在课程开始前显示倒计时通知",
     "examChannelName": "考试提醒",
     "examChannelDesc": "在考试前一天晚上和考前一小时提醒",
-    "permissionDeniedTitle": "无法开启课前提醒",
-    "permissionDeniedDesc": "通知权限已关闭，请在系统设置中允许通知后再开启课前提醒。",
+    "permissionDeniedTitle": "无法开启提醒",
+    "permissionDeniedDesc": "通知权限已关闭，请在系统设置中允许通知后再开启课程或考试提醒。",
     "permissionDeniedCancel": "稍后再说",
     "permissionDeniedOpenSettings": "去设置"
   },
   "calSync": {
+    "permissionDeniedDesc": "请在系统设置中允许访问日历，然后重试同步或移除日历数据。",
     "title": "掌上吾理-我的课表",
     "teacherNotes": "教师: {teacher}",
     "errNoPermission": "没有日历访问权限",

@@ -14,7 +14,7 @@ import {
 import { useCallback, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
-  Linking,
+  AppState,
   Pressable,
   Text,
   View,
@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useT } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
+import { openPermissionSettings } from "@/lib/permission-settings";
 import { reportError } from "@/lib/report";
 
 const log = logger.extend("Scan");
@@ -44,7 +45,7 @@ export default function ScanRoute() {
 function ScanScreen() {
   const t = useT();
   const insets = useSafeAreaInsets();
-  const [permission, requestPermission] = useCameraPermissions();
+  const [permission, requestPermission, getPermission] = useCameraPermissions();
   const focused = useIsFocused();
 
   useEffect(() => {
@@ -54,6 +55,17 @@ function ScanScreen() {
       });
     }
   }, [permission, requestPermission]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        void getPermission().catch((error) => {
+          reportError(error, { module: "scan", stage: "refresh-permission" });
+        });
+      }
+    });
+    return () => subscription.remove();
+  }, [getPermission]);
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
@@ -228,7 +240,7 @@ function PermissionState({
         className="mt-6 rounded-full bg-white px-5 py-3 active:bg-neutral-200"
         onPress={() => {
           if (denied && !canAskAgain) {
-            Linking.openSettings().catch(() => {});
+            void openPermissionSettings();
             return;
           }
           onRequest();

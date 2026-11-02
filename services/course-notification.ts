@@ -11,6 +11,7 @@ import {
   cancelScheduled,
   clearExpiredLiveActivities,
   createChannel,
+  getCourseDndStatus,
   requestAuthorization,
   scheduleCountdown,
   scheduleNotification,
@@ -64,6 +65,17 @@ export async function ensureCourseNotificationPermission(): Promise<boolean> {
   }
 
   return true;
+}
+
+export async function getCourseNotificationPermissionIssue(): Promise<
+  "notification" | "exact-alarm" | null
+> {
+  if (!(await ensureCourseNotificationPermission())) return "notification";
+  if (Platform.OS === "android" && Number(Platform.Version) >= 31) {
+    const status = await getCourseDndStatus();
+    if (!status.exactAlarmAccess) return "exact-alarm";
+  }
+  return null;
 }
 
 function hashReminderId(input: string): number {

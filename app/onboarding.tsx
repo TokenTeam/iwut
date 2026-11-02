@@ -17,8 +17,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
 import { AcademicSyncSetting } from "@/components/layout/academic-sync-setting";
-import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
+import { PermissionSettingsSheet } from "@/components/ui/permission-settings-sheet";
 import { IWUT_WEB_URL } from "@/constants/api";
 import { IS_DEV } from "@/constants/is-dev";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -31,7 +31,7 @@ import {
   syncCoursesToCalendar,
 } from "@/services/calendar-sync";
 import {
-  ensureCourseNotificationPermission,
+  getCourseNotificationPermissionIssue,
   registerBackgroundRefresh,
   scheduleWeeklyReminders,
 } from "@/services/course-notification";
@@ -73,7 +73,9 @@ export default function OnboardingScreen() {
   );
   const [acceptedLegal, setAcceptedLegal] = useState(false);
   const [notificationBusy, setNotificationBusy] = useState(false);
-  const [permissionSheetVisible, setPermissionSheetVisible] = useState(false);
+  const [permissionIssue, setPermissionIssue] = useState<
+    "calendar" | "notification" | "exact-alarm" | null
+  >(null);
   const [calendarBusy, setCalendarBusy] = useState(false);
   const finishStarted = useRef(false);
 
@@ -104,9 +106,9 @@ export default function OnboardingScreen() {
     setNotificationBusy(true);
     try {
       if (value) {
-        const granted = await ensureCourseNotificationPermission();
-        if (!granted) {
-          setPermissionSheetVisible(true);
+        const issue = await getCourseNotificationPermissionIssue();
+        if (issue) {
+          setPermissionIssue(issue);
           return;
         }
       }
@@ -132,6 +134,8 @@ export default function OnboardingScreen() {
         const result = await deleteAppCalendar();
         if (result.success) {
           setCalendarSync(false);
+        } else if (result.permissionDenied) {
+          setPermissionIssue("calendar");
         } else {
           Toast.show({
             type: "error",
@@ -171,6 +175,8 @@ export default function OnboardingScreen() {
             : t("calendarSet.syncedSub", { n: result.count }),
         position: "bottom",
       });
+    } else if (result.permissionDenied) {
+      setPermissionIssue("calendar");
     } else {
       Toast.show({
         type: "error",
@@ -202,11 +208,6 @@ export default function OnboardingScreen() {
       .finally(complete);
   };
 
-  const handleOpenNotificationSettings = () => {
-    setPermissionSheetVisible(false);
-    Linking.openSettings().catch(() => {});
-  };
-
   if (step === "account") {
     return (
       <AccountWelcome
@@ -236,14 +237,9 @@ export default function OnboardingScreen() {
         onImport={handleImport}
         onReminderToggle={handleReminderToggle}
       />
-      <ConfirmSheet
-        visible={permissionSheetVisible}
-        onClose={() => setPermissionSheetVisible(false)}
-        title={t("notif.permissionDeniedTitle")}
-        description={t("notif.permissionDeniedDesc")}
-        confirmText={t("notif.permissionDeniedOpenSettings")}
-        cancelText={t("notif.permissionDeniedCancel")}
-        onConfirm={handleOpenNotificationSettings}
+      <PermissionSettingsSheet
+        target={permissionIssue}
+        onClose={() => setPermissionIssue(null)}
       />
     </>
   );

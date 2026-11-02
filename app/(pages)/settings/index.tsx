@@ -5,7 +5,6 @@ import { Stack, useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -22,20 +21,19 @@ import { WebView } from "react-native-webview";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
+import { PermissionSettingsSheet } from "@/components/ui/permission-settings-sheet";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { buildCourseDndIntervals } from "@/lib/course-dnd";
 import { useT } from "@/lib/i18n";
+import { openPermissionSettings } from "@/lib/permission-settings";
 import { reportError } from "@/lib/report";
 import { shareFileAsync } from "@/lib/sharing";
 import { collectDiagnostics, formatDiagnostics } from "@/modules/diagnostics";
-import {
-  getCourseDndStatus,
-  openCourseDndSettings,
-} from "@/modules/notification";
+import { getCourseDndStatus } from "@/modules/notification";
 import { setCourseDndEnabled } from "@/services/course-dnd";
 import {
-  ensureCourseNotificationPermission,
+  getCourseNotificationPermissionIssue,
   registerBackgroundRefresh,
   scheduleWeeklyReminders,
   unregisterBackgroundRefresh,
@@ -101,7 +99,9 @@ export default function SettingsScreen() {
   const [exporting, setExporting] = useState(false);
   const exportingRef = useRef(false);
   const [reminderSheetVisible, setReminderSheetVisible] = useState(false);
-  const [permissionSheetVisible, setPermissionSheetVisible] = useState(false);
+  const [permissionIssue, setPermissionIssue] = useState<
+    "notification" | "exact-alarm" | null
+  >(null);
   const [customMinutes, setCustomMinutes] = useState("");
   const customInputRef = useRef<TextInputInstance>(null);
 
@@ -140,16 +140,7 @@ export default function SettingsScreen() {
 
   const handleCourseDndSettings = async (exactAlarm: boolean) => {
     setCourseDndSheet(null);
-    try {
-      await openCourseDndSettings(exactAlarm);
-    } catch (error) {
-      reportError(error, { module: "course-dnd", action: "open-settings" });
-      Toast.show({
-        type: "error",
-        text1: t("settings.courseDndFailed"),
-        position: "bottom",
-      });
-    }
+    await openPermissionSettings(exactAlarm ? "exact-alarm" : "policy");
   };
 
   const [cacheWebViewMounted, setCacheWebViewMounted] = useState(false);
@@ -204,9 +195,9 @@ export default function SettingsScreen() {
   const handleCourseReminderChange = async (value: boolean) => {
     try {
       if (value) {
-        const granted = await ensureCourseNotificationPermission();
-        if (!granted) {
-          setPermissionSheetVisible(true);
+        const issue = await getCourseNotificationPermissionIssue();
+        if (issue) {
+          setPermissionIssue(issue);
           return;
         }
       }
@@ -222,9 +213,9 @@ export default function SettingsScreen() {
   const handleExamReminderChange = async (value: boolean) => {
     try {
       if (value) {
-        const granted = await ensureCourseNotificationPermission();
-        if (!granted) {
-          setPermissionSheetVisible(true);
+        const issue = await getCourseNotificationPermissionIssue();
+        if (issue) {
+          setPermissionIssue(issue);
           return;
         }
       }
@@ -354,11 +345,6 @@ export default function SettingsScreen() {
       exportingRef.current = false;
       setExporting(false);
     }
-  };
-
-  const handleOpenNotificationSettings = () => {
-    setPermissionSheetVisible(false);
-    Linking.openSettings().catch(() => {});
   };
 
   return (
@@ -540,14 +526,9 @@ export default function SettingsScreen() {
         onConfirm={handleClearCache}
       />
 
-      <ConfirmSheet
-        visible={permissionSheetVisible}
-        onClose={() => setPermissionSheetVisible(false)}
-        title={t("notif.permissionDeniedTitle")}
-        description={t("notif.permissionDeniedDesc")}
-        confirmText={t("notif.permissionDeniedOpenSettings")}
-        cancelText={t("notif.permissionDeniedCancel")}
-        onConfirm={handleOpenNotificationSettings}
+      <PermissionSettingsSheet
+        target={permissionIssue}
+        onClose={() => setPermissionIssue(null)}
       />
 
       <BottomSheet

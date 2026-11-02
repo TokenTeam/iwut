@@ -17,6 +17,7 @@ import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
+import { PermissionSettingsSheet } from "@/components/ui/permission-settings-sheet";
 import { BUILTIN_PALETTE_NAME_KEYS } from "@/constants/course-palettes";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { MAX_SECTION, MAX_WEEK } from "@/lib/course-weeks";
@@ -150,6 +151,7 @@ export default function CalendarSettingsScreen() {
   );
   const [confirmRemoveVisible, setConfirmRemoveVisible] = useState(false);
   const [pendingOn, setPendingOn] = useState(false);
+  const [permissionDenied, setPermissionDenied] = useState(false);
   const displaySwitchOn = calendarSync || pickerVisible || pendingOn;
   const localCalendarSelected = selectedCalendarIds.has(APP_LOCAL_CALENDAR_ID);
   const externalCalendarSelected = [...selectedCalendarIds].some(
@@ -253,6 +255,8 @@ export default function CalendarSettingsScreen() {
           text1: t("calendarSet.syncRemoved"),
           position: "bottom",
         });
+      } else if (result.permissionDenied) {
+        setPermissionDenied(true);
       } else {
         showSyncError(result.error);
       }
@@ -280,6 +284,8 @@ export default function CalendarSettingsScreen() {
               : t("calendarSet.syncedSub", { n: result.count }),
           position: "bottom",
         });
+      } else if (result.permissionDenied) {
+        setPermissionDenied(true);
       } else {
         showSyncError(result.error);
       }
@@ -311,7 +317,7 @@ export default function CalendarSettingsScreen() {
     try {
       const hasPerm = await requestCalendarPermission();
       if (!hasPerm) {
-        showSyncError(t("calSync.errNoPermission"));
+        setPermissionDenied(true);
         return;
       }
 
@@ -465,6 +471,11 @@ export default function CalendarSettingsScreen() {
           />
         </MenuGroup>
       </ScrollView>
+
+      <PermissionSettingsSheet
+        target={permissionDenied ? "calendar" : null}
+        onClose={() => setPermissionDenied(false)}
+      />
 
       <ConfirmSheet
         visible={pendingCourseData !== null}

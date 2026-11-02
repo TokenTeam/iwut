@@ -21,7 +21,7 @@ import { SECTION_TIMES } from "@/services/course-time";
 import { type Course, useCourseStore } from "@/store/course";
 import { useSettingsStore } from "@/store/settings";
 
-// iOS 仅按持久化 ID 识别应用日历，避免误删用户创建的同名日历。
+// iOS 按存储的 ID 识别日历，避免误删同名日历
 const CALENDAR_IDS_STORAGE_KEY = "calendar-sync.calendarId";
 
 function getStoredCalendarIds(): string[] {
@@ -45,7 +45,6 @@ function setStoredCalendarIds(ids: string[]): void {
   }
 }
 
-// 外部日历中的事件只能按创建时记录的 ID 删除。
 const SYNCED_EVENT_IDS_KEY = "calendar-sync.eventIds";
 const LEGACY_EVENT_IDS_KEY = "__legacy__";
 type StoredEventIds = Record<string, string[]>;
@@ -96,7 +95,7 @@ function setStoredEventIds(idsByCalendar: StoredEventIds): void {
 
 const CALENDAR_COLOR = "#007AFF";
 const ANDROID_CALENDAR_READY_DELAY_MS = 200;
-// 部分 Android 日历 Provider 会拒绝非 ASCII 账户名。
+// 部分 Android 日历 Provider 会拒绝非 ASCII 账户名
 const APP_ACCOUNT_NAME = "iwut.tokenteam.dev";
 const CALENDAR_INTERNAL_NAME = "iwut_schedule";
 
@@ -223,6 +222,7 @@ export async function getWritableCalendars(): Promise<CalendarInfo[]> {
 const calendarQueue = createTaskQueue();
 
 interface SyncResult {
+  permissionDenied?: boolean;
   success: boolean;
   count: number;
   failed: number;
@@ -272,11 +272,12 @@ async function doSyncCoursesToCalendar(
       count: 0,
       failed: 0,
       error: t("calSync.errNoPermission"),
+      permissionDenied: true,
     };
   }
 
   const reminderMinutes = useSettingsStore.getState().reminderMinutes;
-  // Android 使用正数分钟，iOS 使用相对开始时间的负偏移。
+  // Android 用正值，iOS 用负值
   const reminderOffset =
     Platform.OS === "android" ? reminderMinutes : -reminderMinutes;
 
@@ -285,7 +286,6 @@ async function doSyncCoursesToCalendar(
     requestedIds.size === 0 || requestedIds.has(APP_LOCAL_CALENDAR_ID);
   requestedIds.delete(APP_LOCAL_CALENDAR_ID);
 
-  // 新事件成功写入前保留旧数据，避免同步失败后丢失已有日程。
   const calendars = await getCalendars(EntityTypes.EVENT);
   const staleAppCalendars = calendars.filter(isAppCalendar);
   const oldAppCalendarIds = getStoredCalendarIds();
@@ -357,12 +357,12 @@ async function doSyncCoursesToCalendar(
     };
   }
 
-  const writeResults: Array<{
+  const writeResults: {
     calendar: ExpoCalendar;
     createdIds: string[];
     createdCount: number;
     complete: boolean;
-  }> = [];
+  }[] = [];
   let reported = false;
 
   for (const calendar of targets) {
@@ -494,7 +494,6 @@ function createEventForCourse(
   const endTime = course.endTime || SECTION_TIMES[course.sectionEnd]?.[1];
   if (!startTime || !endTime) return null;
 
-  // 每个课程时段只创建一个按周重复事件，减少云日历写入量。
   const startMs = getTermClassTimeMs(
     termStart,
     course.weekStart,
@@ -525,6 +524,7 @@ function createEventForCourse(
   };
 
   if (occurrence > 1) {
+    // 按周重复以减少云日历写入量
     event.recurrenceRule = {
       frequency: Frequency.WEEKLY,
       interval: 1,
@@ -566,6 +566,7 @@ function isEventNotFoundError(error: unknown): boolean {
 interface RemoveSyncResult {
   success: boolean;
   error?: string;
+  permissionDenied?: boolean;
 }
 
 async function doRemoveSyncedCalendarData(
@@ -574,7 +575,11 @@ async function doRemoveSyncedCalendarData(
   try {
     const hasPermission = await requestCalendarPermission();
     if (!hasPermission) {
-      return { success: false, error: t("calSync.errNoPermission") };
+      return {
+        success: false,
+        error: t("calSync.errNoPermission"),
+        permissionDenied: true,
+      };
     }
 
     const appCalendars = await findAppCalendars();

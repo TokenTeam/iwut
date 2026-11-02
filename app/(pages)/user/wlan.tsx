@@ -27,6 +27,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
 import { useT } from "@/lib/i18n";
+import { openPermissionSettings } from "@/lib/permission-settings";
 import { reportError } from "@/lib/report";
 import { login, requestPinnedShortcut } from "@/modules/wlan";
 import { useWlanStore } from "@/store/wlan";
@@ -55,6 +56,7 @@ export default function WlanScreen() {
 
   const [sheetVisible, setSheetVisible] = useState(false);
   const [clearVisible, setClearVisible] = useState(false);
+  const [shortcutSettingsVisible, setShortcutSettingsVisible] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const connectionProgress = useSharedValue(0);
   const spinnerRotation = useSharedValue(0);
@@ -202,20 +204,18 @@ export default function WlanScreen() {
   const handleAddShortcut = async () => {
     try {
       const requested = await requestPinnedShortcut();
+      if (!requested) {
+        setShortcutSettingsVisible(true);
+        return;
+      }
       Toast.show({
-        type: requested ? "success" : "error",
-        text1: t(
-          requested ? "wlan.shortcutRequested" : "wlan.shortcutUnsupported",
-        ),
+        type: "info",
+        text1: t("wlan.shortcutRequested"),
         position: "bottom",
       });
     } catch (error) {
       reportError(error, { module: "wlan-shortcut" });
-      Toast.show({
-        type: "error",
-        text1: t("wlan.shortcutUnsupported"),
-        position: "bottom",
-      });
+      setShortcutSettingsVisible(true);
     }
   };
 
@@ -298,6 +298,12 @@ export default function WlanScreen() {
               iconBg="#007AFF"
               label={t("wlan.addShortcut")}
               onPress={handleAddShortcut}
+            />
+            <MenuItem
+              icon="settings"
+              iconBg="#8E8E93"
+              label={t("wlan.shortcutSettings")}
+              onPress={() => setShortcutSettingsVisible(true)}
             />
           </MenuGroup>
         )}
@@ -385,6 +391,18 @@ export default function WlanScreen() {
           </Pressable>
         </View>
       </BottomSheet>
+
+      <ConfirmSheet
+        visible={shortcutSettingsVisible}
+        onClose={() => setShortcutSettingsVisible(false)}
+        title={t("wlan.shortcutSettings")}
+        description={t("wlan.shortcutSettingsDesc")}
+        confirmText={t("notif.permissionDeniedOpenSettings")}
+        onConfirm={() => {
+          setShortcutSettingsVisible(false);
+          void openPermissionSettings();
+        }}
+      />
 
       <ConfirmSheet
         visible={clearVisible}
