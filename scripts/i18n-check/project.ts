@@ -1,9 +1,11 @@
+import { file as bunFile, Glob } from "bun";
 import fs from "node:fs";
 import path from "node:path";
-import { file as bunFile, Glob } from "bun";
 import ts from "typescript";
 
-export const BASE_LOCALE = "zh";
+import { BASE_LOCALE } from "../../lib/i18n/languages";
+
+export { BASE_LOCALE };
 export const LOCALES_PATH = "lib/i18n/locales";
 
 const CHECKER_DIRECTORY = import.meta.dir;

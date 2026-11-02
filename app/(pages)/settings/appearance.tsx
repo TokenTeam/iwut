@@ -16,7 +16,7 @@ import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
-import { type Lang, useT } from "@/lib/i18n";
+import { type Lang, languages, supportedLanguages, useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
 import { useScheduleStore } from "@/store/schedule";
 import { useSettingsStore } from "@/store/settings";
@@ -180,15 +180,17 @@ export default function AppearanceScreen() {
       icon: "brightness-auto",
       label: t("appearance.langSystem"),
     },
-    { lang: "zh", icon: "translate", label: t("appearance.langZh") },
-    { lang: "en", icon: "translate", label: t("appearance.langEn") },
+    ...supportedLanguages.map((lang) => ({
+      lang,
+      icon: "translate",
+      label: t(languages[lang].labelKey),
+    })),
   ];
 
-  const langLabelMap: Record<Lang, string> = {
-    system: t("appearance.langSystem"),
-    zh: t("appearance.langZh"),
-    en: t("appearance.langEn"),
-  };
+  const languageLabel =
+    language === "system"
+      ? t("appearance.langSystem")
+      : t(languages[language].labelKey);
 
   return (
     <>
@@ -224,7 +226,7 @@ export default function AppearanceScreen() {
             icon="translate"
             iconBg="#0d9488"
             label={t("appearance.language")}
-            value={langLabelMap[language]}
+            value={languageLabel}
             onPress={() => setShowLangPicker(true)}
           />
         </MenuGroup>

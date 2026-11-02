@@ -3,7 +3,7 @@ import * as Updates from "expo-updates";
 import { Platform } from "react-native";
 
 import { CONFIG_REPO_CDN } from "@/constants/api";
-import type { ResolvedLang } from "@/lib/i18n";
+import { BASE_LOCALE, type ResolvedLang } from "@/lib/i18n/languages";
 import { isInRollout, type Rollout } from "@/lib/update-rollout";
 import { compareVersions } from "@/lib/version";
 
@@ -111,7 +111,7 @@ function parseLocalizedString(raw: unknown): LocalizedString | null {
     for (const [k, v] of Object.entries(raw)) {
       if (typeof v === "string" && v.length > 0) out[k] = v;
     }
-    if (typeof out.zh !== "string") return null;
+    if (typeof out[BASE_LOCALE] !== "string") return null;
     return out;
   }
   return null;
@@ -133,7 +133,7 @@ function parseLocalizedStringArray(raw: unknown): LocalizedStringArray | null {
       );
       if (list.length > 0) out[k] = list;
     }
-    if (!Array.isArray(out.zh)) return null;
+    if (!Array.isArray(out[BASE_LOCALE])) return null;
     return out;
   }
   return null;
@@ -472,7 +472,7 @@ export function resolveLocalizedString(
   if (typeof v === "string") return v;
   const exact = v[lang];
   if (typeof exact === "string" && exact.length > 0) return exact;
-  const fallback = v.zh;
+  const fallback = v[BASE_LOCALE];
   return typeof fallback === "string" && fallback.length > 0 ? fallback : null;
 }
 
@@ -484,7 +484,7 @@ export function resolveLocalizedStringArray(
   if (Array.isArray(v)) return v;
   const exact = v[lang];
   if (Array.isArray(exact)) return exact;
-  const fallback = v.zh;
+  const fallback = v[BASE_LOCALE];
   return Array.isArray(fallback) ? fallback : [];
 }
 

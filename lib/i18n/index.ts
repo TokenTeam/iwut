@@ -3,65 +3,38 @@ import { useCallback, useSyncExternalStore } from "react";
 
 import { getSystemLanguageTag } from "@/modules/locale";
 
-import enJson from "./locales/en.json";
-import zhJson from "./locales/zh.json";
+import {
+  BASE_LOCALE,
+  languages,
+  resolveLanguageTag,
+  SYSTEM_LOCALE_READ_FALLBACK,
+  type Lang,
+  type ResolvedLang,
+  type TKey,
+} from "./languages";
 
-export type Lang = "zh" | "en" | "system";
-export type ResolvedLang = "zh" | "en";
-
-type WidenStrings<T> = T extends string
-  ? string
-  : T extends readonly (infer U)[]
-    ? readonly WidenStrings<U>[]
-    : T extends object
-      ? { [K in keyof T]: WidenStrings<T[K]> }
-      : T;
-
-export type Dict = WidenStrings<typeof zhJson>;
-
-// Compile-time check: en must structurally match zh.
-const _enCheck: Dict = enJson;
-void _enCheck;
-
-type Leaves<T, P extends string = ""> = T extends string
-  ? P extends `${infer Head}.`
-    ? Head
-    : never
-  : T extends object
-    ? {
-        [K in keyof T & string]: Leaves<T[K], `${P}${K}.`>;
-      }[keyof T & string]
-    : never;
-
-export type TKey = Leaves<Dict>;
+export * from "./languages";
 export type Translator = (
   key: TKey,
   vars?: Record<string, string | number>,
 ) => string;
 
-const dicts: Record<ResolvedLang, Dict> = {
-  zh: zhJson as Dict,
-  en: enJson,
-};
-
 function resolveSystem(): ResolvedLang {
-  // Prefer the native module which reads the *device-level* locale via
-  // `Resources.getSystem()` / CFPreferences global domain. This bypasses our
-  // own per-app override and is the only way to correctly resolve "follow
-  // system" right after switching away from an explicit language.
+  // 绕过应用语言覆盖，读取设备语言
   try {
     const nativeTag = getSystemLanguageTag();
     if (nativeTag) {
-      return nativeTag.toLowerCase().startsWith("zh") ? "zh" : "en";
+      return resolveLanguageTag(nativeTag);
     }
   } catch {
-    // Fall through to the expo-localization based path below.
+    // 回退到 expo-localization
   }
   try {
-    const code = getLocales().at(0)?.languageCode ?? "zh";
-    return code === "zh" ? "zh" : "en";
+    const locale = getLocales().at(0);
+    const tag = locale?.languageTag ?? locale?.languageCode;
+    return tag ? resolveLanguageTag(tag) : SYSTEM_LOCALE_READ_FALLBACK;
   } catch {
-    return "zh";
+    return SYSTEM_LOCALE_READ_FALLBACK;
   }
 }
 
@@ -141,9 +114,11 @@ function translateWithLang(
   key: TKey,
   vars?: Record<string, string | number>,
 ): string {
-  const dict = dicts[lang];
+  const dict = languages[lang].messages;
   const raw =
-    getByPath(dict, key) ?? getByPath(dicts.zh, key) ?? (key as string);
+    getByPath(dict, key) ??
+    getByPath(languages[BASE_LOCALE].messages, key) ??
+    (key as string);
   return interpolate(raw, vars);
 }
 
@@ -151,7 +126,6 @@ export function t(key: TKey, vars?: Record<string, string | number>): string {
   return translateWithLang(currentResolved, key, vars);
 }
 
-/** 订阅当前已解析语言 */
 export function useResolvedLang(): ResolvedLang {
   return useSyncExternalStore(
     subscribe,
@@ -160,10 +134,6 @@ export function useResolvedLang(): ResolvedLang {
   );
 }
 
-/**
- * 返回绑定到当前语言的 translator。
- * 同一语言下引用稳定，语言变化时引用同步变化，兼顾 React Compiler 与 memo。
- */
 export function useT(): Translator {
   const lang = useResolvedLang();
   return useCallback<Translator>(

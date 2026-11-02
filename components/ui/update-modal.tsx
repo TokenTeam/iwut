@@ -19,7 +19,12 @@ import { useAppBlurProps } from "@/components/ui/app-blur-target";
 import { MorphingIcon } from "@/components/ui/morphing-icon";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
-import { getResolvedLang, useT } from "@/lib/i18n";
+import {
+  languages,
+  useResolvedLang,
+  useT,
+  type ResolvedLang,
+} from "@/lib/i18n";
 import {
   resolveLocalizedString,
   resolveLocalizedStringArray,
@@ -47,24 +52,18 @@ function buildFallbackAndroidUrl(version: string, channel: string): string {
 
 function formatReleasedAt(
   iso: string | null,
-  lang: "zh" | "en",
+  lang: ResolvedLang,
 ): string | null {
   if (!iso) return null;
   const t = Date.parse(iso);
   if (!Number.isFinite(t)) return null;
   const d = new Date(t);
-  return lang === "zh"
-    ? `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`
-    : d.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
+  return languages[lang].formatDate(d);
 }
 
 export function UpdateModal() {
   const t = useT();
-  const lang = getResolvedLang();
+  const lang = useResolvedLang();
   const haptic = useHaptics();
   const isDark = useColorScheme() === "dark";
   const blurProps = useAppBlurProps();

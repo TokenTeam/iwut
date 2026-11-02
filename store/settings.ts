@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import { type Lang, setLang } from "@/lib/i18n";
+import { getNativeLanguageTag, isLang, type Lang, setLang } from "@/lib/i18n";
 import { zustandStorage } from "@/lib/storage";
 import { setApplicationLocales } from "@/modules/locale";
 import { reloadWidgets } from "@/modules/widget";
@@ -56,7 +56,7 @@ export const useSettingsStore = create<SettingsStore>()(
       setSyncedCalendarIds: (ids: string[]) => set({ syncedCalendarIds: ids }),
       setLanguage: (value: Lang) => {
         set({ language: value });
-        const tag = value === "zh" ? "zh-Hans" : value === "en" ? "en" : null;
+        const tag = getNativeLanguageTag(value);
         void setApplicationLocales(tag).catch(() => {
           // 原生模块不可用时，仍更新应用内翻译
         });
@@ -72,15 +72,9 @@ export const useSettingsStore = create<SettingsStore>()(
       name: "settings",
       storage: zustandStorage,
       onRehydrateStorage: () => (state) => {
-        if (state?.language) {
+        if (state && isLang(state.language)) {
           setLang(state.language);
-          // 冷启动时恢复应用语言覆盖
-          const tag =
-            state.language === "zh"
-              ? "zh-Hans"
-              : state.language === "en"
-                ? "en"
-                : null;
+          const tag = getNativeLanguageTag(state.language);
           void setApplicationLocales(tag).catch(() => {});
         }
       },
