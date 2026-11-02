@@ -193,20 +193,12 @@ class NotificationModule : Module() {
         for (id in ids) {
             cancelScheduledAlarm(context, id)
         }
-        cancelLegacySequentialAlarms(context)
         clearTrackedIds(context)
-    }
-
-    private fun cancelLegacySequentialAlarms(context: Context) {
-        for (id in 0 until LEGACY_SEQUENTIAL_ID_LIMIT) {
-            cancelScheduledAlarm(context, id)
-        }
     }
 
     companion object {
         private const val PREFS_NAME = "notification_ids"
         private const val KEY_IDS = "scheduled_ids"
-        private const val LEGACY_SEQUENTIAL_ID_LIMIT = 1024
 
         fun trackScheduledId(context: Context, id: Int) {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

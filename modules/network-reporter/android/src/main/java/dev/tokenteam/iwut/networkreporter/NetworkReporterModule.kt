@@ -4,15 +4,11 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
-import android.os.Build
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
 object NetworkReporter {
     fun reportWifiConnectivity(context: Context, hasConnectivity: Boolean): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            return false
-        }
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE)
             as? ConnectivityManager ?: return false
         val wifiNetwork = connectivityManager.allNetworks.firstOrNull { network ->
@@ -26,9 +22,6 @@ object NetworkReporter {
     }
 
     fun reportConnectivity(context: Context, network: Network, hasConnectivity: Boolean): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            return false
-        }
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE)
             as? ConnectivityManager ?: return false
 

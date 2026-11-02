@@ -11,9 +11,7 @@ public class WidgetModule: Module {
         }
 
         AsyncFunction("reloadWidgets") {
-            if #available(iOS 14.0, *) {
-                WidgetCenter.shared.reloadAllTimelines()
-            }
+            WidgetCenter.shared.reloadAllTimelines()
         }
     }
 }

@@ -42,11 +42,7 @@ public class NotificationModule: Module {
         AsyncFunction("showCountdown") { (id: Int, _: String, title: String, body: String, targetTimeMs: Double, _: Bool, _: Bool) in
             let targetDate = Date(timeIntervalSince1970: targetTimeMs / 1000.0)
 
-            if #available(iOS 16.2, *) {
-                try await self.startOrUpdateLiveActivity(id: id, title: title, body: body, targetDate: targetDate)
-            } else {
-                try await self.showLocalNotification(id: id, title: title, body: body, triggerDate: nil)
-            }
+            try await self.startOrUpdateLiveActivity(id: id, title: title, body: body, targetDate: targetDate)
         }
 
         AsyncFunction("scheduleCountdown") { (id: Int, _: String, title: String, body: String, triggerAtMs: Double, targetTimeMs: Double, _: Bool, _: Bool) in
@@ -63,16 +59,12 @@ public class NotificationModule: Module {
         }
 
         AsyncFunction("cancel") { (id: Int) in
-            if #available(iOS 16.2, *) {
-                await self.endLiveActivity(id: id)
-            }
+            await self.endLiveActivity(id: id)
             self.cancelLocalNotification(id: id)
         }
 
         AsyncFunction("cancelAll") { () in
-            if #available(iOS 16.2, *) {
-                await self.endAllLiveActivities()
-            }
+            await self.endAllLiveActivities()
             await self.cancelAllLocalNotifications()
         }
 
@@ -81,17 +73,14 @@ public class NotificationModule: Module {
         }
 
         AsyncFunction("clearExpiredLiveActivities") { () in
-            if #available(iOS 16.2, *) {
-                let now = Date.now
-                for activity in Activity<CountdownActivityAttributes>.activities where activity.content.state.targetTime <= now {
-                    await activity.end(nil, dismissalPolicy: .immediate)
-                    self.removeActivityMapping(activityId: activity.id)
-                }
+            let now = Date.now
+            for activity in Activity<CountdownActivityAttributes>.activities where activity.content.state.targetTime <= now {
+                await activity.end(nil, dismissalPolicy: .immediate)
+                self.removeActivityMapping(activityId: activity.id)
             }
         }
     }
 
-    @available(iOS 16.2, *)
     private func startOrUpdateLiveActivity(id: Int, title: String, body: String, targetDate: Date) async throws {
         guard targetDate > Date.now else {
             await self.endLiveActivity(id: id)
@@ -123,7 +112,6 @@ public class NotificationModule: Module {
         self.saveActivityMapping(id: id, activityId: activity.id)
     }
 
-    @available(iOS 16.2, *)
     private func loadLiveActivity(for id: Int) -> Activity<CountdownActivityAttributes>? {
         guard let activityId = self.loadActivityId(for: id) else { return nil }
 
@@ -135,7 +123,6 @@ public class NotificationModule: Module {
         return nil
     }
 
-    @available(iOS 16.2, *)
     private func endLiveActivity(id: Int) async {
         guard let activityId = self.loadActivityId(for: id) else { return }
 
@@ -145,7 +132,6 @@ public class NotificationModule: Module {
         self.removeActivityMapping(id: id)
     }
 
-    @available(iOS 16.2, *)
     private func endAllLiveActivities() async {
         for activity in Activity<CountdownActivityAttributes>.activities {
             await activity.end(nil, dismissalPolicy: .immediate)
@@ -153,20 +139,15 @@ public class NotificationModule: Module {
         self.clearAllActivityMappings()
     }
 
-    private func showLocalNotification(id: Int, title: String, body: String, triggerDate: Date?) async throws {
+    private func showLocalNotification(id: Int, title: String, body: String, triggerDate: Date) async throws {
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
         content.sound = .default
 
-        let trigger: UNNotificationTrigger?
-        if let triggerDate = triggerDate {
-            let interval = triggerDate.timeIntervalSinceNow
-            guard interval > 0 else { return }
-            trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
-        } else {
-            trigger = nil
-        }
+        let interval = triggerDate.timeIntervalSinceNow
+        guard interval > 0 else { return }
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
 
         let identifier = "notification_\(id)"
         let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)

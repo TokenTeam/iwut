@@ -25,31 +25,6 @@ export const DEFAULT_SCHEDULE_VISUAL: ScheduleVisualSettings = {
 
 const SCHEDULE_PERSIST_VERSION = 1;
 
-function clampUnit(value: number): number {
-  return Math.max(0, Math.min(1, value));
-}
-
-function migrateScheduleState(persistedState: unknown, version: number) {
-  if (
-    version >= SCHEDULE_PERSIST_VERSION ||
-    typeof persistedState !== "object" ||
-    persistedState === null
-  ) {
-    return persistedState;
-  }
-
-  const state = persistedState as Partial<ScheduleStore>;
-  const oldLocatorOpacity =
-    typeof state.locatorCellOpacity === "number"
-      ? state.locatorCellOpacity
-      : DEFAULT_SCHEDULE_VISUAL.locatorCellOpacity;
-
-  return {
-    ...state,
-    locatorCellOpacity: clampUnit(oldLocatorOpacity / 0.08),
-  };
-}
-
 interface ScheduleStore {
   scrollWeekend: boolean;
   showMiddaySections: boolean;
@@ -138,7 +113,6 @@ export const useScheduleStore = create<ScheduleStore>()(
       name: "schedule",
       storage: zustandStorage,
       version: SCHEDULE_PERSIST_VERSION,
-      migrate: migrateScheduleState,
     },
   ),
 );

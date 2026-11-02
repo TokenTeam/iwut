@@ -1,5 +1,5 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Directory, File, Paths } from "expo-file-system";
+import { File, Paths } from "expo-file-system";
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
@@ -39,7 +39,6 @@ import {
   unregisterBackgroundRefresh,
 } from "@/services/course-notification";
 import { useCourseStore } from "@/store/course";
-import { useScheduleStore } from "@/store/schedule";
 import { useSettingsStore } from "@/store/settings";
 import { useTelemetryStore } from "@/store/telemetry";
 
@@ -263,21 +262,6 @@ export default function SettingsScreen() {
       await FileLogger.deleteLogFiles();
       await Image.clearDiskCache();
       await clearWebViewCache();
-
-      const docDir = new Directory(Paths.document);
-      const currentBgUri = useScheduleStore.getState().backgroundImageUri;
-      for (const entry of docDir.listAsRecords()) {
-        if (
-          !entry.isDirectory &&
-          entry.uri.includes("schedule-bg-") &&
-          entry.uri.endsWith(".jpg")
-        ) {
-          const file = new File(entry.uri);
-          if (file.uri !== currentBgUri) {
-            file.delete();
-          }
-        }
-      }
 
       const { createMMKV } = await import("react-native-mmkv");
       createMMKV({ id: "rpc_apps" }).clearAll();

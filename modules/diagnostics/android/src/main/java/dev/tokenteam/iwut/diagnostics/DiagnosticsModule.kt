@@ -52,7 +52,7 @@ class DiagnosticsModule : Module() {
             "heightPixels" to metrics.heightPixels,
             "density" to metrics.density,
             "densityDpi" to metrics.densityDpi,
-            "stableDensityDpi" to stableDensityDpi(metrics),
+            "stableDensityDpi" to DisplayMetrics.DENSITY_DEVICE_STABLE,
             "scaledDensity" to metrics.scaledDensity,
             "fontScale" to configuration.fontScale,
             "screenWidthDp" to configuration.screenWidthDp,
@@ -133,13 +133,6 @@ class DiagnosticsModule : Module() {
             mapOf("widthDp" to size.width, "heightDp" to size.height)
         }
     }
-
-    private fun stableDensityDpi(metrics: DisplayMetrics): Int =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            DisplayMetrics.DENSITY_DEVICE_STABLE
-        } else {
-            metrics.densityDpi
-        }
 
     @Suppress("DEPRECATION")
     private fun resolveActivity(packageManager: PackageManager, intent: Intent) =

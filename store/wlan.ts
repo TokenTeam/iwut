@@ -1,4 +1,3 @@
-import * as SecureStore from "expo-secure-store";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -26,13 +25,11 @@ export const useWlanStore = create<WlanStore>()(
 
       save: async (username, password) => {
         await saveCredentials(username, password);
-        await SecureStore.deleteItemAsync("wlan_password");
         set({ username, hasSaved: true });
       },
 
       clear: async () => {
         await clearCredentials();
-        await SecureStore.deleteItemAsync("wlan_password");
         set({ username: "", hasSaved: false });
       },
 
@@ -45,12 +42,7 @@ export const useWlanStore = create<WlanStore>()(
           }
           return;
         }
-        if (!hasSaved || !username) return;
-
-        const legacyPassword = await SecureStore.getItemAsync("wlan_password");
-        if (!legacyPassword) return;
-        await saveCredentials(username, legacyPassword);
-        await SecureStore.deleteItemAsync("wlan_password");
+        if (hasSaved || username) set({ username: "", hasSaved: false });
       },
     }),
     {

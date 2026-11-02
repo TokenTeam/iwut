@@ -42,7 +42,6 @@ object CourseDndScheduler {
 
     @Synchronized
     fun update(context: Context, enabled: Boolean, intervalsJson: String, name: String) {
-        if (Build.VERSION.SDK_INT < 24) return
         // Parse before replacing the persisted schedule.
         val intervals = JSONArray(intervalsJson)
         for (index in 0 until intervals.length()) {
@@ -90,7 +89,6 @@ object CourseDndScheduler {
     /** Re-evaluate from the clock, so delayed alarms and clock changes cannot toggle stale state. */
     @Synchronized
     fun refresh(context: Context) {
-        if (Build.VERSION.SDK_INT < 24) return
         val alarmManager = alarms(context)
         val pending = pendingIntent(context)
         alarmManager.cancel(pending)
