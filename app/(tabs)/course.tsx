@@ -43,6 +43,7 @@ import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
+import { useMinuteNow } from "@/hooks/use-minute-now";
 import { MAX_WEEK } from "@/lib/course-weeks";
 import { getCurrentDayOfWeek, getCurrentWeek, isVacation } from "@/lib/date";
 import { useT } from "@/lib/i18n";
@@ -157,6 +158,7 @@ function TabContent({
 }
 
 export default function CourseScreen() {
+  useMinuteNow();
   const [scheduleReady, setScheduleReady] = useState(false);
   const handleScheduleReady = useCallback(() => {
     setScheduleReady(true);
@@ -178,6 +180,11 @@ export default function CourseScreen() {
   const hasBgImage = useScheduleStore((s) => !!s.backgroundImageUri);
   const currentWeek = getCurrentWeek(termStart);
   const [week, setWeek] = useState<number>(() => currentWeek);
+  const [previousCurrentWeek, setPreviousCurrentWeek] = useState(currentWeek);
+  if (currentWeek !== previousCurrentWeek) {
+    setPreviousCurrentWeek(currentWeek);
+    if (week === previousCurrentWeek) setWeek(currentWeek);
+  }
   const today = getCurrentDayOfWeek();
   const haptic = useHaptics();
   const [showWeekPicker, setShowWeekPicker] = useState(false);

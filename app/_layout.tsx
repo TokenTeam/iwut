@@ -1,4 +1,3 @@
-import "@/lib/logger";
 import * as Sentry from "@sentry/react-native";
 
 import { SENTRY_DSN } from "@/constants/api";
@@ -72,13 +71,14 @@ import {
 } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
-import { AppBlurTargetProvider } from "@/components/ui/app-blur-target";
 import { CourseAutoRefresh } from "@/components/layout/course-auto-refresh";
+import { AppBlurTargetProvider } from "@/components/ui/app-blur-target";
 import { UpdateModal } from "@/components/ui/update-modal";
 import { Colors, Themes } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useStartup } from "@/hooks/use-startup";
 import { refreshSystemLocale, t } from "@/lib/i18n";
+import { logger } from "@/lib/logger";
 import { reportError } from "@/lib/report";
 import {
   clearSyncedCalendarData,
@@ -227,17 +227,20 @@ function RootLayout() {
   }, []);
 
   useEffect(() => {
+    let previousState = AppState.currentState;
     const sub = AppState.addEventListener("change", (state) => {
-      if (state !== "active") return;
+      logger.debug("AppState changed", { from: previousState, to: state });
+      const resumed = previousState !== "active" && state === "active";
+      previousState = state;
+      if (!resumed) return;
       if (Platform.OS === "ios") {
         showUpcomingLiveActivity().catch(() => {});
       }
-      // 返回前台时重新读取系统语言
       if (Platform.OS === "android") {
         refreshSystemLocale();
       }
-      useAnnouncementStore.getState().fetch();
-      useUpdateStore.getState().check();
+      void useAnnouncementStore.getState().fetch();
+      void useUpdateStore.getState().check();
     });
     return () => sub.remove();
   }, []);
