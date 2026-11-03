@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { type Href, router } from "expo-router";
-import { useState } from "react";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -21,108 +21,22 @@ import { IS_DEV } from "@/constants/is-dev";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
-import { type TKey, useT } from "@/lib/i18n";
+import {
+  filterSections,
+  isFunctionVisible,
+  type WebApp,
+} from "@/lib/functions";
+import {
+  canOpenApp,
+  subscribeFunctionUser,
+  useFunctionUser,
+} from "@/lib/functions/user";
+import { useT } from "@/lib/i18n";
 import { useScheduleStore } from "@/store/schedule";
-import { useUserBindStore } from "@/store/user-bind";
-
-type WebApp = {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
-  labelKey: TKey;
-  color: string;
-  route?: Href;
-  uri?: string;
-  lan?: boolean;
-};
-
-type Section = {
-  titleKey: TKey;
-  items: WebApp[];
-};
-
-const SECTIONS: Section[] = [
-  {
-    titleKey: "fn.section.study",
-    items: [
-      {
-        icon: "bar-chart-outline",
-        labelKey: "fn.app.grade",
-        color: "#8b5cf6",
-        route: "/grade",
-      },
-      {
-        icon: "calendar-clear-outline",
-        labelKey: "fn.app.exam",
-        color: "#3b82f6",
-        route: "/exam",
-      },
-      {
-        icon: "book-outline",
-        labelKey: "fn.app.classroom",
-        color: "#0d9488",
-        uri: "https://classroom-iwut.tokenteam.net",
-        lan: false,
-      },
-      {
-        icon: "easel-outline",
-        labelKey: "fn.app.icSpace",
-        color: "#06b6d4",
-        uri: "https://zhlgd.whut.edu.cn/tpass/login?service=https%3A%2F%2Fzw.whut.edu.cn%2Frem%2Fstatic%2Fsso%2FwebOAuthRed",
-        lan: true,
-      },
-      {
-        icon: "library-outline",
-        labelKey: "fn.app.library",
-        color: "#3b82f6",
-        uri: "https://library-info-iwut.tokenteam.net",
-        lan: true,
-      },
-    ],
-  },
-  {
-    titleKey: "fn.section.life",
-    items: [
-      {
-        icon: "card-outline",
-        labelKey: "fn.app.card",
-        color: "#10b981",
-        uri: "https://cardcare-iwut.tokenteam.net",
-        lan: false,
-      },
-      {
-        icon: "flash-outline",
-        labelKey: "fn.app.elec",
-        color: "#eab308",
-        uri: "https://zhlgd.whut.edu.cn/tpass/login?service=http://nyyzf.whut.edu.cn/MobileWebOnlineHall/#/",
-        lan: false,
-      },
-      {
-        icon: "wifi-outline",
-        labelKey: "fn.app.netPay",
-        color: "#2563eb",
-        uri: "https://zhlgd.whut.edu.cn/tpass/login?service=http://cwsf.whut.edu.cn/netdetails515N023",
-        lan: false,
-      },
-    ],
-  },
-  {
-    titleKey: "fn.section.info",
-    items: [
-      {
-        icon: "newspaper-outline",
-        labelKey: "fn.app.campusNews",
-        color: "#f97316",
-        uri: "http://i.whut.edu.cn",
-        lan: true,
-      },
-    ],
-  },
-];
 
 function openWeb(uri: string) {
   router.push({ pathname: "/browser", params: { uri } });
 }
-
-const blockPress = () => {};
 
 export default function FunctionScreen() {
   useMarkRouteInteractive();
@@ -132,13 +46,36 @@ export default function FunctionScreen() {
   const isDark = colorScheme === "dark";
   const insets = useSafeAreaInsets();
   const hasBgImage = useScheduleStore((s) => !!s.backgroundImageUri);
-  const isBound = useUserBindStore((s) => s.isBound);
+  const user = useFunctionUser();
+  const { isBound } = user;
   const { height } = useWindowDimensions();
   const [showBrowser, setShowBrowser] = useState(false);
   const [uri, setUri] = useState("");
   const [pendingLanApp, setPendingLanApp] = useState<WebApp | null>(null);
+  const [bindAreaHeight, setBindAreaHeight] = useState(0);
+  const [bindPromptHeight, setBindPromptHeight] = useState(0);
+  const visibleSections = filterSections(user);
+  const pendingLanAppVisible =
+    pendingLanApp !== null && isBound && isFunctionVisible(pendingLanApp, user);
+
+  useEffect(
+    () =>
+      subscribeFunctionUser((next, previous) => {
+        const identityChanged =
+          next.isBound !== previous.isBound ||
+          next.studentId !== previous.studentId;
+        setPendingLanApp((app) =>
+          app &&
+          (identityChanged || !next.isBound || !isFunctionVisible(app, next))
+            ? null
+            : app,
+        );
+      }),
+    [],
+  );
 
   const handleOpenApp = (app: WebApp) => {
+    if (!canOpenApp(app)) return;
     haptic();
     if (app.route) {
       router.push(app.route);
@@ -153,9 +90,9 @@ export default function FunctionScreen() {
   };
 
   const handleConfirmLan = () => {
-    const nextUri = pendingLanApp?.uri;
+    const app = pendingLanApp;
     setPendingLanApp(null);
-    if (nextUri) openWeb(nextUri);
+    if (app?.uri && canOpenApp(app)) openWeb(app.uri);
   };
 
   return (
@@ -165,7 +102,7 @@ export default function FunctionScreen() {
         <View style={{ flex: 1 }}>
           <ScrollView
             className="flex-1"
-            contentContainerStyle={{ paddingBottom: 32 }}
+            contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}
             showsVerticalScrollIndicator={false}
           >
             <View className="px-6 pb-2 pt-8">
@@ -216,106 +153,119 @@ export default function FunctionScreen() {
               }`}
             />
 
-            {SECTIONS.map((section) => (
-              <View key={section.titleKey} className="mb-5">
-                <Text className="mb-3 px-6 text-base font-semibold text-neutral-800 dark:text-neutral-100">
-                  {t(section.titleKey)}
-                </Text>
-                <View className="flex-row flex-wrap px-2">
-                  {section.items.map((app) => (
-                    <AppItem
-                      key={app.labelKey}
-                      app={app}
-                      label={t(app.labelKey)}
-                      isDark={isDark}
-                      hasBg={hasBgImage}
-                      onPress={() => handleOpenApp(app)}
-                    />
-                  ))}
+            {isBound ? (
+              visibleSections.map((section) => (
+                <View key={section.titleKey} className="mb-5">
+                  <Text className="mb-3 px-6 text-base font-semibold text-neutral-800 dark:text-neutral-100">
+                    {t(section.titleKey)}
+                  </Text>
+                  <View className="flex-row flex-wrap px-2">
+                    {section.items.map((app) => (
+                      <AppItem
+                        key={app.labelKey}
+                        app={app}
+                        label={t(app.labelKey)}
+                        isDark={isDark}
+                        hasBg={hasBgImage}
+                        onPress={() => handleOpenApp(app)}
+                      />
+                    ))}
+                  </View>
                 </View>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-
-        {!isBound && (
-          <View
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 12,
-            }}
-          >
-            <Pressable
-              accessible={false}
-              style={[
-                StyleSheet.absoluteFill,
-                {
-                  backgroundColor: isDark
-                    ? "rgba(18,18,20,0.9)"
-                    : "rgba(255,255,255,0.9)",
-                },
-              ]}
-              onPress={blockPress}
-            />
-            <View
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 28,
-                backgroundColor: isDark
-                  ? "rgba(255,255,255,0.06)"
-                  : "rgba(0,0,0,0.04)",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <Ionicons
-                name="person-circle-outline"
-                size={26}
-                color={isDark ? "#525252" : "#a3a3a3"}
-              />
-            </View>
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: "600",
-                color: isDark ? "#a3a3a3" : "#737373",
-              }}
-            >
-              {t("course.needBindTitle")}
-            </Text>
-            <Pressable
-              style={({ pressed }) => ({
-                marginTop: 4,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 2,
-                opacity: pressed ? 0.5 : 1,
-              })}
-              onPress={() => {
-                haptic();
-                router.navigate("/(tabs)/user");
-              }}
-            >
-              <Text
+              ))
+            ) : (
+              <View
+                onLayout={({ nativeEvent }) =>
+                  setBindAreaHeight(nativeEvent.layout.height)
+                }
                 style={{
-                  fontSize: 13,
-                  color: "#3b82f6",
-                  fontWeight: "500",
+                  flex: 1,
+                  minHeight: Math.max(240, bindPromptHeight / 0.8),
+                  paddingHorizontal: 24,
+                  alignItems: "center",
                 }}
               >
-                {t("course.goBind")}
-              </Text>
-              <Ionicons name="chevron-forward" size={13} color="#3b82f6" />
-            </Pressable>
-          </View>
-        )}
+                <View
+                  onLayout={({ nativeEvent }) =>
+                    setBindPromptHeight(nativeEvent.layout.height)
+                  }
+                  style={{
+                    alignItems: "center",
+                    gap: 12,
+                    marginTop: Math.max(
+                      0,
+                      bindAreaHeight * 0.3 - bindPromptHeight / 2,
+                    ),
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: 28,
+                      backgroundColor: isDark
+                        ? "rgba(96,165,250,0.12)"
+                        : "rgba(59,130,246,0.08)",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Ionicons
+                      name="person-circle-outline"
+                      size={26}
+                      color={isDark ? "#60a5fa" : "#3b82f6"}
+                    />
+                  </View>
+                  <View style={{ alignItems: "center", gap: 12 }}>
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        lineHeight: 22,
+                        fontWeight: "600",
+                        textAlign: "center",
+                        color: isDark ? "#e5e5e5" : "#404040",
+                      }}
+                    >
+                      {t("course.needBindTitle")}
+                    </Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      style={({ pressed }) => ({
+                        minHeight: 44,
+                        paddingHorizontal: 12,
+                        paddingBottom: 24,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 2,
+                        opacity: pressed ? 0.5 : 1,
+                      })}
+                      onPress={() => {
+                        haptic();
+                        router.navigate("/(tabs)/user");
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          lineHeight: 20,
+                          color: isDark ? "#60a5fa" : "#3b82f6",
+                          fontWeight: "500",
+                        }}
+                      >
+                        {t("course.goBind")}
+                      </Text>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={13}
+                        color={isDark ? "#60a5fa" : "#3b82f6"}
+                      />
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+            )}
+          </ScrollView>
+        </View>
 
         {IS_DEV && (
           <Modal
@@ -380,7 +330,7 @@ export default function FunctionScreen() {
         )}
 
         <ConfirmSheet
-          visible={pendingLanApp !== null}
+          visible={pendingLanAppVisible}
           onClose={() => setPendingLanApp(null)}
           title={t("fn.lanTitle")}
           description={t("fn.lanDesc", {
