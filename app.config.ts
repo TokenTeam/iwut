@@ -17,7 +17,7 @@ const config: ExpoConfig = {
         ? "掌上吾理 Dev"
         : "掌上吾理",
   slug: "iwut",
-  version: "0.3.29",
+  version: "0.3.30",
   githubUrl: "https://github.com/TokenTeam/iwut",
   runtimeVersion: {
     policy: "appVersion",

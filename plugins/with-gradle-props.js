@@ -7,6 +7,10 @@ const { createBuildGradlePropsConfigPlugin } = AndroidConfig.BuildProperties;
 const withGradleProps = createBuildGradlePropsConfigPlugin(
   [
     {
+      propName: "android.uniquePackageNames",
+      propValueGetter: () => "false",
+    },
+    {
       propName: "org.gradle.jvmargs",
       propValueGetter: () =>
         [
