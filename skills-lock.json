@@ -5,7 +5,7 @@
       "source": "emilkowalski/skills",
       "sourceType": "github",
       "skillPath": "skills/animate/SKILL.md",
-      "computedHash": "7598d33e7f60dd5c24531eaaa897621cc3bdb48e8050324211627973bc59c4ce"
+      "computedHash": "f76ddd3d4446c3c56a143ea98650c370b3e8f88e6203d1e22082d2082bf1eed7"
     },
     "animate-expo": {
       "source": "emilkowalski/skills",
@@ -35,115 +35,115 @@
       "source": "Leonxlnx/taste-skill",
       "sourceType": "github",
       "skillPath": "skills/taste-skill/SKILL.md",
-      "computedHash": "18f81679d2b0247ce9da298b03ed8e47ecd3c206f2951d70eefb1b65d3219345"
+      "computedHash": "6ac8ba6089dcbc303744a507a4587113c5d845ca2f658b3ce2b0b5eab108fb0d"
     },
     "eas-app-stores": {
       "source": "expo/skills",
       "sourceType": "github",
       "skillPath": "plugins/expo/skills/eas-app-stores/SKILL.md",
-      "computedHash": "687009e0cecbbf58674428d2f38a2a2f54ea10551e043ec104e2002087705627"
+      "computedHash": "2ef5251e9991e1b65a657f898b5f171484a833e72cca3913bdc66b299f126ba9"
     },
     "eas-observe": {
       "source": "expo/skills",
       "sourceType": "github",
       "skillPath": "plugins/expo/skills/eas-observe/SKILL.md",
-      "computedHash": "e6c6b69976dd2f287809ca4304fac91faa5a9836bdc676b527f9929bc2c7efd5"
+      "computedHash": "c57c329b89823f302434e3c2105e20f0d57af104c14e87a867f0e3562dec74b4"
     },
     "eas-update-insights": {
       "source": "expo/skills",
       "sourceType": "github",
       "skillPath": "plugins/expo/skills/eas-update-insights/SKILL.md",
-      "computedHash": "8cc5e39b6bbdc43e7e596a4fb0bdbaa11111408d7184cdce969bbb2341bfe2fb"
+      "computedHash": "b0093fce4f82b31d2923392b93dcbc01907d7cfbf06875260beb6ef51dd0b747"
     },
     "eas-workflows": {
       "source": "expo/skills",
       "sourceType": "github",
       "skillPath": "plugins/expo/skills/eas-workflows/SKILL.md",
-      "computedHash": "3d4cb910272bac1bdc5f2a11baede35a3042ae7a776865e9b3a78e354bc6394a"
+      "computedHash": "a6c9af380145afa4eca4cf1ca871a06cc395f41bffc0758eb4e6d10adc77bf3a"
     },
     "emil-design-eng": {
       "source": "emilkowalski/skills",
       "sourceType": "github",
       "skillPath": "skills/emil-design-eng/SKILL.md",
-      "computedHash": "51f2537e04d15911b41d78e2de24c36a0e26d41beae15e82a954fe5496a5eda9"
+      "computedHash": "2483020b5bbaab030d6b3463bfba49c8d9c2cd8dea4d9fba836dbd471f1fb706"
     },
     "expo-animation": {
       "source": "expo/skills",
       "sourceType": "github",
       "skillPath": "plugins/expo/skills/expo-animation/SKILL.md",
-      "computedHash": "daf380553ca20b8c555f954e340b64dfa874d953a9e4e71891848562351e672f"
+      "computedHash": "887ae52d885a9fe2c7d42cf684cd6ba10d410f44480c2501f822accb02b6c483"
     },
     "expo-data-fetching": {
       "source": "expo/skills",
       "sourceType": "github",
       "skillPath": "plugins/expo/skills/expo-data-fetching/SKILL.md",
-      "computedHash": "e3d31524a94bc06915293a1ececfe23b60c13e89c733f0d6780606669ad60ef9"
+      "computedHash": "61e2e98db962edd74389fe74e41c08c502eb6a25e129f4623421c4afe2dae3de"
     },
     "expo-design-system": {
       "source": "expo/skills",
       "sourceType": "github",
       "skillPath": "plugins/expo/skills/expo-design-system/SKILL.md",
-      "computedHash": "06ee277d251026168256c663648e3de5dda1fbed925a0fb69fb008d78fa54bfa"
+      "computedHash": "597dc0de48357b1217f6b35e44812b7c889aba33d02cdfe5a8490d54dd7b165d"
     },
     "expo-dev-client": {
       "source": "expo/skills",
       "sourceType": "github",
       "skillPath": "plugins/expo/skills/expo-dev-client/SKILL.md",
-      "computedHash": "9560a3f40e699af7b3317dbd3887cca646901d6addf7d78eb9429922e2d3baf3"
+      "computedHash": "3e38e9402acd8430b98a887de86b1b346a9fb4873b046585e6c20cf78a91cc49"
     },
     "expo-dom": {
       "source": "expo/skills",
       "sourceType": "github",
       "skillPath": "plugins/expo/skills/expo-dom/SKILL.md",
-      "computedHash": "170214393fb1c6b5f80d60877ef516874b3e52e27c169b4d90507c1cf70307a4"
+      "computedHash": "8f1d2dd30bd944dc2f2b4f2754d1c92cadca415d90391b5965a7777733ca6017"
     },
     "expo-examples": {
       "source": "expo/skills",
       "sourceType": "github",
       "skillPath": "plugins/expo/skills/expo-examples/SKILL.md",
-      "computedHash": "f6a8135a8222365e7360e139bc5a7cfed883cc1ed53f9ed47cec595b41ca7c74"
+      "computedHash": "4a32ae5dc15bdd383a33102c687c46fbf27f46e26d4fc1d54d56d6b350ef1266"
     },
     "expo-module": {
       "source": "expo/skills",
       "sourceType": "github",
       "skillPath": "plugins/expo/skills/expo-module/SKILL.md",
-      "computedHash": "483804366dbb56ad4912596fe0d1de04b4ef06795690c8ec51e0f7c413c9bef9"
+      "computedHash": "5c5e7c413f516794a7fed79a0753c076d51386c2ee0fa1bc303e908dc670e11f"
     },
     "expo-native-ui": {
       "source": "expo/skills",
       "sourceType": "github",
       "skillPath": "plugins/expo/skills/expo-native-ui/SKILL.md",
-      "computedHash": "3e7374ba3679e4e57cbe6aa97c8bcc17c977b7c526b00e0e67b9e0ccd119ba68"
+      "computedHash": "49d480a3f3b5acd3c027bf2b3a12bcab601be14e9467c956697f9a88bd4fbca0"
     },
     "expo-overview": {
       "source": "expo/skills",
       "sourceType": "github",
       "skillPath": "plugins/expo/skills/expo-overview/SKILL.md",
-      "computedHash": "ae10834702315c887df298a220712bf5e89ab6a0d9088eb54c6d7fddddb3e8b3"
+      "computedHash": "55fa500c2637fbcc25bc933e3b8efea2b96a2568243d05d6728aee7a651a9246"
     },
     "expo-project-structure": {
       "source": "expo/skills",
       "sourceType": "github",
       "skillPath": "plugins/expo/skills/expo-project-structure/SKILL.md",
-      "computedHash": "d131a20d31b81e7e04b9ede9f0271bd14e161a8fa525e2e9ba42ba766fe25d2d"
+      "computedHash": "8ef539eb13f9fbb6560f185644f5bcd60230c04a7883f3d148b6295c43847936"
     },
     "expo-router": {
       "source": "expo/skills",
       "sourceType": "github",
       "skillPath": "plugins/expo/skills/expo-router/SKILL.md",
-      "computedHash": "512978d4ea35857932b79ee9b15a47d7ab78382dc1fcd275601b87e4c80c1e59"
+      "computedHash": "8cd1a4358b14380b259b79e22c4170016a077ec316dc36a09f810efd8120ece3"
     },
     "expo-ui": {
       "source": "expo/skills",
       "sourceType": "github",
       "skillPath": "plugins/expo/skills/expo-ui/SKILL.md",
-      "computedHash": "b7cf8d50798a484d84d359c9361c08e80e74fa922a6cb4601e88ce2701f7c449"
+      "computedHash": "49d663ea0d4d5d8a11679317890f907fc08038cfec0de62a8451aeb5657d1095"
     },
     "expo-upgrade": {
       "source": "expo/skills",
       "sourceType": "github",
       "skillPath": "plugins/expo/skills/expo-upgrade/SKILL.md",
-      "computedHash": "43a39224285e495e0eb4b72ace99c8f1915123f69ee50ce6de4f0cd027374e6a"
+      "computedHash": "1a7b83fc0a5b7aa3552a194c57e1f046d85541e77130f3add7c358868f43f4e2"
     },
     "find-animation-opportunities": {
       "source": "emilkowalski/skills",
@@ -161,7 +161,7 @@
       "source": "emilkowalski/skills",
       "sourceType": "github",
       "skillPath": "skills/improve-animations/SKILL.md",
-      "computedHash": "524ea241e41d58bbdd8e288700fe24f5725e2a2f3ae7186ad7cebf9055058356"
+      "computedHash": "f6652a3bb94950baa33c684cc0966c838eb65cf22ebb5769a4f51ea205c254fe"
     },
     "migrate-to-strict-api": {
       "source": "react-native-community/skills",
@@ -181,23 +181,17 @@
       "skillPath": "skills/prototype/SKILL.md",
       "computedHash": "77be567d8c946608fdd15e61b62ab383cdf289a194dce2479828b7eda860d3ba"
     },
-    "redesign-existing-projects": {
-      "source": "Leonxlnx/taste-skill",
-      "sourceType": "github",
-      "skillPath": "skills/redesign-skill/SKILL.md",
-      "computedHash": "52f2ade5449b7005942ebd221e53808a245b3e088ff096c44a374e1e481e9f6b"
-    },
     "review-animations": {
       "source": "emilkowalski/skills",
       "sourceType": "github",
       "skillPath": "skills/review-animations/SKILL.md",
-      "computedHash": "b4e5f0f4fe3e2743c85bf7354108f48a0b9d502cb20ef5c4a9c195da91f93736"
+      "computedHash": "b1aca2c16876b8f00e2a1eb161714e63ec41099269d5f95c2f307230749b9dcd"
     },
     "swiftui-pro": {
       "source": "twostraws/SwiftUI-Agent-Skill",
       "sourceType": "github",
       "skillPath": "swiftui-pro/SKILL.md",
-      "computedHash": "e0edf9a937bbb8c86c170b130ff825f158cc286f07ec477b67835e9c1b20267e"
+      "computedHash": "88fefb2239299c8815366b89737ba15e91358ab3e9a6fb69af2436ed4a704299"
     },
     "write-swift": {
       "source": "emilkowalski/skills",

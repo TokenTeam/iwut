@@ -13,9 +13,10 @@
 //                 [--options 3]                show three dealt directions to choose from, write nothing
 //                 [--direction <id>]           deal the full sheet for the chosen direction
 //   node draw.mjs --show                       reprint the saved direction sheet
-//   node draw.mjs --redraw hero|type|palette|photos|section:<role>|direction   re-deal one slot
-//   node draw.mjs --list sectors|directions|roles|tones
+//   node draw.mjs --redraw hero|type|palette|photos|scenes|section:<role>|direction   re-deal one slot
+//   node draw.mjs --list sectors|directions|roles|tones|scenes
 //   node draw.mjs --site <id>                  print one studied reference site in full
+//   node draw.mjs --app --kind <kind> ...      deal a style for an app screen instead (see lib/app-draw.mjs)
 //
 // Zero dependencies. Node 18+.
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -65,11 +66,16 @@ const DEFAULT_SECTIONS = {
 // requested role names → the role vocabulary used by library/sections.json
 const ROLE_ALIAS = { features: 'features', feature: 'features', benefits: 'features', services: 'features', showcase: 'showcase', product: 'showcase', demo: 'showcase', 'how-it-works': 'how-it-works', how: 'how-it-works', process: 'how-it-works', steps: 'how-it-works', testimonial: 'testimonial', testimonials: 'testimonial', quotes: 'testimonial', proof: 'proof', logos: 'proof', press: 'proof', stats: 'stats', numbers: 'stats', pricing: 'pricing', plans: 'pricing', faq: 'faq', cta: 'cta', footer: 'footer', intro: 'intro', manifesto: 'intro', about: 'about', team: 'about', work: 'work', projects: 'work', index: 'work', 'case-studies': 'work', gallery: 'gallery', images: 'gallery', list: 'list', menu: 'list', schedule: 'list', lineup: 'list', 'line-up': 'list', speakers: 'list', agenda: 'list', programme: 'list', program: 'list', timetable: 'list', rooms: 'list', tickets: 'pricing', price: 'pricing', contact: 'contact', booking: 'contact', newsletter: 'contact', signup: 'contact' };
 
+// App screens (dashboards, admin, settings) have their own library and sheet: scripts/lib/app-draw.mjs.
+const savedKind = (() => { try { return JSON.parse(readFileSync(sheetPath, 'utf8')).kind; } catch { return null; } })();
+if (opt('app') || ((opt('show') || opt('redraw')) && savedKind === 'app')) await import('./lib/app-draw.mjs');
+
 if (opt('list')) {
   const what = opt('list');
   if (what === 'sectors') console.log(SECTORS.join('\n'));
   else if (what === 'tones') console.log(TONES.join('\n'));
   else if (what === 'roles') console.log([...new Set(Object.values(ROLE_ALIAS))].join('\n'));
+  else if (what === 'scenes') { const all = existsSync(join(LIB, 'scenes.json')) ? load('scenes') : []; for (const sc of all) console.log(`${sc.id.padEnd(34)} ${sc.name} — ${sc.family}; ${sc.summary.split(/(?<=\.)\s/)[0]}`); if (!all.length) console.log('No scene library yet.'); }
   else for (const d of load('directions')) console.log(`${d.id.padEnd(30)} ${d.name} — ${d.sectors.join(', ')}`);
   process.exit(0);
 }
@@ -113,7 +119,7 @@ if (opt('show')) {
   console.log(render(saved)); process.exit(0);
 }
 
-const L = { directions: load('directions'), heroes: load('heroes'), sections: load('sections'), type: load('type'), palettes: load('palettes'), photos: load('photos'), sites: load('sites'), motions: load('motions') };
+const L = { directions: load('directions'), heroes: load('heroes'), sections: load('sections'), type: load('type'), palettes: load('palettes'), photos: load('photos'), sites: load('sites'), motions: load('motions'), scenes: existsSync(join(LIB, 'scenes.json')) ? load('scenes') : [] };
 const hist = readHist();
 const recent = (key, n) => hist.slice(0, n).map((h) => h[key]).filter(Boolean);
 
@@ -149,6 +155,7 @@ if (opt('redraw')) {
   else if (what === 'type') sheet.type = dealType(dir, [sheet.type?.id]);
   else if (what === 'palette') sheet.palette = dealPalette(dir, sheet.input, [sheet.palette?.id]);
   else if (what === 'photos') sheet.photos = dealPhotos(dir, sheet.input);
+  else if (what === 'scenes') sheet.scenes = dealScenes(dir, sheet.input, (sheet.scenes || []).map((x) => x.id));
   else if (what.startsWith('section:')) {
     // section:<role> re-deals at random; section:<role>=<id> takes a named alternative (see --alternatives)
     const [roleRaw, wanted] = what.slice(8).split('=');
@@ -162,7 +169,7 @@ if (opt('redraw')) {
       if (!chosen) { console.error(`No blueprint with id ${wanted}. List them with --alternatives <role>.`); process.exit(2); }
       sheet.sections[i] = chosen.role === role ? chosen : { ...chosen, role, name: `${chosen.name} (borrowed from ${chosen.role})` };
     } else sheet.sections[i] = dealSection(dir, role, used, sheet.sections[i - 1]?.shape, sheet.sections[i + 1]?.shape, sheet.input) || sheet.sections[i];
-  } else { console.error('Unknown slot. Use hero, type, palette, photos, section:<role>, section:<role>=<id> or direction.'); process.exit(2); }
+  } else { console.error('Unknown slot. Use hero, type, palette, photos, scenes, section:<role>, section:<role>=<id> or direction.'); process.exit(2); }
 } else {
   const sector = String(opt('sector', ''));
   if (!SECTORS.includes(sector)) {
@@ -198,7 +205,7 @@ if (opt('redraw')) {
 
 mkdirSync(outDir, { recursive: true });
 writeFileSync(sheetPath, JSON.stringify(sheet, null, 1));
-if (!opt('redraw') || String(opt('redraw')) === 'direction') writeHist({ at: sheet.at, direction: sheet.direction.id, type: sheet.type?.id, palette: sheet.palette?.id, hero: sheet.hero?.id, sector: sheet.input.sector });
+if (!opt('redraw') || String(opt('redraw')) === 'direction') writeHist({ at: sheet.at, direction: sheet.direction.id, type: sheet.type?.id, palette: sheet.palette?.id, hero: sheet.hero?.id, sector: sheet.input.sector, scenes: (sheet.scenes || []).map((x) => x.id) });
 console.log(render(sheet));
 
 // ---------- dealing ----------
@@ -252,11 +259,41 @@ function deal(input, redraws) {
     if (sec) s.sections.push(sec); else s.sections.push({ id: null, role, shape: null, name: role, blueprint: null });
   }
   s.references = dealReferences(dir, input);
+  s.scenes = dealScenes(dir, input, []);
   return s;
 }
+// The page's big scroll moments (references/scenes.md): two or three tested scenes from different
+// families, each placed on a section of the argument it can carry. Expressive sectors and tones get three.
+function dealScenes(dir, input, exclude) {
+  if (!L.scenes.length) return [];
+  const has = (need) => input.have.includes(need) || need === 'photography';
+  const fits = (sc) => !exclude.includes(sc.id) && (sc.sectors || ['*']).some((x) => x === '*' || x === input.sector) && (sc.needs || []).every(has);
+  let pool = L.scenes.filter(fits);
+  if (pool.length < 2) pool = L.scenes.filter((sc) => !exclude.includes(sc.id) && (sc.needs || []).every(has));
+  if (!pool.length) return [];
+  const loud = ['agency', 'studio-portfolio', 'personal-portfolio', 'fashion', 'culture', 'music', 'event', 'architecture', 'physical-product', 'real-estate', 'hospitality'].includes(input.sector) || ['bold', 'playful', 'luxury', 'editorial'].includes(input.tone);
+  const quiet = ['quiet', 'technical'].includes(input.tone);
+  const n = Math.min(pool.length, quiet ? 2 : loud ? 3 : 2);
+  const recentIds = hist.slice(0, 4).flatMap((h) => h.scenes || []);
+  let rest = fresh(pool, recentIds);
+  const out = []; const families = new Set(); const usedRoles = new Set();
+  while (out.length < n) {
+    let cands = rest.filter((sc) => !families.has(sc.family) && !(sc.position === 'opening' && out.some((o) => o.position === 'opening')) && !(sc.position === 'closing' && out.some((o) => o.position === 'closing')));
+    if (!cands.length) cands = pool.filter((sc) => !out.includes(sc) && !families.has(sc.family));
+    if (!cands.length) break;
+    const sc = pick(cands); out.push(sc); families.add(sc.family); rest = rest.filter((x) => x !== sc);
+  }
+  // the section each scene carries: the first role of the argument it suits that no other scene has taken
+  const roles = ['hero', ...input.sections];
+  return out.map((sc) => {
+    const role = sc.position === 'opening' ? 'hero' : roles.find((r) => (sc.roles || []).includes(r) && !usedRoles.has(r) && r !== 'hero') || null;
+    if (role) usedRoles.add(role);
+    return { ...sc, carries: role };
+  }).sort((a, b) => (a.carries ? roles.indexOf(a.carries) : 99) - (b.carries ? roles.indexOf(b.carries) : 99));
+}
 function dealHero(dir, input, exclude) {
-  let pool = L.heroes.filter((h) => (dir.heroes || []).includes(h.id));
-  if (!pool.length) pool = L.heroes.filter((h) => (h.directions || []).includes(dir.id));
+  // the direction's own list, and any hero written for this direction since (the October 2026 study added some)
+  let pool = L.heroes.filter((h) => (dir.heroes || []).includes(h.id) || (h.directions || []).includes(dir.id));
   if (!pool.length) pool = L.heroes;
   if (imageryMode(input) !== 'interface' && !input.have.includes('product-ui')) { const plain = pool.filter((h) => !softwareOnly(h)); if (plain.length) pool = plain; }
   const ok = pool.filter((h) => !exclude.includes(h.id) && (h.needs || []).every((n) => n === 'photography' || input.have.includes(n)));
@@ -395,9 +432,11 @@ function dealSection(dir, role, usedIds, prevShape, nextShape, input) {
 }
 function dealReferences(dir, input) {
   const named = (dir.seenIn || []).map((n) => L.sites.find((s) => s.id === n || s.name === n)).filter(Boolean);
-  const sameKind = L.sites.filter((s) => s.kind === input.sector && s.score >= 7.2 && !named.includes(s));
+  // the October 2026 panel scored on a lower scale (its top band starts at 7.5, the first panel's at about 7.6)
+  const good = (s, a, b) => s.score >= (s.panel === '2026-10' ? b : a);
+  const sameKind = L.sites.filter((s) => s.kind === input.sector && good(s, 7.2, 7.3) && !named.includes(s));
   const out = [...shuffle(named).slice(0, 2), ...shuffle(sameKind).slice(0, 1)];
-  return out.length ? out : shuffle(L.sites.filter((s) => s.score >= 7.6)).slice(0, 2);
+  return out.length ? out : shuffle(L.sites.filter((s) => good(s, 7.6, 7.5))).slice(0, 2);
 }
 
 // ---------- rendering ----------
@@ -405,6 +444,8 @@ function siteCard(s, full) {
   const lines = [`- **${s.name}** (${s.source}, studied score ${s.score}) \`${s.id}\``, `  Idea: ${s.idea}`, `  Hero: ${s.hero}`];
   if (full) {
     lines.push(`  Type: ${s.type}`, `  Colour: ${s.colour}`, `  Imagery: ${s.imagery}`, `  Layout: ${s.layout}`);
+    if (s.media) lines.push(`  Pictures and footage: ${s.media}`);
+    if (s.motion) lines.push(`  Motion: ${s.motion}`);
     for (const sec of s.sections || []) lines.push(`  Section (${sec.role}): ${sec.description}`);
     for (const t of s.steal || []) lines.push(`  Worth taking: ${t}`);
     lines.push(`  URL: ${s.url}`);
@@ -471,7 +512,7 @@ function render(s) {
     ? `\`${ASSETS_CMD} "${qs[0]}"\`${qs.length > 1 ? `, then ${qs.slice(1).map((q) => `"${q}"`).join(' and ')}` : ''}, then queries from your inventory (its street, its materials, its trade's tools and history)`
     : `\`${ASSETS_CMD} "<a place, material or object from your inventory>"\``;
   const MODE = {
-    interface: '**This subject is software and there are no screenshots, so its pictures are its own interface.** Wherever this sheet says photograph, image or object, build a believable fragment of the product in HTML at real size (real labels, numbers that add up, one item hovered or selected), put the attribute `data-ui` on its root, and crop or scale it the way the blueprint treats a photograph: a full-bleed close crop, a tile, the fixed half of a split. Where a fragment makes no sense, use a flat colour field with type on it. Never a fake dashboard of grey bars, never a device frame. If the product works on something physical (ships, plants, buildings, a city), one real picture of that world can carry a section: find it with `' + ASSETS_CMD + ' "<that world>"`, download it with `--get`, credit it on the page, and never let it pass for the product or its customers.',
+    interface: '**This subject is software and there are no screenshots, so its pictures are its own interface.** Wherever this sheet says photograph, image or object, build a believable fragment of the product in HTML at real size (real labels, numbers that add up, one item hovered or selected) by the app-screen rules (references/app-screens.md: deal its style once with `node <skill>/scripts/draw.mjs --app --kind <kind> --keep palette,type --out .taste-skill/app`, and build it with assets/app.css and assets/charts.js), put the attribute `data-ui` on its root, and crop or scale it the way the blueprint treats a photograph: a full-bleed close crop, a tile, the fixed half of a split. Where a fragment makes no sense, use a flat colour field with type on it. Never a fake dashboard of grey bars, never a device frame. If the product works on something physical (ships, plants, buildings, a city), one real picture of that world can carry a section: find it with `' + ASSETS_CMD + ' "<that world>"`, download it with `--get`, credit it on the page, and never let it pass for the product or its customers.',
     'no-product-photo': '**There are no photographs of the product and none can be faked.** Wherever this sheet calls for a picture of the object, draw the object: its pieces as flat shapes in inline SVG, large, in one graphic language and in the colours that make it worth buying (a glaze, a finish, a material), never grey placeholders (references/imagery.md §8). **Around the object, use real pictures of its world** from the open collections: its material up close, its town in old postcards, its craft in engravings, a museum piece of the same kind, never one a visitor could take for the product itself (references/imagery.md §3). Start with ' + find + '. Download what you use with `--get` and credit every one on the page (`--credits` prints the footer line). Type at scale and full colour fields carry the rest; the dealt photographs only where they plainly do not pretend to be the product. In your report, say that product photography is needed and which drawings it will replace, and list every found picture with its source and licence.',
     atmosphere: '**The project has no photographs of its own yet.** First choice: **real pictures of the subject\'s world from the open collections**: its city and street in old postcards and photographs, an old map of the neighbourhood, its materials up close, its trade in engravings, museum objects of its kind (references/imagery.md §3). Start with ' + find + '. Download what you use into the project with `--get` and credit every one on the page (`--credits` prints the footer line). They show the world around the client, never the client\'s own room, dish, product, person or team. Second, for what no honest picture exists of: draw the subject\'s own things in code, large, in one flat graphic language and the palette\'s real colours (its tiles, its windows, its objects; references/imagery.md §8). Third: the dealt photographs, only where an honestly generic picture fits (the sea, the weather, a material), never one a visitor could take for the thing itself and never an unrelated scene. One treatment for all of them. If this direction is built on photographs, plan the set before building (four to six pictures of one family) and reuse them at different crops and scales instead of finding or drawing a new picture for every slot; keep drawings as `<symbol>` + `<use>` or generate them with a small script so the page stays light. List every found picture (with its source and licence), every dealt photograph and every drawing that stands in for photography in your report.',
     own: '**Use the images that belong to the project in every picture slot.** For slots they cannot fill, real pictures of the subject\'s world from the open collections come next (start with ' + find + '; credit them on the page), then the dealt photographs.',
@@ -507,17 +548,35 @@ function render(s) {
   });
   p();
   if (s.motion) { p(`## 8. Motion — ${s.motion.name}`); p(s.motion.description); p('This is the signature move, the one loud moment. Around it the page still needs the rest of the motion layer (SKILL.md step 9): an entrance for the parts of every section, feedback on every control, and one moving picture. The inspector fails a page that barely moves. Recipes: references/motion.md.'); p(); }
-  if (d.richness) { p('## 9. Where the richness comes from'); p(d.richness); p(); }
-  if (d.pitfalls) { p('## 10. How this direction goes wrong'); p(d.pitfalls); p(); }
+  if (s.scenes?.length) {
+    p('## 9. Scroll scenes');
+    p(`The page's big moments: ${s.scenes.length} scroll scenes, tested and ready to fill. They are part of the composition, so build them in step 6 with the section they carry, not as a motion afterthought. Each runs on the shared stage (assets/scenes/stage.js and stage.css, with GSAP and Lenis from the pinned CDN lines in stage.js) and ships its own finished composition for reduced motion and for phones that rest. How to put one on a page, fill it and check it: references/scenes.md. Check them with \`node <skill>/scripts/scenes.mjs <page>\` and look at every sheet.`);
+    for (const sc of s.scenes) {
+      p();
+      p(`### ${sc.name} (\`${sc.id}\`)${sc.carries ? ` — carries the ${sc.carries === 'hero' ? 'first screen' : sc.carries + ' section'}` : ' — a transition between two sections'}`);
+      p(sc.summary);
+      if (sc.place) p(`Where: ${sc.place}`);
+      if (sc.content) p(`Content: ${sc.content}`);
+      if (sc.options) p(`Options (data-options): ${sc.options}`);
+      p(`Files: \`<skill>/assets/scenes/${sc.id}.js\` and \`${sc.id}.css\`; a working example: \`<skill>/assets/scenes/demo/${sc.id}.html\`.${sc.phone ? ' On a phone: ' + sc.phone : ''}`);
+    }
+    p();
+    p('Leave a quiet section between two scenes so each one lands. A scene whose content you cannot fill honestly is redrawn (`--redraw scenes`), never faked.');
+    p();
+  }
+  if (d.richness) { p('## 10. Where the richness comes from'); p(d.richness); p(); }
+  if (d.pitfalls) { p('## 11. How this direction goes wrong'); p(d.pitfalls); p(); }
   if (s.references?.length) {
-    p('## 11. Real references');
+    p('## 12. Real references');
     p('Studied sites that work this way. Take the principle, never the specifics: no names, copy, images or signature assets of theirs.');
     for (const r of s.references) p(siteCard(r, false));
     p('Full notes on any of them: `node draw.mjs --site <id>`.'); p();
   }
   p('## Always');
   p('Headlines two lines or fewer at every width. No eyebrow labels, no monospace, no 01/02/03, no thin rules, no gradients, no shadows at rest,');
-  p('no cream-and-terracotta, no violet. `inspect.mjs` measures all of it.');
+  p('no cream-and-terracotta, no violet. The frame: one h1 on the first screen that says what this is, equal outer margins, no');
+  p('section huddled on one side with the other half empty, no blank stretch over half a screen, a heading on every section.');
+  p('`inspect.mjs` measures all of it.');
   if (s.allow?.length) p(`This direction is allowed: ${s.allow.join(', ')} (the inspector reads this from the saved sheet).`);
   p();
   p(`Saved to ${sheetPath.split('\\').join('/')} · reprint with \`node draw.mjs --show\``);

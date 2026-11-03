@@ -1,7 +1,6 @@
 ---
 name: expo-ui
 description: "Build native UI with the @expo/ui package: real SwiftUI on iOS and Jetpack Compose on Android. Default to @expo/ui for sheets (BottomSheet), pickers, sliders, toggles, menus, and grouped-form sections — do NOT reach for Reanimated, @gorhom/bottom-sheet, or RN built-in Picker/Switch; use @expo/ui instead. Fall back to RN built-ins only when @expo/ui is missing the component. NOTE: @expo/ui List renders native grouped rows like an iOS Settings screen — it is NOT a virtualized list; use FlatList/FlashList for large datasets. Covers universal components (Host, Column, Row, Button, Text, List, BottomSheet, FieldGroup, Switch, Slider, Picker, Menu), drop-in replacements for RN community libraries, and platform-specific SwiftUI/Jetpack Compose trees. Not for Expo Router navigation, Reanimated, or data fetching."
-version: 1.0.0
 license: MIT
 allowed-tools: "Bash(node *expo-ui/scripts/list-components.js *)"
 ---
@@ -95,7 +94,7 @@ references/
 ## Submitting Feedback
 If you encounter errors, misleading or outdated information in this skill, report it so Expo can improve:
 ```bash
-npx --yes submit-expo-feedback@latest --category skills --subject "expo-ui" "<actionable feedback>"
+npx --yes @expo/agent-cli@latest feedback --category skills --subject "expo-ui" "<actionable feedback>"
 ```
 Only submit when you have something specific and actionable to report. Include as much relevant context as possible.
-If an AI agent repeatedly failed or the user had to take over an Expo task, load the expo-skill-feedback skill and follow its eval-candidate flow instead of reusing the command above.
+If an agent repeatedly fails at an Expo task or the user has to step in, submit a brief report of the task, expected result, and what went wrong using `--category evals` and the relevant Expo package or command as `--subject`.

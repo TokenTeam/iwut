@@ -1486,7 +1486,7 @@
    ],
    "italic": false,
    "settings": "weight 500 · tracking -0.025em · leading 0.95 · sentence case, or tight capitals at 32–40px for a single statement",
-   "css": "<link rel=\"preconnect\" href=\"https://api.fontshare.com\">\n<link rel=\"preconnect\" href=\"https://cdn.fontshare.com\" crossorigin>\n<link href=\"https://api.fontshare.com/v2/css?f[]=erode@400,500,600&display=swap\" rel=\"stylesheet\">"
+   "css": "<link rel=\"preconnect\" href=\"https://api.fontshare.com\">\n<link rel=\"preconnect\" href=\"https://cdn.fontshare.com\" crossorigin>\n<link href=\"https://api.fontshare.com/v2/css?f[]=erode@400,401,500,600&display=swap\" rel=\"stylesheet\">"
   },
   "text": {
    "family": "Erode",
@@ -1498,7 +1498,7 @@
    ],
    "italic": true,
    "settings": "400 for body, 600 for emphasis, italic for titles of works · leading 1.5 · tracking 0",
-   "css": "<link rel=\"preconnect\" href=\"https://api.fontshare.com\">\n<link rel=\"preconnect\" href=\"https://cdn.fontshare.com\" crossorigin>\n<link href=\"https://api.fontshare.com/v2/css?f[]=erode@400,500,600&display=swap\" rel=\"stylesheet\">"
+   "css": "<link rel=\"preconnect\" href=\"https://api.fontshare.com\">\n<link rel=\"preconnect\" href=\"https://cdn.fontshare.com\" crossorigin>\n<link href=\"https://api.fontshare.com/v2/css?f[]=erode@400,401,500,600&display=swap\" rel=\"stylesheet\">"
   },
   "standsInFor": [
    "Noe Text",
@@ -1512,7 +1512,7 @@
    "aww-colonia-zacamil"
   ],
   "links": [
-   "https://api.fontshare.com/v2/css?f[]=erode@400,500,600&display=swap"
+   "https://api.fontshare.com/v2/css?f[]=erode@400,401,500,600&display=swap"
   ],
   "scale": {
    "step-small": "clamp(0.8125rem, 0.79rem + 0.1vw, 0.875rem)",
@@ -1534,7 +1534,7 @@
    ],
    "italic": true,
    "settings": "weight 400 · tracking -0.02em · leading 0.95 · roman capitals for the main words with lowercase italic for the connecting words at the same size, or sentence case throughout; centred lines work",
-   "css": "<link rel=\"preconnect\" href=\"https://api.fontshare.com\">\n<link rel=\"preconnect\" href=\"https://cdn.fontshare.com\" crossorigin>\n<link href=\"https://api.fontshare.com/v2/css?f[]=boska@400,500&display=swap\" rel=\"stylesheet\">"
+   "css": "<link rel=\"preconnect\" href=\"https://api.fontshare.com\">\n<link rel=\"preconnect\" href=\"https://cdn.fontshare.com\" crossorigin>\n<link href=\"https://api.fontshare.com/v2/css?f[]=boska@400,401,500&display=swap\" rel=\"stylesheet\">"
   },
   "text": {
    "family": "Boska",
@@ -1546,7 +1546,7 @@
    ],
    "italic": true,
    "settings": "400 for body, 500 for emphasis · leading 1.5 · tracking 0.005em",
-   "css": "<link rel=\"preconnect\" href=\"https://api.fontshare.com\">\n<link rel=\"preconnect\" href=\"https://cdn.fontshare.com\" crossorigin>\n<link href=\"https://api.fontshare.com/v2/css?f[]=boska@400,500&display=swap\" rel=\"stylesheet\">"
+   "css": "<link rel=\"preconnect\" href=\"https://api.fontshare.com\">\n<link rel=\"preconnect\" href=\"https://cdn.fontshare.com\" crossorigin>\n<link href=\"https://api.fontshare.com/v2/css?f[]=boska@400,401,500&display=swap\" rel=\"stylesheet\">"
   },
   "standsInFor": [
    "Louize Display",
@@ -1559,7 +1559,7 @@
    "opl-sarah-matt-wedding"
   ],
   "links": [
-   "https://api.fontshare.com/v2/css?f[]=boska@400,500&display=swap"
+   "https://api.fontshare.com/v2/css?f[]=boska@400,401,500&display=swap"
   ],
   "scale": {
    "step-small": "clamp(0.8125rem, 0.79rem + 0.1vw, 0.875rem)",
@@ -1676,7 +1676,7 @@
    ],
    "italic": false,
    "settings": "weight 300 · tracking -0.015em · leading 1.0 · sentence case; about 8vw for the headline, 40px for statements",
-   "css": "<link rel=\"preconnect\" href=\"https://api.fontshare.com\">\n<link rel=\"preconnect\" href=\"https://cdn.fontshare.com\" crossorigin>\n<link href=\"https://api.fontshare.com/v2/css?f[]=sentient@300,400,500&display=swap\" rel=\"stylesheet\">"
+   "css": "<link rel=\"preconnect\" href=\"https://api.fontshare.com\">\n<link rel=\"preconnect\" href=\"https://cdn.fontshare.com\" crossorigin>\n<link href=\"https://api.fontshare.com/v2/css?f[]=sentient@300,400,401,500&display=swap\" rel=\"stylesheet\">"
   },
   "text": {
    "family": "Sentient",
@@ -1688,7 +1688,7 @@
    ],
    "italic": true,
    "settings": "400 for body, 500 for emphasis · leading 1.55 · tracking 0",
-   "css": "<link rel=\"preconnect\" href=\"https://api.fontshare.com\">\n<link rel=\"preconnect\" href=\"https://cdn.fontshare.com\" crossorigin>\n<link href=\"https://api.fontshare.com/v2/css?f[]=sentient@300,400,500&display=swap\" rel=\"stylesheet\">"
+   "css": "<link rel=\"preconnect\" href=\"https://api.fontshare.com\">\n<link rel=\"preconnect\" href=\"https://cdn.fontshare.com\" crossorigin>\n<link href=\"https://api.fontshare.com/v2/css?f[]=sentient@300,400,401,500&display=swap\" rel=\"stylesheet\">"
   },
   "standsInFor": [
    "Season Mix",
@@ -1702,7 +1702,7 @@
    "opl-le-petit-bleu"
   ],
   "links": [
-   "https://api.fontshare.com/v2/css?f[]=sentient@300,400,500&display=swap"
+   "https://api.fontshare.com/v2/css?f[]=sentient@300,400,401,500&display=swap"
   ],
   "scale": {
    "step-small": "clamp(0.8125rem, 0.79rem + 0.1vw, 0.875rem)",

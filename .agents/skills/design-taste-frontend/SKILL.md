@@ -1,6 +1,16 @@
 ---
 name: design-taste-frontend
-description: tasteskill v2, the anti-slop frontend skill. Art direction for websites, distilled from a study of 247 curated gallery sites (One Page Love, Awwwards Sites of the Day). Deals researched directions (idea, composition, type, palette, photographs, section blueprints) from a library, enforces a strict no-slop house style with a real-browser inspector, and runs a look-and-fix loop on screenshots. Use this whenever you build, design, redesign, restyle, polish or review a landing page, marketing site, portfolio, product page, one-pager, hero or any public-facing web page, in any stack (HTML/CSS, React, Next.js, Vue, Svelte, Astro, Tailwind) — also when the user says a page looks generic, templated, "AI-made", sloppy, or asks to make it look designed, premium, award-level or less like every other site. Not for dashboards or app screens.
+description: >-
+  tasteskill v2, the anti-slop frontend skill. Art direction for websites, distilled from a study of
+  247 curated gallery sites (One Page Love, Awwwards Sites of the Day). Deals researched directions
+  (idea, composition, type, palette, photographs, section blueprints) from a library, enforces a strict
+  no-slop house style with a real-browser inspector, and runs a look-and-fix loop on screenshots. Use
+  this whenever you build, design, redesign, restyle, polish or review a landing page, marketing site,
+  portfolio, product page, one-pager, hero or any public-facing web page, in any stack (HTML/CSS, React,
+  Next.js, Vue, Svelte, Astro, Tailwind) — also when the user says a page looks generic, templated,
+  "AI-made", sloppy, or asks to make it look designed, premium, award-level or less like every other
+  site. Also for app screens: dashboards, admin and analytics views, settings, inboxes and other screens
+  people work in, with their own run and rules.
 ---
 
 # tasteskill v2
@@ -30,6 +40,34 @@ section carrying its full content. The skill is built to give you that; do not t
 In the commands below `<skill>` is this skill's folder. Run them from the project's root, so the
 working files land in `.taste-skill/` there. The scripts need Node 22+ and an installed Chrome, Edge
 or Chromium, and install nothing. `assets.mjs` also needs network access; it uses no API keys.
+
+## Page or app screen
+
+Decide first which of two kinds of work this is.
+
+- **A page** is read and scrolled: a landing page, a marketing or product site, a portfolio, an
+  event, a restaurant, a one-pager. It follows **the run** below.
+- **An app screen** is worked in: a dashboard, an admin or analytics view, settings, billing, an inbox
+  or queue to work through, a wallet, a list with filters, an editor or builder. It follows
+  **`references/app-screens.md`**: its own run, its own draw (`draw.mjs --app`), its own house rules
+  (quiet borders, small labels and repeated panels are normal there; gradients, glows, icons in tinted
+  squares, rainbow charts and invented vanity numbers are not) and `inspect.mjs --app`. Read that file
+  whole before you start; the page run below does not apply.
+
+A product site that shows its app is a page; the interface fragments on it follow the app-screen
+rules for their insides. Deal the product's app style once, in its own folder, with the page's colours
+and type kept:
+
+```bash
+node <skill>/scripts/draw.mjs --app --kind <kind> --brief "<the product>" --keep palette,type --out .taste-skill/app
+```
+
+and build every fragment the page shows (the hero's live screen, a feature's crop, a chart) as a real
+piece of that app: `assets/app.css` for its panels, tables and controls, `assets/charts.js` for its
+charts, real data that adds up, one finding stated, cropped and scaled the way the page's blueprint
+treats a picture. A fragment that looks like a working product is the strongest picture a software page
+has; grey bars and lorem numbers are the weakest. When a request mixes both (a landing page and the
+dashboard behind it), build each with its own run and one shared palette and typeface.
 
 ## The run
 
@@ -102,9 +140,10 @@ The command prints a **direction sheet**. It is the art direction for this build
 
 - **Adopt it.** Do not blend it with the layout you would have made anyway. If it feels unfamiliar,
   good: the familiar layout is the one this skill exists to prevent.
-- Redraw one slot (`--redraw hero | type | palette | photos | section:<role> | direction`) only for a
-  reason you can state: it contradicts a stated brand constraint, or needs an asset that does not
-  exist. Never redraw to get something more comfortable. Record every redraw in your report.
+- Redraw one slot (`--redraw hero | type | palette | photos | scenes | section:<role> | direction`) only for a
+  reason you can state: it contradicts a stated brand constraint, needs an asset that does not exist,
+  or is a section that cannot hold the real content (next point). Never redraw to get something more
+  comfortable. Record every redraw in your report.
 - When a dealt section cannot hold the real content (it compares three plans and there is one price;
   it wants five quotations and there are none), do not bend the content to fit. List the others with
   `--alternatives <role>`, pick the one whose assumptions match the content, and take it with
@@ -153,6 +192,12 @@ right now and how long until the last ferry; choose a size and see it against th
 fallback without script, it never blocks reading, and it is one thing, not a playground. It is
 built in step 6 as part of the page, not added as motion in step 9.
 
+**The scenes carry the idea too.** The scroll scenes on the sheet are devices waiting for a subject.
+Decide what each one shows from your inventory before building: the fly-through passes through this
+studio's own title cards, the route is the road this shipment really takes, the picture that opens to
+the whole screen is the room the guest will wake up in. A scene filled with pictures that could belong
+to anyone is a screensaver.
+
 ### 5. Write the words
 
 Write the whole page as a copy deck (plain text) before markup, following `references/copy.md`:
@@ -160,8 +205,10 @@ Write the whole page as a copy deck (plain text) before markup, following `refer
 - **Every headline fits in two lines or fewer at every width.** Do the arithmetic in copy.md §2 before
   committing to a sentence: about 32 characters is safe everywhere at a confident size. The studied
   gallery heroes have a median of 5 words and 32 characters.
-- One supporting sentence. One primary action, named for what it does, as a real button on the first
-  screen.
+- One supporting sentence, directly under the headline (32–48px below it) and shown with it, never
+  docked at the foot of the first screen or held back by an animation. When the headline is a name or
+  a figure of speech, this sentence says plainly what the thing is. One primary action, named for what
+  it does, as a real button on the first screen.
 - **The first screen answers the visitor's first question in large type.** For an event: what it is,
   when and where (the dates belong in the headline or at the second size, never only in small text).
   For a product: what it is and what it costs or does. For a person: who and what they do. Every
@@ -211,6 +258,13 @@ not finished. Order of work:
       sea house), never as a stand-in for the subject;
    6. type and colour alone.
 
+   When the project has footage or a real picture of its own process or product, the first screen
+   shows it, large (about 40% of the screen or more). Never write a sentence on the page about where
+   the pictures come from or what they are not ("none of these shows our bar"): a caption says what
+   the picture is, and the credit line sits small in the footer. A portfolio whose work is invented
+   for the brief draws each piece as a finished still of that work (its title card with its own type,
+   an end frame, a poster), with real detail, never as a pictogram of the client's product.
+
    **The floor, which the inspector checks:** at least four real pictures on the page, usually six to
    twelve (photographs, archival images, maps, engravings, footage, raster artwork; for software, its
    cropped interface fragments count too). SVG drawings do not count toward the floor: draw what no
@@ -221,12 +275,31 @@ not finished. Order of work:
    `references/imagery.md` covers searching, licences and credits, video, drawing, crops and treatments.
 5. **The live thing** from step 4, built into the section where it proves the claim (often the hero
    or the booking), with real content, a thumb-sized phone version and a plain fallback.
-6. **Fullness.** Look at each desktop screen as a poster: one dominant thing and the content it
+6. **The scroll scenes,** when the sheet deals them (section 9), each with the section it carries: the page's big
+   moments, the camera that flies through the work, the picture that opens to the whole screen, the
+   word that buckles under the scroll. Copy the shared stage and the scene's files from
+   `<skill>/assets/scenes/`, fill the scene with this project's own pictures and words, and set the
+   page's tokens so it takes the page's look. A scene is composition: it decides how long the page is
+   and what each screen shows, so it is built now and seen in every look round, not added at the end.
+   `references/scenes.md` says how to put one on a page, fill it, fit it and check it;
+   `assets/scenes/demo/<id>.html` is a working example of each.
+7. **Fullness.** Look at each desktop screen as a poster: one dominant thing and the content it
    carries. A screen that is mostly empty ground is an underbuilt section, not a rest; one deliberate
    rest per page is the limit, and the inspector fails a page with two or more near-empty screens.
    Running text is in the full ink at 16px or more; grey is for secondary notes.
-7. **States and semantics.** Real links and buttons, visible focus, alt text, a phone layout that is
-   its own composition.
+8. **The frame.** The page has one pair of equal outer margins at every width, and every section uses
+   the width the page has set up: when its text sits in the left half, the right half holds its
+   picture, its second column, its list or its figure, never nothing. Asymmetry lives inside the grid,
+   never in the frame: a void is placed only when something closes it on the far side. No stretch of
+   the page taller than about half a screen holds nothing at all; sections are 120–240px apart on
+   desktop. Every section the visitor came for opens with a heading that names it, and the first
+   screen carries the page's title in an `h1`. These are what readers name first when a page looks
+   wrong ("no clear title", "random empty space", "everything is pushed to one side"), and the
+   inspector measures each of them.
+9. **States and semantics.** Real links and buttons, visible focus, alt text, a phone layout that is
+   its own composition. Every control, the live thing included, works from the keyboard alone in
+   reading order and has an accessible name: its visible label, or `aria-label` when it shows only an
+   icon.
 
 Read `references/type.md`, `references/colour.md` and `references/layout.md` when you need the detail
 behind a decision; the laws below are the short form.
@@ -236,15 +309,26 @@ behind a decision; the laws below are the short form.
 ```bash
 node <skill>/scripts/lint.mjs <source files or folder>
 node <skill>/scripts/inspect.mjs <url or path/to/index.html>
+node <skill>/scripts/scenes.mjs <url or path/to/index.html>     # when the page has scroll scenes
 ```
+
+`scenes.mjs` photographs every scroll scene at 0, 10 … 100% of its hold, on desktop and on a phone,
+and the reduced-motion page; with scenes on the sheet, `inspect.mjs` also films the whole scroll
+(`desktop-film-NN.jpg`). A scene that never started or rests on desktop is a `FAIL`.
 
 `lint.mjs` scans source for banned patterns and stock phrases. `inspect.mjs` opens the page in a real
 browser at 1440, 768 and 390 pixels, measures it (headline line counts, type sizes, fonts actually
-loaded, colours, rules, shadows, gradients, contrast, overflow) and saves screenshots to
-`.taste-skill/inspect/`. Fix every `FAIL`. Treat each `WARN` as wrong unless you can defend it to a
+loaded, colours, rules, shadows, gradients, contrast, overflow, and the frame: equal margins, sections
+huddled on one side, blank stretches, the title, untitled sections, text against the screen edge) and
+saves screenshots to `.taste-skill/inspect/`. Fix every `FAIL`. Treat each `WARN` as wrong unless you can defend it to a
 designer in one sentence. Re-run until there are no `FAIL`s. Do not argue with the meter and do not
 hide things from it. The inspector serves local files over a throwaway local server; if the page must
 also open straight from the file system, open `index.html` that way once before you finish.
+
+Inspect what the visitor receives. With a build step, run the last gate on the production build
+(`vite build && vite preview`, `next build && next start`, or the built `index.html`), not only on the
+dev server: minifiers and bundlers change what ships (one dropped a `backdrop-filter` that the dev
+server showed). The inspector warns when it is looking at a dev server.
 
 ### 8. Look
 
@@ -260,9 +344,9 @@ Judge only the pictures. If a problem is visible in a screenshot, it is real, wh
 
 Now build the motion layer. It is required, and it is more than one fade: the inspector counts the
 elements that really move while the page loads and is scrolled, and fails a page under eight (it warns
-under sixteen). The layer has four parts:
+under sixteen). Any scroll scenes are already built (step 6); around them the layer has four parts:
 
-1. **The signature move** named on the sheet: one, done well.
+1. **The signature move** named on the sheet: one, done well (a dealt scene can be it).
 2. **An entrance for the parts of every section:** the heading, then the text, then the picture,
    staggered by 60–90ms, rising 16–32px with opacity, triggered once as the section enters. Not one
    fade for the whole block, and never content that stays hidden if the script fails.
@@ -278,6 +362,16 @@ every screenshot for content that failed to appear.
 
 ### 10. Report
 
+Do not report until all of these are true; each one was skipped in a test run that came out badly:
+
+- `inspect.mjs` shows **0 FAIL** at 1440, 768 and 390, on the final version of the page.
+- You opened every screenshot it listed after the last change, not only the first screen.
+- With scroll scenes: `scenes.mjs` ran on the final page with no problems, and you read every sheet
+  (desktop, phone, reduced motion).
+- A stranger reading the first screen for five seconds can say what this is and what to do.
+- Every section has a heading; the margins match on both sides; no stretch of the page is empty.
+- The critique of your last round is written down in the shape of `references/critique.md` §4.
+
 Tell the user, briefly: the direction dealt (name and seed) and any redraws with reasons; the idea
 sentence and the live thing; the final scores from your last critique round and what still falls short;
 every found picture and clip with its title, creator, licence and source page (`assets.mjs --credits` prints
@@ -292,6 +386,9 @@ These hold on every build, whatever the direction. `inspect.mjs` measures them.
 | Rule | Instead |
 | --- | --- |
 | **Headlines: two lines or fewer, at every width.** Every `h1`–`h6`, and the main line of the first screen whatever its tag. | Cut words. Then widen the measure. Size last. |
+| **A clear title on the first screen**, in the page's one `h1`, and a heading on every section. | Say what this is: the name with what it does, the product with what it is for, the event with its date and place. |
+| **Equal outer margins; no section huddled on one side** with the other half of the screen empty. | Close every void with something on its far side: the section's picture, a second column, a list, a figure. |
+| **No blank stretches** taller than about half a screen. | The normal section gap. A deliberate rest is a placed picture or a field of colour, once per page. |
 | **Statements are paragraphs.** An intro sentence or a quotation set large is marked up as `<p>` or `<blockquote>`, stays at statement size (36px or less on desktop, 24px on a phone) and runs to about 25 words, three lines. | Larger than that it is a headline and the two-line rule applies. In blind tests jurors read a 42px sentence over four lines as a four-line headline. |
 | **No eyebrows.** No small label above a heading, no pill badge above the headline, no "New ·" chip. | Put the information in the heading or the first sentence, or drop it. |
 | **No monospace** outside real code blocks. | The text face. Tabular figures where numbers align. |
@@ -341,7 +438,9 @@ Short form. Numbers are from the study unless marked as house style.
 **Space**
 - One grid, one pair of tight margins (16–32px), used everywhere; large things run to the edges. Text
   blocks share two or three left edges on the whole page.
-- The gap between sections is clearly larger than any gap inside one: 120–220px on desktop.
+- Asymmetry inside the grid, never in the frame: the two outer margins are equal, and an off-centre
+  heading is answered by something at the far side of the grid.
+- The gap between sections is clearly larger than any gap inside one: 120–240px on desktop (the study's median is about 240).
 - Each section has a different composition from its neighbours; none is a card grid.
 
 **Colour**
@@ -367,6 +466,11 @@ Short form. Numbers are from the study unless marked as house style.
   square, 23% pill; the 9–16px "soft" radius is the weak-site default). Most strong heroes have no
   button at all, or one.
 - Navigation: wordmark, three to five plain links, one action. No bar chrome.
+- A control explains how to use it by its form, its label and its place. When it seems to need a
+  sentence on how to operate it, redesign the control instead of adding the sentence. What a field
+  accepts is different. First remove the limit where you can: a date picker, or a parser that takes
+  any common format. A limit that remains, such as password rules or file type and size, stays visible
+  beside the field and is tied to it with `aria-describedby`.
 - The footer is a designed close, not a sitemap: on most strong sites the name returns at full width.
 
 ## Special cases
@@ -376,9 +480,28 @@ onto the roles, and take only composition from the draw. The house rules still a
 itself requires a banned device (its logo sits in a gradient, its accent is violet), keep the brand
 asset, say so in the report, and pass `--allow <rule>` to the inspector for that rule only.
 
-**Redesign or review of an existing page.** Run `lint.mjs` and `inspect.mjs` on it first and report
-what they find, then critique the screenshots with `references/critique.md`. For a redesign, draw a
-direction and proceed from step 2, keeping the page's real content and working behaviour.
+**Redesign, restyle or review of an existing page or app screen.**
+
+1. **Record the before.** Run the project as it is and inspect it into its own folder
+   (`inspect.mjs <url> --out .taste-skill/before`, with `--app` for an app screen) and lint its
+   source. Read the code: the framework, the styling method (Tailwind v3 or v4, CSS modules,
+   styled-components, plain CSS), the components, and what must survive: routes, forms, data,
+   behaviour, the brand's own assets.
+2. **A review stops here.** Critique the before screenshots with `references/critique.md`, list the
+   findings with the inspector's measurements, and name the three changes that would move the page
+   most.
+3. **Keep the stack, the content and what works.** No framework or styling-library migration; check the
+   dependency file before adding anything. A restyle keeps the layout and takes type, colour and
+   components from a dealt direction (`--keep` whatever the brand fixes); a redesign deals a full
+   direction and rebuilds the sections from its blueprints inside the existing components. Either way
+   proceed from step 2 of the run with the page's real content.
+4. **Order of work, biggest effect for least risk:** type (faces and scale), colour (one ground, one
+   ink, one accent), the frame (margins, section rhythm, a title on the first screen and a heading on
+   every section), states (hover, focus, loading, empty, error), then the stock components (icon
+   cards, pill badges, gradient blobs, card grids) replaced by the dealt blueprints.
+5. **Prove it.** Inspect again into `.taste-skill/after`, compare before and after at every width,
+   click through every link, form and menu that worked before, and report the before and after
+   measurements side by side.
 
 **A component or a single section, not a page.** Skip the draw unless there is no direction to follow.
 Match the surrounding design, apply the house rules and the laws, and still inspect the result.
@@ -398,17 +521,22 @@ open collections could not be searched.
 
 | File | Read it when |
 | --- | --- |
+| `references/app-screens.md` | Any dashboard, admin, settings or other app screen: its own run, rules, tokens and checks. |
 | `references/copy.md` | Writing the argument and the copy deck (steps 2 and 5). The two-line arithmetic. |
 | `references/type.md` | Setting type: scales, tracking, measure, loading fonts, pairing. |
 | `references/colour.md` | Applying the palette: roles, proportions, tone steps, dark pages, contrast. |
 | `references/layout.md` | Grid, margins, rhythm, section variety, navigation, footer, the phone composition. |
 | `references/imagery.md` | Choosing, finding, crediting, cropping and treating pictures; what to do with none. |
 | `references/motion.md` | Step 9. Budget, tokens, recipes, reduced motion. |
+| `references/scenes.md` | Step 6, when the sheet deals scroll scenes: putting one on a page, filling, fitting, the phone, checking, the catalogue. |
 | `references/critique.md` | Step 8. How to look, how to score, what to fix first. |
 | `references/tells.md` | The dated registry of generated-page tells and what each is replaced by. |
 | `references/research.md` | The study: method, numbers, what the best and worst sites do. Cite it, do not guess. |
-| `scripts/draw.mjs` | Deals and reprints the direction; `--photos`, `--site <id>` for more references. |
+| `scripts/draw.mjs` | Deals and reprints the direction; `--photos`, `--site <id>` for more references; `--app` deals an app style instead. |
 | `scripts/assets.mjs` | Step 6: searches open collections for real pictures of the subject's world; `--get` downloads with the credit, `--credits` prints them. |
 | `scripts/lint.mjs` · `scripts/inspect.mjs` | The gate. |
+| `scripts/scenes.mjs` | The gate for scroll scenes: each scene at 0-100% of its hold, desktop, phone, reduced motion. |
 | `assets/base.css` · `assets/base.js` | An optional neutral foundation to build on. |
-| `library/` | The data the draw reads: directions, heroes, sections, type systems, palettes, photographs, studied sites, motions. Do not read it whole; use the script. |
+| `assets/scenes/` | The scroll scenes: the shared stage (`stage.js`, `stage.css`) and, for each scene in the library, its `.js`, `.css` and a working demo page in `demo/`. |
+| `assets/app.css` · `assets/charts.js` | For app screens: a neutral shell, panels, tables and controls, and small SVG charts drawn to the app rules. |
+| `library/` | The data the draw reads: directions, heroes, sections, type systems, palettes, photographs, studied sites, motions, scroll scenes (`scenes.json`), and the app styles, shells and screen patterns (`app.json`). Do not read it whole; use the script. |

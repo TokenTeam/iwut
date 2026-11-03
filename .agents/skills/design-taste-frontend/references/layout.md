@@ -11,11 +11,12 @@ below are hand tallies from those notes, so read them as "about").
 2. Margins and the grid
 3. Where text sits
 4. Empty space
-5. Sections: carry the idea, vary the arrangement
-6. Navigation
-7. Endings
-8. The phone is a second composition
-9. How pages fail
+5. The frame: margins, balance and titles
+6. Sections: carry the idea, vary the arrangement
+7. Navigation
+8. Endings
+9. The phone is a second composition
+10. How pages fail
 
 ## 1. What strong pages do
 
@@ -77,19 +78,132 @@ below are hand tallies from those notes, so read them as "about").
 
 ## 4. Empty space
 
-Empty space is placed, not left over: an empty left half, a blank right third, 300px of nothing above
-the work.
+Empty space is placed, not left over. In the study of 97 Sites of the Day captured in October 2026,
+readers judged every large empty area either a rest, which something closes, or a hole, which nothing
+closes. Strong sites have plenty of rests. About half of them still leave at least one hole, and the
+holes are what visitors name ("big random blank spaces").
 
-- Decide where the void is and keep it clean: no stray caption, no decorative shape, no faint
-  watermark.
-- The gap between sections is clearly larger than any gap inside one (120–220px on desktop,
-  72–112px on a phone).
-- Related things sit close; unrelated things sit far. If a heading is equidistant from the paragraph
-  above and the one below, fix it: at least twice as much space above as below.
+**A void is placed when something closes it.** In the readers' notes the closer is, most often:
+
+- the picture itself (sky, ground, the object, the film) with the type docked at its edge;
+- a picture across the void: the photograph at the far side of an empty band, the full-width row
+  rising under a statement, the opposite picture in a stagger;
+- the type: a headline large enough to span the space, or two short texts at the two ends of one
+  baseline;
+- on a one-screen page, the wordmark, the navigation and one fact in the corners, like a mount around
+  a print.
+
+About one closer in five in the study is a hairline or grid line. That device is banned here; close the
+void with the picture, the type, a step in ground tone or a field of flat colour.
+
+**Where holes come from.** In order of frequency in the study:
+
+1. A gap between sections stretched too far: bands of 250–760px of plain ground.
+2. Text in one half of a section and nothing in the other.
+3. Content that arrives late: a reveal not yet fired, so the visitor scrolls onto bare ground while the
+   words fade in.
+4. A short block stretched to a full screen: a footer padded to the viewport height, a section title
+   alone on a whole screen.
+5. A pinned scene that holds almost nothing for several screens.
+6. Pictures of different heights top-aligned in a row, leaving a hole under the short one.
+
+**Rules**
+
+- Decide where the void is and name what closes it. If nothing does, it is a hole: move the section's
+  picture into it, make the main element bigger, or take the space out.
+- Keep the void clean: no stray caption, no decorative shape, no faint watermark, no grid lines.
+- Sections sit 120–240px apart on desktop, counted from the last line of one to the first line of the
+  next (the median in the study is about 230–250px), and 72–112px on a phone. A change of ground
+  colour lets the gap be a little smaller. More than about 40% of a screen of plain ground between two
+  sections is a hole.
+- The gap between sections is clearly larger than any gap inside one. Related things sit close and
+  unrelated things far; a heading has at least twice as much space above it as below.
+- No stretch of the page taller than about half a screen holds nothing at all. In the study, runs of a
+  screen or more with nothing in the page were almost always scroll distance for a pinned scene; the
+  pinned stage must then hold something at every scroll position.
+- Content is in place on the first paint. An entrance moves what is already there (see `motion.md`);
+  it never leaves a screen of bare ground while the words arrive.
+- Size a section to its content. `min-height: 100vh` belongs to a section that fills the screen, not
+  to a footer or a lone heading.
+- In a row of pictures of different heights, align the bottoms or put something under the short one,
+  or crop the row to one ratio.
+- A rest is one thing on a screen: a single line, one object, one picture or a field of colour. Once
+  per page at most. A screen of nothing is never a rest, and the inspector fails two near-empty screens.
 - When a section looks empty, the answer is almost never "add something". Make the main element
   bigger, or cut the section.
 
-## 5. Sections: carry the idea, vary the arrangement
+## 5. The frame: margins, balance and titles
+
+The frame is what readers judge before any detail: "no good margin", "everything is shifted to one
+side", "no clear title", "random unclear sections". The inspector measures each of these. The numbers
+are from the study of 97 Sites of the Day (October 2026).
+
+**One pair of equal margins.**
+
+- The left and right margins are the same, at every width. On the studied sites with scrolling
+  sections the two sides match to a few pixels: 16 and 16, 20 and 21, 32 and 32, 140 and 137. No
+  strong page in the study was pushed to one side.
+- The usual margin is tight: median about 28px at 1440, half the sites between about 18 and 45px, a
+  few at 80px or more. Here it is 16–32px (section 2), and never under 16px at any width, on the phone
+  included. About one award site in seven sets text 8–15px from the edge; that studio habit is
+  excluded here.
+- The navigation sits on the same margins as the content. The commonest small fault in the study is a
+  header on one inset and the page on another (40px against 20px, or 34px on the left against 10px on
+  the right).
+- A bleed is deliberate and starts from the margin: a row of pictures that runs off the right edge
+  begins on the left margin; a display line that bleeds starts or ends on one. A bleed never moves the
+  margin.
+- Asymmetry belongs inside the frame: an off-centre anchor line (a third across, 42%, the centre line)
+  on symmetric margins.
+
+**Use the width the page has set up.**
+
+- In the study about one text section in a hundred leaves half the width empty. Text that sits in one
+  half is common, in roughly one site in three, but the other half then holds the section's own
+  picture (most often), a full-bleed picture behind the text, a second column, a list or a figure.
+- When the text takes one side, put the picture, the second column, the list or the large number on
+  the other. Never leave the other half to plain ground.
+- The middle counts too: a card at the left edge and a lone button at the right with the middle third
+  empty is the same hole.
+- The first screen counts too. When the sentence and the button take the left third above a name
+  docked at the foot, the upper right holds something (the picture or film, one fact, the action) or
+  the name grows up to meet them; in testing, 60% of a first screen left as plain ground under the
+  navigation read as a hole, and the inspector now warns when one empty block takes 28% of the first
+  screen or more.
+- A display line fitted to the width is fitted by measurement (a small script that sets its size from
+  the content box, or SVG text with `textLength`), never by a size guessed for one face: a name that
+  starts on the margin and runs a few pixels off the other edge reads as a mistake.
+- A centred composition has one axis, equal flanks and one thing on it, not a stack of heading,
+  paragraph and two buttons.
+
+**A title that says what this is, on the first screen.**
+
+- Asked whether a stranger could say what the page is within five seconds, readers found that 40 of
+  the 97 first screens say it in words, 42 say it only through pictures, small print or a bare name,
+  and 15 do not say it at all. The last group lost usability and content points, not design points.
+- Size alone does not do it: 66 of the 97 first screens carry a display-size line, but 26 of those are
+  a name, a slogan or a place with nothing saying what is offered.
+- The first screen has one `h1`, at display size (32px or more on desktop; on the clear first
+  screens in the study mostly 50–150px), two lines at most, that says what this is: the name with
+  what it does, the product with what it is for, the event with its date and place. If the `h1` is
+  the name, the line under it, at 18px or more, says what the thing is.
+- It is there on the first paint. About a third of the studied pages still showed a loader or nothing readable 4.5
+  seconds.
+
+**A heading on every section.**
+
+- 82% of the text sections on the studied sites open with a heading: median 57px (40–96px for the
+  middle half), about three and a half times the body size, one or two lines.
+- Headings start on the outer margin or on the page's inner anchor line (in the study about a third
+  each) and in the same place for every section. About a quarter of the headings in the study are
+  centred; centre one moment per page here.
+- Where a studied section has no heading, the usual stand-in is a small label: caps, mono or a number
+  in brackets. All three are banned here. Put the label's words in a heading in the heading face at the
+  section size ("The rooms", "How it works", "Prices"), set them on the anchor line, and let the first
+  sentence carry the rest.
+- A statement can open a section as its heading only when it names what the section holds.
+
+## 6. Sections: carry the idea, vary the arrangement
 
 The most common failure in every score band is a distinctive first screen followed by stock blocks:
 icon cards, a three-up row, an accordion, a link-column footer. About 25 of the studied sites lose
@@ -110,7 +224,7 @@ points this way, including several above 7.5.
 - **Short pages are fine.** A quarter of the studied sites are one or two screens. Do not add sections
   to seem complete; each one must carry a claim (see `copy.md` §1).
 
-## 6. Navigation
+## 7. Navigation
 
 - The plain form: the wordmark at one end, three to five text links, one action, all at text size on
   the page ground with no bar, border or background. Median link count in the study is 3.
@@ -127,7 +241,7 @@ points this way, including several above 7.5.
   the phone so the headline, the supporting sentence and the action stay in the first screen. In
   blind tests a nav that ate the hero cost a whole point of usability.
 
-## 7. Endings
+## 8. Endings
 
 - The page should end on a designed scene. In the study: the name at full width (about 18 of 114), the
   hero repeated in inverted colours (about 12), a closing scene of its own such as the one contact
@@ -138,7 +252,7 @@ points this way, including several above 7.5.
 - Put the practical facts (address, hours, email, legal line) in the text face at a readable size, on
   the same anchor lines as the rest of the page.
 
-## 8. The phone is a second composition
+## 9. The phone is a second composition
 
 Design the 390px screen as its own page, not the desktop page squeezed. Strong sites that neglect this
 lose usability points; weak ones are often just broken.
@@ -153,7 +267,7 @@ lose usability points; weak ones are often just broken.
 - Check 390px in the inspector's screenshots for every round: sideways scroll and three-line headlines
   usually appear here first.
 
-## 9. How pages fail
+## 10. How pages fail
 
 From the panel's notes on the 54 sites scoring under 6.8 (counts out of 54):
 

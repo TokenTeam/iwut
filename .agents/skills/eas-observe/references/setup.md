@@ -403,15 +403,17 @@ User-defined events are persisted on-device, batched, and dispatched on the next
 
 User-defined events appear under the **Events** tab in the Observe dashboard, and are queryable from the terminal with `eas observe:events` — see [`./queries.md`](./queries.md).
 
-## Optional — error reporting
+## Optional — error and crash reporting
 
-`expo-observe` records errors as non-fatal `exception` log events alongside the performance metrics. They arrive by three paths, and they are **not** a replacement for a crash reporter such as Sentry — EAS Observe has no crash reporting yet.
+`expo-observe` records JavaScript errors and native crashes alongside the performance metrics. Errors are persisted on-device, batched, and dispatched on the next flush. They appear on the **Observe > Errors** page of the dashboard. Docs: https://docs.expo.dev/eas/observe/errors/
 
-> These APIs ship in `expo-observe` but are not covered by the published docs yet. Verify the exports against the installed package version before relying on them.
+> Error reporting is in **preview** and requires SDK 57+. Native crashes additionally require `expo-observe` 57.0.21+.
 
-**1. Unhandled JS errors — automatic.** A global `ErrorUtils` handler is installed when the package is first imported, which is earlier than any `configure()` call, so errors thrown before configuration are still recorded. React Native's own behavior is unchanged: the red box in development and fatal termination in production still happen. Turn the recording off with `configure({ errorHandlingEnabled: false })`.
+JavaScript errors arrive by three paths.
 
-**2. Render-phase errors — `<ObserveErrorBoundary>`.** Render errors never reach `ErrorUtils`, so a boundary is the only way to capture them with the React component stack. The boundary records the error and then renders `fallback` in place of the subtree.
+**1. Unhandled JS errors — automatic.** A global `ErrorUtils` handler is installed when the package is first imported, which is earlier than any `configure()` call, so errors thrown before configuration are still recorded. React Native's own behavior is unchanged: the red box in development and fatal termination in production still happen. Turn the recording off with `configure({ errorHandlingEnabled: false })`. This only affects unhandled JS errors — boundary errors, `reportError` calls, and native crashes are still recorded.
+
+**2. Render-phase errors — `<ObserveErrorBoundary>`.** Without a boundary, a render error is recorded by the global handler as an unhandled error. A boundary records it with the React component stack and then renders `fallback` in place of the subtree.
 
 ```tsx
 import { ObserveErrorBoundary } from 'expo-observe';
@@ -424,6 +426,22 @@ import { ObserveErrorBoundary } from 'expo-observe';
 
 `fallback` is required and accepts a React element, `null`, or a function receiving `{ error, resetError }`. `resetError()` clears the caught error and re-mounts the children, so they restart from a clean state. There is no capture-and-rethrow mode — a boundary always renders one of the three fallback forms. Errors that no boundary catches still reach the global handler.
 
+For an app-wide boundary, pass `errorBoundaryFallback` to `ObserveRoot`. `ObserveRoot.wrap(Component)` takes no options, so replace `export default ObserveRoot.wrap(RootLayout)` with an outer wrapper that keeps `RootLayout` beneath `ObserveRoot`:
+
+```tsx
+export default function ObservedRootLayout() {
+  return (
+    <ObserveRoot errorBoundaryFallback={<FallbackScreen />}>
+      <RootLayout />
+    </ObserveRoot>
+  );
+}
+```
+
+Keep your existing `RootLayout` beneath `ObserveRoot` when making this change. Rendering `<ObserveRoot>` inside a layout is fine only when that layout just returns the wrapper and its children.
+
+`ObserveRoot.wrap(RootLayout)` stays correct when no custom boundary is needed. Without `errorBoundaryFallback`, no root boundary is mounted and render errors are recorded by the global handler without the component stack. Pass `errorBoundaryFallback={null}` to capture render errors and render nothing after an error.
+
 **3. Handled errors — `Observe.reportError(error)`.** Report failures your code caught and recovered from, which reach neither the global handler nor a boundary.
 
 ```tsx
@@ -434,11 +452,46 @@ try {
 }
 ```
 
-The value is normalized before it is sent: an `Error` contributes `name`, `message`, and `stack`; any other thrown value (a string, a plain object, a number) is stringified into the message with no stack. `reportError` never throws — it is called from a `catch` block, so a failure inside it must not turn a handled error into an unhandled one.
+The value is normalized before it is sent: an `Error` contributes `name`, `message`, and `stack`; any other thrown value (a string, a plain object, a number) is stringified into the message with no stack. `reportError` never throws — it is called from a `catch` block, so a failure inside it must not turn a handled error into an unhandled one. Keep PII out of error messages; everything reported leaves the device and is visible in the dashboard.
+
+### Native crashes — automatic
+
+With `expo-observe` 57.0.21+, native crashes are recorded with no setup. The report is written on the device and dispatched on the **next launch**, so a recent crash can take time to appear. They show with the **Native** source in the dashboard.
+
+- **Android:** uncaught Java/Kotlin exceptions, including the `Caused by` chain. On Android 11+, also the OS crash records for native-code crashes such as `SIGSEGV` and `SIGABRT`.
+- **iOS:** MetricKit crash reports — Mach exceptions (`EXC_BAD_ACCESS`, `EXC_BREAKPOINT`) and Unix signals (`SIGSEGV`, `SIGBUS`, `SIGTRAP`). On iOS 17+, also uncaught Objective-C and Swift exceptions.
+- **Not recorded:** tvOS, the iOS Simulator, ANRs, and out-of-memory terminations.
+
+### Symbolicated stack traces
+
+Production JS stack traces point into the minified bundle unless a source map is stored for the code that threw. Errors from the embedded bundle use the **build's** source map; errors from an OTA bundle use the **update's** source map. Upload both.
+
+**Builds** — set `uploadSourceMaps` in the build profile:
+
+```json
+{ "build": { "production": { "uploadSourceMaps": true } } }
+```
+
+- Requires EAS CLI 22.0.0+ and a build on EAS Build servers. `eas build --local` does not upload source maps.
+- `sourcesContent` is stripped before upload; only file names and mappings are stored. A failed upload only warns — the build still completes.
+
+**EAS Updates** — publish with `--upload-source-maps` (EAS CLI 24.9.0+):
+
+```bash
+eas update --channel production --upload-source-maps
+```
+
+- Uploads the map `expo export` emits for each native platform, with `sourcesContent` stripped.
+- Maps over the 5 MiB upload limit are skipped with a warning; publishing never fails because of a source map.
+- The error detail page links the update that supplied the map next to **Stack trace**, as it does for the build.
+
+**Not available yet:** native symbolication (no dSYM or ProGuard mapping upload). Native frames show symbol names on iOS and class/method/line on Android.
+
+If the user needs ANR/OOM capture or native symbolication today, a separate crash reporter such as Sentry is still the option for that gap.
 
 ## Optional — runtime configuration
 
-`Observe.configure()` controls collection and dispatch. Call it at module scope, before mount. Integration flags in particular cannot be toggled at runtime.
+`Observe.configure()` controls collection and dispatch. Call it at module scope, before mount. The navigation integration flags (`expo-router`, `react-navigation`) cannot be toggled at runtime. The `react-native-reanimated` integration can be turned off by a later `configure()` call (see [`./library-integrations.md`](./library-integrations.md)).
 
 | Option | Type | Default | What it does |
 |---|---|---|---|
@@ -447,7 +500,7 @@ The value is normalized before it is sent: an `Error` contributes `name`, `messa
 | `dispatchInDebug` | boolean | `false` | Dispatch metrics collected from debug builds. No effect on release builds. |
 | `sampleRate` | number | `undefined` (all installations) | Fraction of installations that dispatch, in `[0, 1]`. |
 | `errorHandlingEnabled` | boolean | `true` | Record unhandled JS errors as `exception` events. |
-| `integrations` | object | `undefined` | Opt in to `expo-router`, `react-navigation`, or a third-party integration. |
+| `integrations` | object | `undefined` | Opt in to `expo-router`, `react-navigation`, `expo-image`, `react-native-reanimated`, or a third-party integration. For `expo-image` and `react-native-reanimated`, see [`./library-integrations.md`](./library-integrations.md). |
 
 **Network request monitoring is automatic and has no off switch.** `expo-observe` observes `URLSession` traffic on iOS and `OkHttpClient` traffic on Android from launch, and attaches a rollup of the launch window to the TTI event — including the **host** of the slowest request (see [`./metrics.md`](./metrics.md)). Observe's own uploads are excluded. No `configure()` option disables it as of `expo-observe` 57.0.9, so treat request hosts as data that leaves the device.
 
@@ -472,5 +525,6 @@ The URL is baked into the native layer at build time, so run `npx expo prebuild`
 - [ ] (Optional, SDK 56+) Per-route metrics enabled via `Observe.configure({ integrations: { ... } })`, plus `<ObserveNavigationContainer>` (dynamic) or `<ObserveNavigationProvider>` (static) for React Navigation.
 - [ ] (Optional, SDK 57+) Sensitive route/query params listed in `filteredParams`.
 - [ ] (Optional, SDK 56+) User-defined events emitted via `Observe.logEvent(name, { attributes })` with stable, lowercase, dot-separated names and no PII.
-- [ ] (Optional) `<ObserveErrorBoundary>` around risky subtrees and `Observe.reportError` in recovery paths.
+- [ ] (Optional) Library problem reports enabled via `integrations: { 'expo-image': true }` (SDK 57+) or `integrations: { 'react-native-reanimated': true }` (SDK 58+, Reanimated 4.7.0+), with no `configureReanimatedLogger` call in the app. See [`./library-integrations.md`](./library-integrations.md).
+- [ ] (Optional, SDK 57+) `<ObserveErrorBoundary>` (or `errorBoundaryFallback` on `ObserveRoot`) around risky subtrees, `Observe.reportError` in recovery paths, `"uploadSourceMaps": true` in the `eas.json` build profile, and `eas update --upload-source-maps` when publishing updates.
 - [ ] New build produced with `eas build` and metrics visible in the Observe dashboard.

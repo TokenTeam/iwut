@@ -26,13 +26,18 @@
   --section: clamp(5rem, 12vw, 13rem);   /* space between sections */
   --radius: 0px;                          /* one radius for the whole page: 0, or large, decided once */
 
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
-  --ease-soft: cubic-bezier(0.33, 1, 0.68, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);        /* entrances, moving hovers, UI under 600ms */
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);        /* reveals of 800ms and longer, line rises, openings */
+  --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);     /* wipes, panels, things that travel while visible */
+  --ease-soft: cubic-bezier(0.33, 1, 0.68, 1);       /* slow scale and drift on photographs */
+  --ease-exit: cubic-bezier(0.55, 0.055, 0.675, 0.19); /* something leaving for good, short */
   --t-press: 140ms;
   --t-hover: 180ms;
   --t-ui: 240ms;
   --t-reveal: 800ms;
+  --t-open: 1200ms;                                  /* picture openings and clip wipes */
+  --stagger-line: 90ms;
+  --stagger-item: 70ms;
 }
 
 /* ---------- reset ---------- */

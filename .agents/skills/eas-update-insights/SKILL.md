@@ -1,7 +1,6 @@
 ---
 name: eas-update-insights
 description: "Check the health of published EAS Update: crash rates, install/launch counts, unique users, payload size, and the split between embedded and OTA users per channel. Use when the user asks how an update is performing, whether a rollout is healthy, how many users are on the embedded build vs OTA, or wants to gate CI on update health."
-version: 1.0.0
 license: MIT
 allowed-tools: "Bash(eas *)"
 ---
@@ -232,7 +231,7 @@ Human-readable group details plus 30 days of launches/failures per platform — 
 ## Submitting Feedback
 If you encounter errors, misleading or outdated information in this skill, report it so Expo can improve:
 ```bash
-npx --yes submit-expo-feedback@latest --category skills --subject "eas-update-insights" "<actionable feedback>"
+npx --yes @expo/agent-cli@latest feedback --category skills --subject "eas-update-insights" "<actionable feedback>"
 ```
 Only submit when you have something specific and actionable to report. Include as much relevant context as possible.
-If an AI agent repeatedly failed or the user had to take over an Expo task, load the expo-skill-feedback skill and follow its eval-candidate flow instead of reusing the command above.
+If an agent repeatedly fails at an Expo task or the user has to step in, submit a brief report of the task, expected result, and what went wrong using `--category evals` and the relevant Expo package or command as `--subject`.

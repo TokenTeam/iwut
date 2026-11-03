@@ -1,9 +1,9 @@
 // Zero-dependency Chrome DevTools Protocol client.
 // Drives an installed Chrome / Edge / Chromium in headless mode over Node's built-in WebSocket.
 // Requires Node 22+. No npm install.
-import { spawn } from 'node:child_process';
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { spawn, spawnSync } from 'node:child_process';
+import { existsSync, mkdtempSync, rmSync, writeFileSync, readFileSync, readdirSync } from 'node:fs';
+import { tmpdir, hostname } from 'node:os';
 import { join } from 'node:path';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -37,6 +37,30 @@ export function findChrome() {
   return null;
 }
 
+// Each profile carries an owner file naming the machine and the two processes that use it (the run and
+// its Chrome). A later run removes a profile left by a killed run only when that file names this machine
+// and neither process is alive. A profile without one (made before 2.1.4, or by another tool) is never touched.
+const OWNER = 'taste-skill-owner.json';
+
+function alive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; }
+}
+
+export function sweepProfiles(base) {
+  let names;
+  try { names = readdirSync(base); } catch { return; }
+  for (const name of names) {
+    if (!name.startsWith('ad-chrome-')) continue;
+    const p = join(base, name);
+    try {
+      const o = JSON.parse(readFileSync(join(p, OWNER), 'utf8'));
+      if (o.host !== hostname() || !Number.isInteger(o.pid) || alive(o.pid) || alive(o.chrome)) continue;
+      rmSync(p, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    } catch {}
+  }
+}
+
 export class Browser {
   static async launch({ width = 1440, height = 900, extraArgs = [] } = {}) {
     if (typeof WebSocket === 'undefined') {
@@ -46,9 +70,26 @@ export class Browser {
     if (!exe) {
       throw new Error('No Chrome/Edge/Chromium found. Install one or set CHROME_PATH to its executable.');
     }
-    const dir = mkdtempSync(join(tmpdir(), 'ad-chrome-'));
+    // A throwaway profile per run, its cache capped (each run starts cold anyway), removed on exit. It is
+    // claimed with an owner file before Chrome starts, so another run's sweep can tell when it was abandoned.
+    const base = process.env.TASTE_SKILL_TMP || tmpdir();
+    sweepProfiles(base);
+    const dir = mkdtempSync(join(base, 'ad-chrome-'));
+    const claim = (chrome) => {
+      try { writeFileSync(join(dir, OWNER), JSON.stringify({ host: hostname(), pid: process.pid, chrome })); } catch {}
+    };
+    claim();
+    // On exit Chrome still holds the profile's files: stop it first, then remove the folder.
+    let pid = 0;
+    const drop = () => {
+      try { if (pid) { if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(pid), '/T', '/F'], { stdio: 'ignore' }); else process.kill(pid, 'SIGKILL'); } } catch {}
+      try { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); } catch {}
+    };
+    process.once('exit', drop);
+    for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.once(sig, () => { drop(); process.exit(130); });
     const args = [
       '--headless=new', '--remote-debugging-port=0', `--user-data-dir=${dir}`,
+      '--disk-cache-size=16777216', '--media-cache-size=16777216',
       '--no-first-run', '--no-default-browser-check', '--mute-audio', '--hide-scrollbars',
       '--disable-background-timer-throttling', '--disable-renderer-backgrounding',
       '--disable-backgrounding-occluded-windows', '--disable-features=Translate,MediaRouter',
@@ -56,6 +97,8 @@ export class Browser {
       '--enable-unsafe-swiftshader', `--window-size=${width},${height}`, ...extraArgs, 'about:blank',
     ];
     const proc = spawn(exe, args, { stdio: ['ignore', 'ignore', 'pipe'] });
+    pid = proc.pid;
+    claim(pid);
     const wsUrl = await new Promise((resolve, reject) => {
       let buf = '';
       const t = setTimeout(() => reject(new Error('Chrome did not start within 20s')), 20000);

@@ -16,6 +16,8 @@ others.
 9. What the inspector says about the gallery itself
 10. The 25 highest-scored sites and their ideas
 11. How the skill was tested
+12. The October 2026 study: 100 Sites of the Day
+13. The app-screen study
 
 ## 1. Method and its limits
 
@@ -304,3 +306,51 @@ Each of these is now a rule in SKILL.md or a check in the inspector.
 
 Limits: one juror per brief per round, so single scores carry about half a point of noise; the round-5
 briefs had been seen in round 4; jurors are models, not people.
+
+## 12. The October 2026 study: 100 Sites of the Day
+
+A second study, made for v2.1, of the latest 100 Awwwards Sites of the Day (10 July to 17 October
+2026), with a different aim from the first: where the pictures and footage sit, how pages move, and
+the frame (margins, balance, empty space, titles). About three in four of these sites were also in
+the first study.
+
+- **Capture.** Headless Chrome at 1440×900 and 390×844 on 18 October 2026: four frames of the first
+  4.5 seconds after load, every screen while scrolling with real wheel input (one frame at rest per
+  step; the mid-step frames were cut from the top of the document instead of the viewport, so they
+  were not used), five phone screens, and a measurement pass in the page: every picture and
+  clip with its box, ratio, fit and corners; every section's content edges and pictures; blank runs;
+  the CSS that loaded (curves, durations, keyframes, breakpoints, feature counts); the animations,
+  transitions and script-driven moves that actually ran; GSAP tweens and scroll triggers where the
+  page exposed them. Nothing a site owns (code, copy, pictures) is reproduced in the skill; only
+  measurements and descriptions in our own words.
+- **Panel.** One model reader per site studied its frames and measurements, described the idea, the
+  first screen, the frame, every section, where each picture sits, the motion and what not to copy,
+  and scored it the Awwwards way. 91 of 99 captures were usable (the rest showed a gate, a bot wall or
+  a firewall page). Scores ran 6.7 to 7.9 (median 7.45); "top" means 7.5 or more (36 sites), "lowest"
+  under 7.3 (16).
+- **What it changed.** Where pictures and footage go: `imagery.md` §12. What strong pages do with
+  motion, new tokens, recipes and the gimmicks to avoid: `motion.md` §2, §4–6 and §9–10. Empty space
+  and the frame: `layout.md` §4–5. New compositions in `library/heroes.json` and `sections.json` and
+  notes on media and motion in `library/sites.json` (`draw.mjs --site <id>`).
+- **Headline numbers.** Pictures fill a median 16% of a scrolled screen, but in whole screens: 42% of
+  screens hold none and 19% are 90% picture or more. The median page carries 7 pictures (top 8,
+  lowest 2) and 42% carry footage (half of the top sites, one of the 16 lowest). 94% of pictures have
+  square corners. Strong ease-outs are the curves that ran (expo and quint out); the median of all
+  that ran on a site is 420ms. 60 of 99 open on a loading screen, and a third of the usable pages were
+  still unreadable 4.5 seconds after load, with no gain in the design marks. About 1 text section in
+  100 leaves half the width empty; the outer margins of strong pages match to a few pixels; 82% of
+  text sections open with a heading; 15 of 97 first screens never say what the thing is, and those
+  lose usability points.
+- **Limits.** One capture per site on one day; a WebGL scene can render blank in a headless browser;
+  the scroll-linked frames are partly an artefact of smooth-scroll libraries; one reader per site, so
+  single scores carry about half a point of noise.
+
+## 13. The app-screen study
+
+For dashboards and app screens (v2.1), a separate study of 23 real product screens chosen by the
+owner (17 products, 17 light and 6 dark, at 1440–1512px): each screen measured from its pixels by a
+reader with full-resolution crops, six cross-cutting reports (shell, data and charts, tables and
+forms, visual language, taste, styles), and a synthesis into `references/app-screens.md` and
+`library/app.json` (seven styles, five shells, screen patterns). The screenshots stay private; the
+skill carries only the measurements and the rules. Blind test rounds of app screens built with and
+without the skill then shaped the warnings at the top of that file.

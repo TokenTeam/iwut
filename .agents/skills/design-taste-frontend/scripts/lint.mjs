@@ -2,7 +2,7 @@
 // tasteskill / lint — static scan of source files for the tells this skill bans.
 // Catches them before a render, plus the ones a render cannot see (copy habits, motion values).
 //
-//   node lint.mjs [files or directories ...] [--json]
+//   node lint.mjs [files or directories ...] [--app] [--json]
 //
 // Exit code 1 when any FAIL is found. Zero dependencies.
 import { readFileSync, readdirSync, statSync } from 'node:fs';
@@ -10,6 +10,11 @@ import { join, extname, relative, resolve } from 'node:path';
 
 const args = process.argv.slice(2);
 const asJson = args.includes('--json');
+// App screens (references/app-screens.md) keep quiet table and panel lines, faint shadows, data labels
+// and their own typefaces; a sheet dealt with draw.mjs --app switches this on by itself.
+let appMode = args.includes('--app');
+try { if (JSON.parse(readFileSync('.taste-skill/direction.json', 'utf8')).kind === 'app') appMode = true; } catch {}
+const APP_LEVEL = { hairline: null, 'outlined-box': null, 'default-font': null, numbering: 'WARN', mono: 'WARN', shadow: 'WARN', eyebrow: 'WARN', 'cta-copy': null, 'h-screen': null };
 const roots = args.filter((a) => !a.startsWith('--'));
 if (!roots.length) roots.push('.');
 const EXT = new Set(['.html', '.htm', '.css', '.scss', '.less', '.js', '.jsx', '.ts', '.tsx', '.vue', '.svelte', '.astro', '.mdx']);
@@ -19,7 +24,7 @@ const files = []; const tooBig = [];
 const walk = (p) => {
   let st; try { st = statSync(p); } catch { return; }
   if (st.isDirectory()) { for (const f of readdirSync(p)) if (!SKIP.has(f) && !f.startsWith('.')) walk(join(p, f)); }
-  else if (EXT.has(extname(p)) && !/\.min\.|lock|\.d\.ts$/.test(p)) { if (st.size < 4000000) files.push(p); else tooBig.push(p); }
+  else if (EXT.has(extname(p)) && !/\.min\.|\.d\.ts$|(^|[\\/])(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|bun\.lockb?|[^\\/]+\.lock)$/.test(p)) { if (st.size < 4000000) files.push(p); else tooBig.push(p); }
 };
 for (const r of roots) {
   try { statSync(resolve(r)); } catch { console.error(`Not found: ${r}`); process.exit(2); }
@@ -54,6 +59,11 @@ const R = [
   ['WARN', 'h-screen', /\bh-screen\b|height\s*:\s*100vh/, '100vh jumps on mobile. Use 100svh / 100dvh.'],
   ['WARN', 'bounce', /animate-(bounce|ping|pulse)\b/, 'Looping attention animation (bounce / ping / pulse dot).'],
 ];
+if (appMode) {
+  for (const r of R) if (r[1] in APP_LEVEL) r[0] = APP_LEVEL[r[1]];
+  R.push(['FAIL', 'placeholder-data', /\b(John|Jane) Doe\b|\bAcme( Inc| Corp)?\b|\bexample\.com\b|\bFirstname Lastname\b|\b123 Main St\b/, 'Placeholder data. Use believable names, amounts that add up and real units for this product.']);
+  R.push(['WARN', 'framework-colour', /#(3b82f6|2563eb|1d4ed8|60a5fa|10b981|22c55e|ef4444|f59e0b)\b/i, 'A framework default colour (Tailwind blue, green, red, amber). Take the accent and status colours from the dealt style.']);
+}
 
 const findings = [];
 let emDashes = 0;
@@ -73,6 +83,7 @@ for (const file of files) {
     if (/taste-skill-ignore/.test(line)) return;
     if (!/^\s*(\/\/|\/\*|\*|<!--)/.test(line)) emDashes += (line.replace(/\/\/.*$|\/\*.*?\*\/|<!--.*?-->/g, '').match(/—/g) || []).length; // comments are not copy
     for (const [level, id, re, message] of R) {
+      if (!level) continue;
       if (id === 'mono' && (codeLine || /(^|[\s,>+~(])(pre|code|kbd|samp)\b|code/i.test(selector))) continue; // real code may be monospace
       if ((id === 'hairline' || id === 'outlined-box') && /(^|[\s,>+~(])(table|thead|tbody|tfoot|tr|td|th|input|textarea|select|fieldset)\b/i.test(selector)) continue; // real tables and form fields keep their lines
       if (inUi && (id === 'hairline' || id === 'outlined-box' || id === 'shadow')) continue;

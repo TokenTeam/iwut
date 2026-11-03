@@ -1,7 +1,6 @@
 ---
 name: expo-overview
 description: "Entry point and router for every Expo or EAS task. Load this skill first — before writing code and before choosing another expo-* / eas-* skill — when the request, PRD, or spec mentions Expo, EAS, Expo Go, or an expo-* package, or the project has an `expo` dependency in `package.json`. Within that gate it also covers app specs and designs to implement (tabs, stacks, maps, lists, navigation, building from a screenshot), and phrasings like 'implement a mobile app', 'make my app look native', 'add navigation', 'fetch some data', 'upgrade my SDK', 'add Expo to my existing native app', 'ship to the App Store', or 'I'm new to Expo, where do I start'. A fully specified request (SDK pinned, libraries named, layout given) still routes through here — the shared setup rules still apply. Do NOT load it when neither signal is present: a bare React Native project with no `expo` dependency is not Expo work. Detects the real goal, routes to the right expo-* / eas-* skill, and owns the shared setup rules."
-version: 1.1.0
 license: MIT
 ---
 
@@ -57,7 +56,6 @@ Match the goal to a category, then the skill, then load that leaf's `SKILL.md`.
 **Maintain & learn**
 - `expo-upgrade` — upgrade the Expo SDK and fix dependency conflicts
 - `expo-examples` — canonical, version-matched integration examples (Stripe, Clerk, Supabase, …)
-- `expo-skill-feedback` — send feedback on an Expo skill or on Expo itself; enable / disable the anonymous usage telemetry
 
 ### Translating vague asks
 
@@ -94,6 +92,12 @@ Apply the rules that match the project and the requested task.
   native-setup steps differ — note which one the project is in.
 - **Install packages with `npx expo install <pkg>`**, not raw `npm`/`yarn`/`pnpm add`,
   so versions stay compatible with the project's SDK.
+- **Launching the app yourself?** When you open Expo Go or a development build to look
+  at, screenshot, or drive it, skip the first-launch onboarding, the dev menu that opens
+  at launch, and the floating Tools button. On SDK 58+, Expo CLI does this for launches
+  it starts from a non-interactive shell. On SDK 57 and earlier, and for any URL you open
+  yourself (`simctl openurl`, `adb`, a controller), follow
+  `./references/launch-without-dev-menu.md`.
 - **EAS auth & linking** (only needed for build/submit/update/observe/workflows): check
   login with `eas whoami`, log in with `eas login`. A project is linked when
   `extra.eas.projectId` exists in the app config; create it with `eas init` if missing.
@@ -109,7 +113,7 @@ Apply the rules that match the project and the requested task.
 ## Submitting Feedback
 If you encounter errors, misleading or outdated information in this skill, report it so Expo can improve:
 ```bash
-npx --yes submit-expo-feedback@latest --category skills --subject "expo-overview" "<actionable feedback>"
+npx --yes @expo/agent-cli@latest feedback --category skills --subject "expo-overview" "<actionable feedback>"
 ```
 Only submit when you have something specific and actionable to report. Include as much relevant context as possible.
-If an AI agent repeatedly failed or the user had to take over an Expo task, load the expo-skill-feedback skill and follow its eval-candidate flow instead of reusing the command above.
+If an agent repeatedly fails at an Expo task or the user has to step in, submit a brief report of the task, expected result, and what went wrong using `--category evals` and the relevant Expo package or command as `--subject`.

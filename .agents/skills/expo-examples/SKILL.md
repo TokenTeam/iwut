@@ -2,7 +2,6 @@
 name: expo-examples
 description: Expo's official example projects - the expo/examples repo of ~70 `with-*` integrations (Stripe, Clerk, Supabase, OpenAI, maps, Reanimated, SQLite, Skia, NativeWind, and more). Use when integrating a third-party library or service into an existing Expo app and you want the canonical, version-matched pattern to adapt, or when scaffolding a new project from one with `npx create-expo --example`.
 allowed-tools: "Read,Bash(gh api:*),Bash(git clone:*),Bash(npx create-expo:*),Bash(npx degit:*),Bash(bun create:*)"
-version: 1.0.0
 license: MIT
 ---
 
@@ -100,7 +99,7 @@ When the user already has an app, **add only what the example introduces; never 
 ## Submitting Feedback
 If you encounter errors, misleading or outdated information in this skill, report it so Expo can improve:
 ```bash
-npx --yes submit-expo-feedback@latest --category skills --subject "expo-examples" "<actionable feedback>"
+npx --yes @expo/agent-cli@latest feedback --category skills --subject "expo-examples" "<actionable feedback>"
 ```
 Only submit when you have something specific and actionable to report. Include as much relevant context as possible.
-If an AI agent repeatedly failed or the user had to take over an Expo task, load the expo-skill-feedback skill and follow its eval-candidate flow instead of reusing the command above.
+If an agent repeatedly fails at an Expo task or the user has to step in, submit a brief report of the task, expected result, and what went wrong using `--category evals` and the relevant Expo package or command as `--subject`.

@@ -18,8 +18,10 @@ the code, so you will read your intentions into it. The pictures only show what 
 Open `desktop-fold.jpg`, then the `desktop-page-*.jpg` sheets, then `mobile-fold.jpg` and the mobile
 sheets. Make each pass on its own; do not blend them.
 
-1. **One second.** Glance and look away. What did you see? There should be exactly one answer: a
-   word, an image, an object. If the answer is "a website", there is no focal point.
+1. **One second, then five.** Glance and look away. What did you see? There should be exactly one
+   answer: a word, an image, an object. If the answer is "a website", there is no focal point. Then
+   give the first screen five seconds as a stranger: can you say what this is, who it is for and
+   what to do next? If the title only makes sense after scrolling, it is not a title.
 2. **Squint.** Blur your attention until text becomes grey bars. The page should reduce to two or
    three large masses with clear size differences. Many small similar masses means everything is
    medium and nothing leads.
@@ -29,9 +31,13 @@ sheets. Make each pass on its own; do not blend them.
    the pricing, the FAQ and the footer, or does the page turn into stock blocks after the first screen?
 4. **Edges.** Follow the left edge of every text block down the page. Count the distinct x positions.
    A composed page has two or three, reused on purpose. Six means things were placed one at a time.
-5. **Space.** Are related things close and unrelated things far? Is the gap between sections clearly
-   larger than any gap inside a section? Is any region empty by accident (a hole) rather than by
-   decision (a rest)? A hole usually sits beside a short column or under a removed decoration.
+5. **Space and frame.** Are related things close and unrelated things far? Is the gap between sections
+   clearly larger than any gap inside a section? Is any region empty by accident (a hole) rather than
+   by decision (a rest)? A hole usually sits beside a short column or under a removed decoration.
+   Then look at the frame: are the left and right margins of the page the same? Does any section keep
+   its text in one half and leave the other half empty? Is there a stretch of nothing taller than half
+   a screen? Readers name these first ("it is pushed to the left", "random empty space"), before any
+   detail; in the study of 100 Sites of the Day about 1 section in 100 left half the width empty.
 6. **Type.** Is the jump from body text to headline decisive (three times or more)? Do you see more
    than five sizes? Any headline with one orphan word on its last line? Any paragraph wider than about
    75 characters or centred over more than three lines?
@@ -122,6 +128,11 @@ These override the arithmetic.
   grey: design cannot exceed **6.5**.
 - A section the brief asked for that is missing or reduced to a few words: content cannot exceed **6**.
 - No real button for the primary action on the first screen: usability cannot exceed **7**.
+- The five-second pass fails (no clear title saying what this is on the first screen): usability
+  cannot exceed **6**.
+- Unequal page margins, a section huddled on one side with the other half empty, or a blank stretch
+  taller than half a screen: design cannot exceed **6.5**.
+- A section of running text with no heading naming it: usability cannot exceed **7**.
 - Anything covering a headline at any scroll position: usability cannot exceed **6**.
 - A blank band where a reveal did not fire, or content clipped off-screen: usability cannot exceed **5**.
 

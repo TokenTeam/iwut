@@ -104,7 +104,7 @@ effortless, cutting-edge, all-in-one …); the correction ("not just X, it's Y")
 ## 7. Motion tells
 
 Identical fade-up on every block; a dozen staggered hero entrances; hover lift on every card; bounce
-easing; infinite loops that mean nothing; reveals that fail and leave a blank band. See `motion.md` §7.
+easing; infinite loops that mean nothing; reveals that fail and leave a blank band. See `motion.md` §9.
 
 ## 8. Why removal is not enough
 

@@ -114,6 +114,7 @@ export function judge(m, { width = m.viewport.w, allow = [] } = {}) {
     else if (m.page.realPictures < 2) add('WARN', 'no-real-pictures', `Only ${m.page.realPictures} real photograph(s) or clip(s); the rest are interface fragments.`, 'Add two or more real pictures of the customer\'s world from scripts/assets.mjs, not stock of people at laptops.');
     if (!m.page.videoCount) add('WARN', 'no-footage', 'No video anywhere on the page.', 'Look for one honest clip with scripts/assets.mjs --video (the place, the material, the process) and use it as a muted loop with a poster frame. Defend its absence only if no clip fits the subject.');
   }
+  if (m.page.videosNoPoster) add('WARN', 'no-poster', `${m.page.videosNoPoster} clip(s) without a poster.`, 'Give every clip a poster frame: in the study of 100 Sites of the Day only 31% had one, and the blank or grey boxes before the clips played were recorded as faults (references/imagery.md §11).');
   if (m.page.sideScrollers) add('WARN', 'side-scroll', `${m.page.sideScrollers} row(s) scroll sideways with content past their edge.`, 'Jurors and most visitors read a row cut at the edge as clipped, not as scrollable. Wrap it onto more lines, or end it inside the grid.');
   if (m.page.blendText) add('WARN', 'blend-text', `${m.page.blendText} text element(s) use mix-blend-mode difference or exclusion.`, 'Over anything but black, white or grey, blended text takes random hues (blue on orange, lilac on green) that jurors read as a glitch. Use a solid ink chosen for the ground, or keep the blended text over neutral grounds only.');
   if (m.type.measureChars && m.type.measureChars > 88 && !mobile) add('WARN', 'measure', `Longest paragraph runs about ${m.type.measureChars} characters per line.`, 'Cap paragraphs at 45–75 characters (max-width: 60ch).');
@@ -134,4 +135,109 @@ export function judge(m, { width = m.viewport.w, allow = [] } = {}) {
   return out;
 }
 
-export const RULE_IDS = ['headline-lines', 'statement-length', 'focal-point', 'hero-words', 'mixed-font-headline', 'eyebrow', 'mono', 'numbering', 'micro-label', 'emoji', 'gradient', 'gradient-text', 'shadow', 'text-shadow', 'button-fx', 'hairline', 'outlined-box', 'dashed', 'glass', 'icon-cards', 'card-rows', 'pill-nav', 'palette-claude', 'palette-terracotta', 'palette-cream', 'palette-purple', 'default-link', 'contrast', 'font-count', 'font-fallback', 'size-count', 'body-size', 'measure', 'small-text', 'all-centred', 'ui-wrapper', 'overflow', 'broken-image', 'no-hero', 'first-action', 'grey-body', 'blend-text', 'covered-text', 'clipped-text', 'pinned-over-picture', 'empty-screens', 'long-pin', 'side-scroll', 'few-pictures', 'no-real-pictures', 'no-footage', 'still-page'];
+// The frame of the page, measured once per width by layout(): margins, balance, blank stretches, titles.
+// These catch the failures a reader names first: "no clear title", "random empty space", "it is all
+// pushed to one side", "text touching the edge".
+export function judgeLayout(L, { width = L.viewport.w, allow = [] } = {}) {
+  const out = [];
+  const add = (level, id, message, fix) => { if (!allow.includes(id)) out.push({ level, id, width, message, fix }); };
+  const mobile = width < 600, H = L.viewport.h;
+  // the outer frame: the two margins match (asymmetry belongs inside the grid, never in the frame)
+  const { left, right } = L.margins;
+  if (left != null && right != null) {
+    const diff = Math.abs(left - right), wide = Math.max(left, right);
+    if (diff >= Math.max(mobile ? 14 : 40, width * 0.045) && wide >= (mobile ? 28 : width * 0.07)) {
+      add('FAIL', 'off-centre', `The page sits off-centre: its content comes to ${left}px from the left edge but only to ${right}px from the right, at ${width}px.`, `Give the page one pair of equal margins. Check the wrapper for a max-width without margin-inline: auto, a grid with an empty last column, or padding on one side only. If one side is meant to hold air, it must still be closed by something that reaches the margin (a picture, the navigation's last item, a figure).`);
+    } else if (diff >= (mobile ? 12 : 16)) {
+      // strong sites hold their two margins within a few pixels; a 20-30px drift is the "shifted" look
+      add('WARN', 'off-centre', `The margins differ: ${left}px on the left, ${right}px on the right, at ${width}px.`, 'Put the navigation and the content on one pair of margins; check for padding on one side only, a scrollbar gutter, or a header on another inset than the page.');
+    }
+  }
+  // sections whose content huddles on one side, leaving the other half of the screen empty
+  if (!mobile && left != null) {
+    const lop = L.sections.filter((s) => !s.hero && !s.footer && !s.fullBleed && !s.pinned && s.left != null && s.words >= 12 && s.height >= 180 && Math.min(s.left, s.right) <= Math.max(left, right) + 24 && Math.max(s.left, s.right) >= width * 0.42);
+    if (lop.length >= 2) add('FAIL', 'lopsided', `${lop.length} sections keep all their content on one side and leave ${Math.round(Math.max(...lop.map((s) => Math.max(s.left, s.right))) / width * 100)}% of the width empty: ` + lop.slice(0, 4).map((s) => `${s.heading ? '"' + s.heading.text + '"' : s.sel} (${s.right > s.left ? 'right' : 'left'} ${Math.max(s.left, s.right)}px empty)`).join('; '), 'Use the whole width the page has set up: put the section\'s picture, its second column, its list or its figure in the empty half, or set the text larger across the grid. Empty space must be placed, with something on each side of it.');
+    else if (lop.length) add('WARN', 'lopsided', `A section keeps its content on one side and leaves ${Math.max(lop[0].left, lop[0].right)}px of the width empty: ${lop[0].heading ? '"' + lop[0].heading.text + '"' : lop[0].sel}.`, 'Fill the other side with what the section has (its picture, a second column, the figure), or defend the void in one sentence.');
+    // the same hole with the empty part in the middle: a card at the left, a lone button at the right
+    const hollow = L.sections.filter((s) => !s.hero && !s.footer && !s.fullBleed && !s.pinned && s.words >= 12 && s.middle >= width * 0.45);
+    if (hollow.length) add('WARN', 'empty-middle', `${hollow.length} section(s) have content at both edges and ${Math.max(...hollow.map((s) => s.middle))}px of nothing between: ` + hollow.slice(0, 3).map((s) => s.heading ? '"' + s.heading.text + '"' : s.sel).join('; '), 'Bring the two parts together on the grid, or put the picture or figure of the section in the middle. An empty middle third reads as a hole, the same as an empty half.');
+  }
+  // blank stretches: nothing at all for a long run down the page
+  const big = L.gaps.filter((g) => g.height >= H * 0.6), mid = L.gaps.filter((g) => g.height >= H * 0.42 && g.height < H * 0.6);
+  if (big.length || mid.length >= 2) add(L.stage ? 'WARN' : 'FAIL', 'blank-gap', `${big.length + mid.length} stretch(es) of the page hold nothing at all: ` + [...big, ...mid].slice(0, 4).map((g) => `${g.height}px at ${g.top}px`).join('; ') + ` (the screen is ${H}px tall).`, (L.stage ? 'A fixed picture layer covers the screen here, so the DOM cannot tell whether the stretch is empty: check the screenshots. ' : '') + 'Close the gap: a section gap is 120–240px on desktop and 72–112px on a phone. Look for a min-height: 100vh on a short section, an empty grid row, a hidden element still holding its space, or a reveal that never fired. A deliberate rest is a placed picture or colour field, not nothing.');
+  else if (mid.length) add('WARN', 'blank-gap', `A ${mid[0].height}px stretch at ${mid[0].top}px holds nothing.`, 'Check that it is a deliberate rest (once per page at most); otherwise close it to the normal section gap.');
+  // the title: one h1, on the first screen, that says what this is
+  if (!L.h1s.length) add('FAIL', 'no-title', 'The page has no visible h1.', 'Give the first screen a clear title in an h1 that says what this is (a name with what it does, the product with what it is for, the event with its date and place).');
+  else {
+    const first = L.h1s[0];
+    if (!first.firstScreen) add('FAIL', 'no-title', `The h1 ("${first.text.slice(0, 50)}") is not on the first screen (it starts ${first.top}px down).`, 'The title belongs on the first screen, where a visitor decides whether to stay.');
+    else if (first.size < (mobile ? 26 : 32)) add('WARN', 'small-title', `The h1 is ${first.size}px ("${first.text.slice(0, 50)}").`, 'Set the title at display size, or make the large text of the first screen the h1.');
+    if (first.firstScreen && first.text.split(' ').length <= 3 && L.explains === false) add('WARN', 'name-only-title', `The h1 is a bare name ("${first.text.slice(0, 40)}") and nothing else on the first screen says what this is.`, 'Keep the name if it leads, and give the line under it (18px or more) the plain words: what it is, for whom, where or when. In the study of 97 Sites of the Day, first screens that named nothing lost usability and content points.');
+    if (L.h1s.length > 1) add('WARN', 'many-h1', `${L.h1s.length} h1 elements.`, 'One h1 per page; section titles are h2.');
+  }
+  // sections with running text but no heading: the reader cannot tell what they are
+  const untitled = L.sections.filter((s) => !s.hero && !s.footer && !s.continues && !s.heading && s.words >= 30 && s.height >= 200);
+  if (untitled.length >= 2) add('FAIL', 'untitled-section', `${untitled.length} sections carry text but no heading: ` + untitled.slice(0, 4).map((s) => `${s.sel} at ${s.top}px (${s.words} words)`).join('; '), 'Give each section a short heading that names what it holds (the menu, the rooms, how it works, the price), in the heading face at the section size.');
+  else if (untitled.length) add('WARN', 'untitled-section', `A section carries text but no heading: ${untitled[0].sel} at ${untitled[0].top}px.`, 'Name it with a short heading unless it is the continuation of the section above.');
+  // the first screen: a large empty rectangle that nothing closes reads as "random empty space"
+  if (!mobile && L.voidShare >= 0.28 && !L.stage) add('WARN', 'hero-void', `${Math.round(L.voidShare * 100)}% of the first screen is one empty block (${L.voidBox.w}×${L.voidBox.h}px at ${L.voidBox.x},${L.voidBox.y}).`, 'Place the void on purpose or fill it: move the picture, the film or one fact into it, grow the headline to meet it, or shrink the screen to its content. A void reads as placed only when something closes it on the far side and it is the screen\'s one rest.');
+  // display type that starts inside the margin but runs off the opposite edge by a sliver: a fit error
+  if (L.slivers && L.slivers.length) add('WARN', 'one-sided-bleed', `${L.slivers.length} display line(s) start inside the margin but run off the ${L.slivers[0].side} edge by a few pixels: ` + L.slivers.map((t) => `"${t.text}" (${t.px}px)`).join('; '), 'Fit the line to the content box by measurement (a small fit script, or SVG text with textLength), or bleed it on purpose by a clear amount from the margin. A name sliced by a few pixels on one side reads as a mistake.');
+  // text pressed against the screen edge
+  const tight = L.edgeText.filter((t) => t.px < (mobile ? 12 : 16)), near = mobile ? L.edgeText.filter((t) => t.px >= 12) : [];
+  if (near.length && !tight.length) add('WARN', 'edge-text', `${near.length} text block(s) sit 12–15px from the phone's edge: ` + near.slice(0, 3).map((t) => `"${t.text.slice(0, 30)}" (${t.px}px)`).join('; '), 'The page margin is 16–20px on a phone; the header and the corner labels sit on it too.');
+  if (tight.length) add('FAIL', 'edge-text', `${tight.length} text block(s) sit within ${mobile ? 12 : 16}px of the screen edge: ` + tight.slice(0, 4).map((t) => `"${t.text.slice(0, 30)}" (${t.px}px from the ${t.side})`).join('; '), `Keep text inside the page margin (${mobile ? '16–20px' : '16–32px or more'}). Only display type deliberately bled past the edge may touch it.`);
+  // too many left edges: nothing lines up
+  if (!mobile && L.edges.length > 6 && L.leftBlocks >= 8) {
+    const top3 = L.edges.slice(0, 3).reduce((a, e) => a + e.n, 0) / L.leftBlocks;
+    if (top3 < 0.6) add('WARN', 'ragged-edges', `Left-aligned text starts at ${L.edges.length} different lines (${L.edges.slice(0, 7).map((e) => e.x + 'px').join(', ')}); the three most used hold only ${Math.round(top3 * 100)}% of it.`, 'Pick two or three anchor lines from the grid and start every heading and paragraph on one of them.');
+  }
+  return out;
+}
+
+// App screens (dashboards, admin, settings, inboxes) keep conventions a marketing page does not: tables
+// and panels may have quiet borders, labels are small, cards repeat, there is no hero, no picture floor
+// and no motion floor. These page rules do not apply to them; references/app-screens.md has the reasons.
+export const APP_SKIP = new Set(['hero-words', 'eyebrow', 'mono', 'name-only-title', 'empty-middle', 'numbering', 'hairline', 'outlined-box', 'dashed', 'icon-cards', 'card-rows', 'pill-nav', 'grey-body', 'measure', 'first-action', 'few-pictures', 'no-real-pictures', 'no-footage', 'focal-point', 'no-hero', 'body-size', 'small-text', 'statement-length', 'shadow', 'glass', 'still-page', 'empty-screens', 'long-pin', 'side-scroll', 'pinned-over-picture', 'off-centre', 'lopsided', 'ragged-edges', 'untitled-section', 'size-count', 'all-centred']);
+
+export function judgeApp(A, m, { width = A.viewport.w, allow = [] } = {}) {
+  const out = [];
+  const add = (level, id, message, fix) => { if (!allow.includes(id)) out.push({ level, id, width, message, fix }); };
+  const mobile = width < 600;
+  if (mobile && A.sidebar && A.sidebar.share > 0.3) add('FAIL', 'sidebar-phone', `The sidebar still takes ${Math.round(A.sidebar.share * 100)}% of the width on a ${width}px phone.`, 'On a phone the navigation folds into a top bar with a menu button or a bottom bar of four or five destinations; the screen\'s content gets the full width.');
+  if (!mobile && width >= 1100 && A.canvas && A.canvas.right > Math.max(120, width * 0.1) && A.canvas.right > A.canvas.left + 80) add('WARN', 'unused-canvas', `The content stops ${A.canvas.right}px short of the right edge while it starts ${A.canvas.left}px from the sidebar.`, 'Let the grid fill the canvas (columns in fr units), or centre a capped canvas with equal margins. A dead strip on one side reads as unfinished.');
+  if (A.panels.heavyShadows) add('FAIL', 'heavy-shadow', `${A.panels.heavyShadows} panel shadow(s) heavy enough to read as floating: ${A.panels.shadowSamples.join(' | ')}`, 'Panels sit on the ground: separate them with a fill one step from the ground or a quiet 1px border. A shadow, if any, is under 8% black with a small blur. Real overlays (menus, dialogs, popovers) may float.');
+  if (A.panels.glass) add('FAIL', 'glass', `${A.panels.glass} blurred glass panel(s).`, 'Opaque surfaces only.');
+  if (A.panels.heavyBorders >= 3) add('WARN', 'heavy-borders', `${A.panels.heavyBorders} panel borders are dark against their ground: ${A.panels.borderSamples.join(' | ')}`, 'A panel border is a whisper: about 1.1–1.3:1 against its ground on a light screen (#e5e7eb–#ededed on white), and about 1.2–1.5:1 on a dark one (#1a1a1a on #000, #2e2e2e on #111). Darker lines turn the screen into a grid of boxes; keep the stronger line for controls.');
+  const radii = A.panels.radii.filter(([, n]) => n >= 2).map(([r]) => r);
+  if (radii.length > 3) add('WARN', 'radius-mix', `Panels use ${radii.length} corner radii (${radii.join(', ')}px).`, 'One radius for panels, one for controls, full round only for pills and avatars.');
+  if (A.chips.count >= 3) add(A.chips.hues >= 2 ? 'FAIL' : 'WARN', 'icon-chips', `${A.chips.count} icons sit in tinted squares or circles${A.chips.hues >= 2 ? ` in ${A.chips.hues} different colours` : ''}.`, 'This is the commonest tell of a generated dashboard. Drop the tinted square: a KPI is a label and a number; an icon, if it helps, is plain and in the text colour.');
+  if (A.numbers.cells >= 6 && A.numbers.leftAligned / A.numbers.cells >= 0.5) add('WARN', 'numeric-align', `${A.numbers.leftAligned} of ${A.numbers.cells} numeric table cells are left-aligned.`, 'Right-align numbers, amounts and percentages (and their column headers) so the digits line up.');
+  if (A.numbers.figures >= 6 && A.numbers.tabularShare != null && A.numbers.tabularShare < 0.5) add('WARN', 'tabular', `Only ${Math.round(A.numbers.tabularShare * 100)}% of the figures use tabular numerals.`, 'Set font-variant-numeric: tabular-nums on tables, KPIs and anything that updates, so digits keep their width.');
+  if (A.chartHues > 6) add('FAIL', 'rainbow-chart', `The charts use ${A.chartHues} different hues.`, 'One hue for the series that matters, a neutral for the rest, and at most four series colours in total; status colours only for status.');
+  else if (A.chartHues > 4) add('WARN', 'rainbow-chart', `The charts use ${A.chartHues} different hues.`, 'Four series colours at most; prefer one accent and neutrals.');
+  if (A.colourShare != null && A.colourShare > 0.12) add('WARN', 'colour-sprawl', `${Math.round(A.colourShare * 100)}% of the first screen is strongly coloured.`, 'Keep the screen neutral and spend colour on data and status: the studied screens sit near 3%, and only tinted styles reach 10–15%, as pale tints rather than saturated fills.');
+  if (A.placeholders.length) add('FAIL', 'placeholder-data', `Placeholder data on screen: ${A.placeholders.join(', ')}.`, 'Use believable data for this product: real-looking names, amounts that add up, dates in order, units on every figure.');
+  if (A.type.tiny > 2) add('FAIL', 'tiny-text', `${A.type.tiny} text blocks under 11px: ${A.type.tinySamples.join(', ')}.`, 'Nothing below 11px; secondary text 12px, data 13–14px.');
+  else if (A.type.under13 > 0.45) add('WARN', 'tiny-text', `${Math.round(A.type.under13 * 100)}% of the text is under 13px.`, 'Data and labels read at 13–14px; keep 11–12px for sublines and axis ticks.');
+  if (!mobile && A.layout) {
+    if (A.layout.ragged.length) add('WARN', 'ragged-row', `${A.layout.ragged.length} pair(s) of cards in one row end at different heights (by ${A.layout.ragged.map((r) => r.diff + 'px').slice(0, 3).join(', ')}).`, 'Cards that share a row share a bottom edge: balance them by their content (the same number of rows, a block of similar height beside it), or stack them. In testing, ragged rows were marked down every time.');
+    if (width >= 1100 && A.layout.panels >= 4 && A.layout.firstScreen / A.layout.panels < 0.5) add('WARN', 'below-fold', `Only ${A.layout.firstScreen} of ${A.layout.panels} blocks start on the first ${width}px screen.`, 'Every block the brief names shows its header and first rows on the first desktop screen: size the headline block to its question, cap long lists with "View all", and put time-sensitive blocks before long tables.');
+    if (width >= 1100 && A.layout.voids?.length) add('WARN', 'panel-void', `${A.layout.voids.length} card(s) hold a blank band inside: ${A.layout.voids.slice(0, 3).map((v) => `${v.gap}px in "${v.panel}"`).join(', ')}.`, 'A card stretches to its neighbour only when it has content to fill. Keep a legend or a note directly under its chart (only an action or a total may sit at a stretched card\'s foot), let a short card keep its own height (align-items: start), and let a filtered block shrink to its rows.');
+  }
+  // an achromatic screen with a chart or a timeline and no hue on any data reads as a kit: the one chart hue goes on
+  // the main data element (today's line, the booked bars, the margin that breaks)
+  if (!mobile && A.charts > 0 && A.chartHues === 0 && A.colourShare != null && A.colourShare < 0.002) add('WARN', 'no-data-hue', `The screen has ${A.charts === 1 ? 'a chart' : A.charts + ' charts or timelines'} but no hue on any of its data (${(A.colourShare * 100).toFixed(1)}% coloured pixels).`, 'Put the style\'s one chart hue (or the brand\'s) on the screen\'s main data element: today\'s line, the booked bars, the current period, the cover margin. Keep the chrome neutral; the hue still stays under the style\'s colour budget.');
+  // in app mode the screen's hero is its h1 or the largest text on the first screen, not the page probe's guess
+  // (which can be a figure below the fold read without its spaces); the report and the MEASURED line use this one
+  if (A.hero && m) m.hero = A.hero;
+  if (A.title && A.title.size > (mobile ? 28 : 34)) add('WARN', 'app-title-size', `The h1 is ${A.title.size}px ("${A.title.text.slice(0, 40)}").`, 'An app screen is not a landing page: the title is 18-32px (20-24px on a phone).');
+  if (A.numbers.kpiMax && A.numbers.kpiMax >= 48) add('WARN', 'kpi-size', `A figure is set at ${Math.round(A.numbers.kpiMax)}px.`, 'Figures run 16-40px on app screens; none of the studied screens reaches 48px. Size and isolation make a number loud, not display type.');
+  if (A.type.sizes.length > 10) add('WARN', 'size-count', `${A.type.sizes.length} font sizes (${A.type.sizes.join(', ')}).`, 'App screens use 4-9 sizes (median 6): a scale such as 12/14/16/24 with one figure size.');
+  if (A.tiles >= 4) add('WARN', 'icon-tiles', `${A.tiles} icons sit in neutral boxes repeated down the screen.`, 'A boxed icon on every row or card is still the template habit, tinted or not. Keep one plain 16px icon where it helps the eye, or none.');
+  if (!A.title) add('FAIL', 'no-title', 'The screen has no h1.', 'Name the screen in an h1 at the top of the canvas (18–28px): "Overview", "Payouts", the project\'s name.');
+  if (m && m.type && m.type.monoProseShare > 0.15) add('WARN', 'mono', `Monospace is ${Math.round(m.type.monoProseShare * 100)}% of the text.`, 'Monospace for IDs, keys and code only; numbers use tabular figures in the text face.');
+  return out;
+}
+
+export const RULE_IDS = ['headline-lines', 'statement-length', 'focal-point', 'hero-words', 'mixed-font-headline', 'eyebrow', 'mono', 'numbering', 'micro-label', 'emoji', 'gradient', 'gradient-text', 'shadow', 'text-shadow', 'button-fx', 'hairline', 'outlined-box', 'dashed', 'glass', 'icon-cards', 'card-rows', 'pill-nav', 'palette-claude', 'palette-terracotta', 'palette-cream', 'palette-purple', 'default-link', 'contrast', 'font-count', 'font-fallback', 'size-count', 'body-size', 'measure', 'small-text', 'all-centred', 'ui-wrapper', 'overflow', 'broken-image', 'no-hero', 'first-action', 'grey-body', 'blend-text', 'covered-text', 'clipped-text', 'pinned-over-picture', 'empty-screens', 'long-pin', 'side-scroll', 'few-pictures', 'no-real-pictures', 'no-footage', 'still-page', 'off-centre', 'lopsided', 'blank-gap', 'no-title', 'small-title', 'many-h1', 'name-only-title', 'empty-middle', 'untitled-section', 'edge-text', 'ragged-edges', 'sidebar-phone', 'unused-canvas', 'heavy-shadow', 'heavy-borders', 'radius-mix', 'icon-chips', 'numeric-align', 'tabular', 'rainbow-chart', 'placeholder-data', 'tiny-text', 'colour-sprawl', 'ragged-row', 'below-fold', 'app-title-size', 'kpi-size', 'icon-tiles', 'late-title', 'reduced-hidden', 'no-poster', 'hero-void', 'one-sided-bleed', 'font-not-dealt', 'panel-void', 'no-data-hue', 'scene-not-started', 'scene-not-live', 'many-scenes', 'scene-heavy', 'dev-server'];

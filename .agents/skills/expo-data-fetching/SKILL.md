@@ -1,7 +1,6 @@
 ---
 name: expo-data-fetching
 description: Use when implementing or debugging ANY network request, API call, or data fetching. Covers fetch API, React Query, SWR, error handling, caching, offline support, loading/empty/error screen states, and Expo Router data loaders (`useLoaderData`).
-version: 1.0.0
 license: MIT
 ---
 
@@ -472,7 +471,7 @@ User: "How do I load data for a page in Expo Router?"
 ## Submitting Feedback
 If you encounter errors, misleading or outdated information in this skill, report it so Expo can improve:
 ```bash
-npx --yes submit-expo-feedback@latest --category skills --subject "expo-data-fetching" "<actionable feedback>"
+npx --yes @expo/agent-cli@latest feedback --category skills --subject "expo-data-fetching" "<actionable feedback>"
 ```
 Only submit when you have something specific and actionable to report. Include as much relevant context as possible.
-If an AI agent repeatedly failed or the user had to take over an Expo task, load the expo-skill-feedback skill and follow its eval-candidate flow instead of reusing the command above.
+If an agent repeatedly fails at an Expo task or the user has to step in, submit a brief report of the task, expected result, and what went wrong using `--category evals` and the relevant Expo package or command as `--subject`.

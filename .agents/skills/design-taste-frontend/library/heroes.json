@@ -890,5 +890,197 @@
    "aww-px-push",
    "opl-lorenzo-bocchi-photography"
   ]
+ },
+ {
+  "id": "window-opens-to-the-edges",
+  "name": "Window that opens to the edges",
+  "archetype": "pinned-stage",
+  "directions": [
+   "pinned-poster",
+   "place-carries-it",
+   "hero-object"
+  ],
+  "needs": [],
+  "blueprint": "A flat paper or pale ground, and one picture seen through a small window that becomes the whole screen as the page scrolls. The hero is a wrapper 200svh tall holding a stage with `position: sticky; top: 0; height: 100svh`. On the first frame the window is a 4:5 portrait opening 36% of the viewport wide (518×648px), centred, its top and bottom 126px from the edges, square corners; give it a shape from the subject if it has one (an arch, a rounded diamond, a lens). Build it as `clip-path: inset(126px 461px)` on a layer that is itself 100vw by 100svh, so the photograph or muted film inside is laid out full-bleed and never moves: only the opening grows. The headline sits left of the window on columns 1–3: two lines at clamp(44px, 4.4vw, 64px), leading 0.95, flush to the 32px margin, its last baseline level with the window's lower edge. Right of the window on columns 10–12, bottom-aligned to the same line: one supporting sentence at 18px, max 26ch, and the single action as a solid rectangular button. Wordmark top-left and three text links top-right at 15px on the same margin; nothing else sits on the ground. Over the first 100svh of scroll the inset runs to zero on a scroll-linked timeline while the text, which sits above the picture layer, rises and fades out before the opening reaches it; the picture then holds full-bleed for 50svh before the next section slides over it. Without scroll timelines, or under reduced motion, show the open picture with the headline over a neutral scrim in its bottom-left corner.",
+  "mobile": "The stage stays sticky. The window starts 78vw wide at 4:5, centred, its top at 30% of the height, leaving about a quarter of the screen below it. The headline sits above it at 10vw on two lines inside 20px margins, 72px down; the supporting sentence at 16px and a full-width action sit under the window. The opening reaches the edges within 70svh of scroll. The links fold behind a menu word.",
+  "headline": "Two short lines of up to about 9 characters each: the name with what it is, or a 2–4 word claim. It scrolls away as the picture takes the screen.",
+  "motion": "pinned-story",
+  "seenIn": [
+   "aww-decathlon-yestalgia",
+   "aww-leo-parpeix-portfolio-2026",
+   "aww-revelatio-studio",
+   "aww-vero-new-york"
+  ]
+ },
+ {
+  "id": "ring-of-frames-around-the-headline",
+  "name": "Ring of frames around the headline",
+  "archetype": "mosaic",
+  "directions": [
+   "contact-sheet",
+   "dark-room",
+   "name-as-monument"
+  ],
+  "needs": [],
+  "blueprint": "One near-black or deep flat field. Eighteen to twenty-four photographs or film stills sit on an ellipse centred on the viewport, with radii of 560px across and 310px down, so their centres run from x 160 to 1280 and from y 140 to 760. Frames have square corners and no border, mix 4:3 and 3:4, and grow towards the viewer: about 100px wide at the top of the ring and 150px at the bottom and at both ends, so the ring reads as tilted. Each frame is turned so its base lies along the curve (never more than 30 degrees), and neighbours may overlap by up to a fifth. Inside the ring an empty core about 600×340px holds the text, centred: the headline on two lines at clamp(56px, 5.4vw, 80px), leading 0.95, in the light ink; one supporting sentence at 18px, max 40ch, 24px under it; then the single action as a solid light rectangle. Wordmark top-left and three text links top-right at 15px on 32px margins, outside the ring. Every frame is a link to its project: pointing at one, or focusing it, brings it to full brightness, drops the others to 45% and replaces the supporting sentence with that project's name and year. Place the frames with a few lines of trigonometry (left and top in percentages) and keep them still; the wheel scrolls the page as usual.",
+  "mobile": "The ellipse becomes a circle 132vw across, centred at half height, so the frames at its left and right ends run off both edges and the ring reads as two arcs, one above and one below the text. Keep twelve frames at 64–88px. The headline sits in the core at 10.5vw on two lines inside 28px margins, with the sentence at 16px and the action at the full width of the core beneath it. Wordmark top-left and a menu word top-right sit above the top arc. A tap on a frame opens its project.",
+  "headline": "A 3–6 word line on two lines, at most about 14 characters per line, so it fits the empty core.",
+  "motion": "masked-headline",
+  "seenIn": [
+   "aww-cipher",
+   "aww-squarespace-foundations",
+   "aww-studio-k95-3",
+   "aww-kononenko-architectural-bureau"
+  ]
+ },
+ {
+  "id": "navigation-on-the-midline",
+  "name": "Navigation on the midline",
+  "archetype": "fullbleed-media",
+  "directions": [
+   "place-carries-it",
+   "quiet-instrument",
+   "dark-room"
+  ],
+  "needs": [],
+  "blueprint": "One photograph or muted film fills the viewport at 100vw by 100svh, `object-fit: cover`, framed so the middle of the screen cuts the subject: a face or a skyline in the upper half, hands or ground in the lower. There is no headline block and nothing in the top or bottom bands. One rail 64px tall runs across the exact vertical centre (its top at 418px) and carries everything on one baseline in the paper colour: the `h1` on the 24px left margin, the name with what it is in two to five words at clamp(32px, 2.6vw, 40px) in medium weight, doing the job of the wordmark; from column 6, one supporting sentence at 18px, max 44ch; at the right margin, two text links at 15px and the single action as a small solid button in the paper colour. If the frame is light behind the rail, give the rail alone a neutral dark scrim at 35%. The rail is `position: sticky; top: 0` in the hero's flow, so as the page scrolls it rises with the content and docks as the header bar without changing size or layout, taking the page ground once the pictures have passed. A second full-bleed photograph, a closer detail of the same subject, follows directly beneath, so the rail is seen crossing two pictures before it reaches the top. On a black ground with one photographed object instead of a film, stand the object on the rail at about 17% of the width, between the sentence and the links, so the line seems to pass behind it.",
+  "mobile": "A portrait crop keeps the subject's middle on the screen's middle. The rail stays on the vertical centre, as tall as the `h1` needs at 28px on up to two lines, with the `h1` on the left and Menu on the right. The sentence leaves the rail and sits at 17px in the bottom-left on a 20px margin with the action as a full-width button under it, over a neutral scrim limited to that corner. The rail docks at the top as on desktop.",
+  "headline": "The `h1` on the rail: the name with what it is, two to five words at 32–40px on one line, and one sentence of up to 50 characters beside it; the picture does the rest.",
+  "motion": "slow-crossfade",
+  "seenIn": [
+   "aww-odyssee",
+   "aww-milledollars",
+   "aww-twks-1"
+  ]
+ },
+ {
+  "id": "title-in-the-sky-line-on-the-horizon",
+  "name": "Title in the sky, line on the horizon",
+  "archetype": "fullbleed-media",
+  "directions": [
+   "place-carries-it",
+   "hero-object",
+   "sentence-as-layout"
+  ],
+  "needs": [],
+  "blueprint": "One wide photograph or render fills the viewport, chosen with the subject in the lower 55% and open sky, fog or a plain wall above it. The headline is centred in that empty upper zone: two lines at clamp(72px, 7.2vw, 112px), leading 0.9, its cap line 72px from the top, the first line short and the second longer so the block widens towards the subject. On the horizon, with its baseline at 52% of the height, one supporting sentence is split into two halves at 22px: the first half right-aligned to end at column 5, the second left-aligned from column 8, so the subject shows through the 260px gap between them. Wordmark top-left on a 32px margin; up to three text links from column 9; the single action top-right as a solid rectangle in the paper colour. All type is in one ink chosen against the sky; on a pale sky use the photograph's darkest tone rather than black. Nothing else crosses the lower half.",
+  "mobile": "The picture is re-cropped to portrait with the subject in the lower 45%. The headline sits centred in the sky at 11vw on two lines, 96px down, and the two halves of the sentence become two centred lines at 17px directly under it. The action is a full-width button 24px above the bottom edge on a neutral scrim band 96px tall. Wordmark top-left and a menu word top-right.",
+  "headline": "Two lines, the second the longer, at most about 14 characters per line: the name of the place, or a 3–5 word claim about it.",
+  "motion": "shutter-image",
+  "seenIn": [
+   "aww-era-residence",
+   "aww-vectr"
+  ]
+ },
+ {
+  "id": "name-across-the-middle",
+  "name": "Name across the middle",
+  "archetype": "giant-wordmark",
+  "directions": [
+   "name-as-monument",
+   "type-only-statement",
+   "loud-flat-poster"
+  ],
+  "needs": [],
+  "blueprint": "Paper and ink only; no picture on the first screen. The name runs on one line across the vertical centre, sized to span from the 18px left margin to the 18px right margin (97.5% of the width). Set it as inline SVG text with a `viewBox` fitted to the word and `width: 100%`, or tune its vw size to the letter count, so it never wraps. In a heavy grotesk the letters stand about 280px tall, from about 310px to 590px; nothing touches or overlaps them. The four corners carry everything else on 18px margins. Top-left: one supporting sentence at 18px on two lines, max 36ch, and 16px below it the single action as a solid ink rectangle. Top-right: a menu word or three text links at 15px. Bottom-left, on a baseline 24px above the edge: the city or the kind of work at 16px. Bottom-right on the same baseline: two or three text links at 15px. The ground between the corners and the name, about 230px above and below it, stays empty and is closed on both sides by the corner texts. The name returns in the footer at the same width with ground and ink swapped and a two-line invitation above it, so the page closes like a bracket.",
+  "mobile": "The name stays on one line across the width inside 16px margins and moves up to 22% of the height. The supporting sentence follows on the left margin at 17px, then the action at full width. The lower half holds the first picture of the work as a 4:5 frame cropped by the bottom edge, so the screen does not end in empty paper. A menu word sits top-right.",
+  "headline": "The name itself on one line, up to about 12 characters; the 18px sentence in the top-left corner says what it is.",
+  "motion": "scaling-wordmark",
+  "seenIn": [
+   "aww-nothin",
+   "aww-produx-design"
+  ]
+ },
+ {
+  "id": "square-over-a-moving-line",
+  "name": "Square over a moving line",
+  "archetype": "type-poster",
+  "directions": [
+   "name-as-monument",
+   "place-carries-it",
+   "loud-flat-poster"
+  ],
+  "needs": [],
+  "blueprint": "A white or pale flat ground. One line of display type at clamp(150px, 15vw, 230px), weight 500, tracking -0.02em, runs edge to edge with its cap band centred 360px from the top, moving left at a slow, constant 40px a second: the name, or a claim of two or three words, repeated with a solid round dot one third of the cap height between copies and duplicated for a seamless loop. One square photograph 272px across (19vw), square corners, `object-fit: cover`, sits exactly on the band's centre behind the type, so the words slide across it; the moving line is set twice, the second copy in the paper colour and clipped to the square with `clip-path`, so the letters turn light as they cross the photograph and every word reads whole. It shows the subject's best detail. In the study the photograph sits on top of the words; here nothing lies on top of a headline. 150px under the photograph, centred: one supporting sentence at 22px on two lines, max 36ch, and 24px below it the key fact (a price, a date, an address) at 17px. Top row on 32px margins: one text link on the left, the wordmark centred, one text link on the right. Bottom row on the same margins, 40px above the edge: a location line at 16px on the left and the single action as a solid rectangle on the right. The `h1` holds the moving words once as plain text and the moving copies are `aria-hidden`. Under reduced motion the line stops with one copy centred and both ends cropped.",
+  "mobile": "The line drops to 34vw with its band at 26% of the height and keeps moving; the photograph shrinks to a 46vw square and stays centred on it. The sentence sits centred at 18px about 64px below the photograph, then the fact at 16px. The action becomes a full-width button 20px above the bottom edge. The wordmark stays centred at the top and the two links fold into a menu word on the right.",
+  "headline": "The name or a 2–3 word claim of at most 14 characters, set once in the `h1` and repeated in the moving line.",
+  "motion": "edge-marquee",
+  "seenIn": [
+   "aww-realevate"
+  ]
+ },
+ {
+  "id": "two-doors-on-a-dark-wall",
+  "name": "Two doors on a dark wall",
+  "archetype": "split",
+  "directions": [
+   "dark-room",
+   "quiet-instrument"
+  ],
+  "needs": [],
+  "blueprint": "For a subject with two halves a visitor must choose between: two exhibitions, two audiences, two places, two collections. One near-black flat field. Two portrait photographs at 3:4, each 280×373px, stand side by side 80px apart, so the pair spans x 400–1040 (44% of the width) with their tops at 300px; square corners, no frame, the pictures supplying every colour on the screen. Each photograph is the link to its half, and directly beneath it, left-aligned to the frame, sit its name at 22px in the light ink and one line at 16px in the soft ink. The headline is centred above the pair: two lines at clamp(36px, 3.4vw, 52px), leading 1.05, its first line 104px from the top, at most 26 characters per line. Wordmark top-left and one text link top-right at 15px on 32px margins. About 150px of dark ground stays below the pair and 400px either side of it, closed by the two doors at the centre. Pointing at or focusing one door keeps it at full strength and dims the other to 50%. The page continues below with the two halves in order, so each door is also an anchor to its half.",
+  "mobile": "The pair stays side by side: each photograph 168px wide at 3:4 with a 14px gap, centred at 46% of the height, its name at 17px and its line at 16px beneath it. The headline sits above at 8vw on two lines, centred, 64px down. The wordmark and the link stay in the top corners.",
+  "headline": "A 4–8 word sentence on two lines that names the choice, at most 26 characters per line.",
+  "motion": "stillness",
+  "seenIn": [
+   "aww-hearst-exhibit-2026"
+  ]
+ },
+ {
+  "id": "title-from-top-to-bottom-edge",
+  "name": "Title from the top edge to the bottom edge",
+  "archetype": "bottom-anchored-type",
+  "directions": [
+   "place-carries-it",
+   "name-as-monument",
+   "dark-room"
+  ],
+  "needs": [],
+  "blueprint": "One full-bleed photograph or film at 100vw by 100svh, with a horizon near half height and empty sky or darkness above. The headline is two lines in a heavy face at clamp(140px, 13vw, 200px), leading 0.85, pulled as far apart as the screen allows: line one flush to the 32px left margin with its cap line 72px from the top; line two indented 28vw (403px) and anchored to the bottom, its baseline 24px above the lower edge, running towards the right margin. Lay the hero out as a grid of three rows (`grid-template-rows: auto 1fr auto`): line one in the first row, line two in the third, both spans of one `h1` with `display: contents`. The middle row leaves the picture clear apart from one supporting sentence at 18px, max 44ch, crossing the horizon at 48% of the height from 30vw, and the single action directly beneath it as a solid rectangular button with its label at 18px. The wordmark and two text links sit top-right on the 32px margin at 15px; the top-left belongs to line one. Choose a picture whose upper-left and lower-right are calm enough for the type, or lay a neutral scrim under those two corners only.",
+  "mobile": "Keep the two lines at 19vw: line one flush left on a 16px margin 88px down, line two right-aligned to the 16px margin with its baseline 20px above the bottom. The sentence at 17px and the action button sit between them on the left margin, at 46% of the height. The picture is re-cropped to portrait around the horizon.",
+  "headline": "Two words or short phrases, one per line, at most about 8 characters each.",
+  "motion": "masked-headline",
+  "seenIn": [
+   "aww-the-state-of-the-gallery"
+  ]
+ },
+ {
+  "id": "line-up-on-an-arc",
+  "name": "Line-up on an arc",
+  "archetype": "object-centre",
+  "directions": [
+   "specimen-catalogue",
+   "hero-object",
+   "dark-room"
+  ],
+  "needs": [
+   "product-photo"
+  ],
+  "blueprint": "For a range: flavours, colourways, editions, sizes. One deep flat ground, which may take the current item's own colour. The current item, a cut-out photograph, stands at the exact centre about 240px wide and 450px tall (y 210–660), tilted no more than 8 degrees. Its siblings stand behind it on a shallow arc, alternately a little higher and lower: each step out is 30% smaller, a quarter darker (`filter: brightness()`) and about 260px further from the centre, three on each side, so the outermost pair is cut by the left and right edges. Under the current item, centred: its name at clamp(32px, 2.8vw, 44px) and one fact at 17px (what it tastes of, what it is made of, the price). The headline sits top-left on columns 1–4 at clamp(36px, 3.2vw, 48px) on two lines with the supporting sentence at 17px under it; the single action, a solid rectangle, sits top-right on a 32px margin. The arc is a horizontal scroller with `scroll-snap-type: x mandatory`, each item snapping to the centre, its scale and brightness set from its distance to the centre, so a drag, a swipe, the arrow keys or a click on a sibling brings it forward; the ground colour follows with a 300ms transition. No arrows drawn on the screen and no counter.",
+  "mobile": "The current item takes 55% of the width and half the height, centred at 46% of the height; one sibling peeks in at each edge at 60% scale, half cut off. The headline sits at the top at 8vw on two lines with the supporting sentence beneath; the item's name and fact sit under the item at 24px and 16px. The action becomes a full-width button 20px above the bottom edge.",
+  "headline": "A plain 3–6 word line on two lines, at most 20 characters per line; the item's own name under the object changes with the selection.",
+  "motion": "drag-row",
+  "seenIn": [
+   "aww-ciao-energy-launch-website"
+  ]
+ },
+ {
+  "id": "view-with-two-cards-in-the-corner",
+  "name": "View with two cards in the corner",
+  "archetype": "fullbleed-media",
+  "directions": [
+   "place-carries-it",
+   "hero-object",
+   "editorial-report"
+  ],
+  "needs": [],
+  "blueprint": "One photograph or muted film fills the viewport, `object-fit: cover`, with the subject in the right half. The headline sits on the left at mid-height: two lines at clamp(44px, 3.9vw, 60px), bold, leading 1.08, flush to the 32px margin on columns 1–5, the block vertically centred; 20px below it, one supporting sentence at 18px, max 40ch, in the paper colour. In the bottom-right corner, 32px from the right and bottom edges, two cards sit side by side with a 16px gap, each two columns wide (about 210px) at 3:2: a photograph of the newest thing (a project, an edition, an article) with a paper-colour bar 40px tall fused to its lower edge, holding its title at 16px on the left and a small arrow on the right. They are the next steps after the single action, which is a solid rectangle top-right beside a menu word. One short fact at 16px in the paper colour may be pinned onto the subject itself, beside a solid 8px dot on the point it describes, with no line joining them. Wordmark top-left on the 32px margin. If the left half is light, lay a neutral dark scrim under columns 1–6 only.",
+  "mobile": "The picture is re-cropped to portrait with the subject in the upper half. The headline sits at 9vw on two lines on the 16px margin at 44% of the height, with the sentence at 16px beneath it. The two cards sit side by side across the full width at the bottom, 16px from the edges, each about 171px wide at 3:2 with its title bar. Wordmark top-left; the action and a menu word top-right.",
+  "headline": "A plain two-line claim of 4–7 words, at most about 17 characters per line at 3.9vw.",
+  "motion": "slow-crossfade",
+  "seenIn": [
+   "aww-cominvi",
+   "aww-no-art"
+  ]
  }
 ]

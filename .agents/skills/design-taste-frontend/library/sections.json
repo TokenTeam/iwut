@@ -4132,5 +4132,298 @@
    "opl-near",
    "opl-midnight-2"
   ]
+ },
+ {
+  "id": "work-names-pass-a-held-square",
+  "role": "work",
+  "name": "Names passing a held square",
+  "shape": "index",
+  "tags": [
+   "type-led",
+   "photo-led",
+   "poster"
+  ],
+  "directions": [
+   "name-as-monument",
+   "loud-flat-poster",
+   "pinned-poster",
+   "specimen-catalogue"
+  ],
+  "needs": [],
+  "blueprint": "A flat ground and one centred column of very large names: eight to fourteen project or product names in condensed capitals at clamp(96px, 14vw, 200px), leading 0.85, one per line and each line centred, so long names run nearly to the margins and short ones leave wide ground either side. A square frame 450px across (31vw), square corners, holds at the centre of the viewport behind the list: a sticky element (`position: sticky; top: calc(50svh - 225px)`) at the head of the list with a negative bottom margin equal to its height, centred, below the names in the stacking order, so the passing names cross the picture and are never hidden by it. Choose pictures with a calm centre, or lay a flat 30% scrim inside the frame, so the crossing name keeps 3:1. In the study the picture sits on top of the names; here nothing lies on top of large type. It shows the picture of whichever name is crossing its centre (an IntersectionObserver with a thin root margin at the viewport's middle sets the current name) and swaps with a 200ms crossfade. Level with the frame's middle, 48px to its left and right, two facts about the current item sit at 16px, the kind of work on the left and the year or price on the right, changing with it. The heading opens the list as its first line, at the same size in the soft ink, two words at most. Every name is a link. The section runs about three screens, so each name holds the centre for about a quarter of a screen.",
+  "mobile": "Names drop to 15vw and may wrap to two lines, still centred. The frame shrinks to a 60vw square and stays sticky at the centre; the two facts move into one row at 16px directly under it. The heading line stays first.",
+  "seenIn": [
+   "aww-decathlon-yestalgia"
+  ]
+ },
+ {
+  "id": "work-title-torn-at-the-seam",
+  "role": "work",
+  "name": "Title torn at the seam",
+  "shape": "pinned",
+  "tags": [
+   "photo-led",
+   "poster"
+  ],
+  "directions": [
+   "split-stage",
+   "pinned-poster",
+   "dark-room",
+   "name-as-monument"
+  ],
+  "needs": [],
+  "blueprint": "A wrapper about 95svh tall per project holds a sticky stage of 100svh, split at exactly 50vw into two portrait panes of 720×900px, `object-fit: cover`, square corners, no gap: two different pictures or loops of the same project (the whole and a detail, before and after). The project's title sits on the seam, centred on x 720 at the optical middle: capitals in a heavy face at clamp(96px, 11vw, 160px), leading 0.8, tracking -0.04em, at most two lines, in one light colour chosen per project. It is set twice inside the one heading element, the second copy `aria-hidden`, each copy clipped to its own half with `clip-path: inset(0 50% 0 0)` and `inset(0 0 0 50%)`. Directly under it, centred, the discipline and year at 16px and a text link with an arrow at 16px. While a project crosses the stage, the left pane and left half-title travel up and the right pane and right half-title travel down (panes ±20svh, title ±30svh, on a scroll-linked timeline), so the name tears at the seam and lines up exactly when the project is centred. The section's two-word heading sits at clamp(28px, 2.4vw, 36px) in the stage's top-left corner, 32px in. Four to eight projects; the stage releases after the last. Under reduced motion the halves stay aligned and the projects change by crossfade.",
+  "mobile": "Keep the split: two strips 195px wide running the full height of the screen with the same opposing travel. The title drops to 12.5vw on the seam, at most two lines, with the discipline line and the link under it at 16px; give the link a 44px hit area.",
+  "seenIn": [
+   "aww-glitch-grit"
+  ]
+ },
+ {
+  "id": "work-one-slide-two-neighbours",
+  "role": "work",
+  "name": "One slide, two neighbours",
+  "shape": "strip",
+  "tags": [
+   "photo-led",
+   "quiet"
+  ],
+  "directions": [
+   "editorial-report",
+   "contact-sheet",
+   "place-carries-it",
+   "product-performs"
+  ],
+  "needs": [],
+  "blueprint": "Each project is one band the full width of the viewport. In its middle stands one slide 73% of the width (1046×600px, x 197–1243), square corners, `object-fit: cover`. The previous and next pictures of the same project peek in at the edges, 177px of each visible, with 20px gaps, so the row reads as a filmstrip cut by the viewport. The strip scrolls sideways with `overflow-x: auto` and `scroll-snap-type: x mandatory`, each picture snapping to the centre, the scrollbar hidden. 26px under the strip runs one row at 16px on the 12-column grid with 20px margins, every item on a fixed column start: the project's name in the full ink at column 1 with its category in the soft ink after it, the recognition it received at column 4, the year at column 7, the team or client at column 10. A text link with an arrow sits 24px under the name. 240px of ground separates one project from the next, and all projects share one photographic treatment so the run reads as a set. The section's heading, two or three words at clamp(40px, 4vw, 60px), sits on the left margin 96px above the first strip.",
+  "mobile": "The slide is 78% of the width at 4:5, with 32px of each neighbour showing and 10px gaps, still snapping. The row of facts becomes two columns, name and category on the left, year and team from 50% of the width; the link drops under the name. 64px between projects.",
+  "seenIn": [
+   "aww-leo-parpeix-portfolio-2026"
+  ]
+ },
+ {
+  "id": "showcase-cards-cross-a-held-photograph",
+  "role": "showcase",
+  "name": "Cards crossing a held photograph",
+  "shape": "carousel",
+  "tags": [
+   "photo-led",
+   "colour-field"
+  ],
+  "directions": [
+   "place-carries-it",
+   "pinned-poster",
+   "colour-chapters",
+   "dark-room"
+  ],
+  "needs": [],
+  "blueprint": "A wrapper about 350svh tall holds a sticky stage of 100svh. On the stage one full-bleed photograph of the subject's ground (a landscape, a material, an aerial texture) stays still, darkened evenly with `filter: brightness(0.6)`. Over it a track of four to six cards travels from right to left as the page scrolls (a `translateX` tied to the wrapper's scroll progress), so one card is always near the centre and the next shows about 300px at the right edge. Each card is 720×560px, square corners, vertically centred with 170px of photograph above and below it: its top 68% is a photograph of one item (a room, a building, a stop on the route), its lower 32% a flat panel in one earth tone from the palette, a different tone per card at a similar lightness, holding the item's name at clamp(32px, 3vw, 48px) bottom-left with 28px padding and a two-line description at 16px right-aligned beside it. Cards are 40px apart. The section heading, two to four words at clamp(40px, 4.4vw, 68px) in the paper colour, sits top-left on the stage over the photograph before the first card arrives and moves out ahead of it. Keep the run under three screens; at its end the stage releases into the next section.",
+  "mobile": "No pin and no sideways travel. The photograph runs full-bleed as a 4:5 band under the heading at 9vw, and the cards follow it at full width minus 16px margins, 24px apart, each a 4:3 photograph over its colour panel 140px tall, with the name at 26px and the description at 16px.",
+  "seenIn": [
+   "aww-lpas",
+   "aww-white-desert"
+  ]
+ },
+ {
+  "id": "list-object-rides-the-schedule",
+  "role": "list",
+  "name": "Object riding down the schedule",
+  "shape": "table",
+  "tags": [
+   "object-led",
+   "type-led",
+   "dense"
+  ],
+  "directions": [
+   "hero-object",
+   "borrowed-category",
+   "loud-flat-poster",
+   "dark-room",
+   "specimen-catalogue"
+  ],
+  "needs": [
+   "product-photo"
+  ],
+  "blueprint": "A schedule of dated events (races, concerts, tastings, departures) with the subject's own object travelling down it. On a dark flat ground, on the page's own margins, the heading is one centred line of condensed capitals at clamp(40px, 3.6vw, 56px), split into its two words with a gap between them, and in the gap stands a cut-out photograph of the object seen from above or in profile, about 320px wide (22% of the width) and up to 64% of the viewport tall. Below come full-width rows 84px tall, each a two-part grid: the event's name at 26px in condensed capitals on the left with a one-line note at 16px in the soft ink under it, and the date and place right-aligned at 16px on the note's baseline. Rows alternate between the ground and a tone one step lighter instead of rules. As the page scrolls, the object leaves the heading and moves down the centre line over the rows (`position: sticky` in a centred column that spans the list, `pointer-events: none`), where it covers only the empty middle of each row and marks how far the reader has come. The row for the next event takes the accent colour across its whole band, with its name and date in the accent's ink. About ten rows fit on one screen; the list ends 120px under the last row.",
+  "mobile": "Rows stack at full width on 20px margins: the name at 22px on up to two lines, the note at 16px, the date under the note. The object shrinks to 40% of the width and stays in the heading; it does not travel, because on a phone it would cover the rows. The accent band stays on the next event.",
+  "seenIn": [
+   "aww-nick-ho"
+  ]
+ },
+ {
+  "id": "gallery-rising-triptych",
+  "role": "gallery",
+  "name": "Rising triptych",
+  "shape": "pinned",
+  "tags": [
+   "photo-led",
+   "quiet"
+  ],
+  "directions": [
+   "place-carries-it",
+   "uneven-photographs",
+   "pinned-poster",
+   "editorial-report"
+  ],
+  "needs": [],
+  "blueprint": "A wrapper about 200svh tall holds a sticky stage of 100svh on the plain page ground. The heading, two lines at clamp(32px, 2.8vw, 44px), is centred in the top fifth of the stage with one sentence at 17px under it. From the bottom edge three photographs rise as the page scrolls, each at its own speed. The centre one, a 4:5 portrait, starts 620px wide with only its top quarter showing and grows (scale and travel on a scroll-linked timeline) until it is about 760px wide with its top 40px below the sentence, cropped by the bottom edge, so it never reaches the heading. In the study it slides over the heading; here nothing lies on top of a heading. The two outer ones, each 360×530px, stand beside it with 10px gaps, their tops always 55px lower than the centre's, and by the end they are cut by the left and right viewport edges. Square corners, no captions, one consistent light across all three (warm interiors with warm, cold coast with cold). Under reduced motion show the end state with the heading above the three photographs.",
+  "mobile": "The centre portrait starts at 60% of the width and grows to nearly the full height; the outer two show as 40px slivers at the screen edges. The heading and sentence sit in the top third above it.",
+  "seenIn": [
+   "aww-sobha-privy-collection"
+  ]
+ },
+ {
+  "id": "showcase-portrait-on-its-own-ground",
+  "role": "showcase",
+  "name": "Portrait on its own ground",
+  "shape": "full-bleed",
+  "tags": [
+   "photo-led",
+   "colour-field"
+  ],
+  "directions": [
+   "colour-chapters",
+   "dark-room",
+   "hero-object",
+   "editorial-report"
+  ],
+  "needs": [],
+  "blueprint": "One chapter per screen, three to six chapters. Each is a full-bleed field 100svh tall whose flat colour is taken from its own photograph: the darkest large tone in the picture (a deep brown for a wooden interior, a slate for a winter coast), so picture and page seem to be one surface. In the centre stands one portrait photograph at 3:4, 506×675px (75% of the height), top 112px, square corners, no frame. Type sits in the corners on 32px margins in the light ink: the chapter's title at clamp(28px, 2.4vw, 36px) top-left as its heading; one sentence at 17px, max 32ch, bottom-left; a text link to the chapter's page bottom-right. As each chapter arrives its field starts as a panel inset 20px from the viewport edges and grows to full-bleed, while the portrait scales from 0.92 to 1 (background colour over 600ms, scale over 800ms, both easing out), so the change reads as the room changing, not as a new slide. A chapter may hold a short muted loop or a single enlarged letterform in place of the portrait, on the same kind of field. The first chapter's title doubles as the section heading.",
+  "mobile": "The portrait becomes 80% of the width at 3:4, centred at 45% of the height. The title sits top-left at 24px, and the sentence and link stack bottom-left at 16px under the portrait. The field still takes the picture's darkest tone.",
+  "seenIn": [
+   "aww-squarespace-foundations"
+  ]
+ },
+ {
+  "id": "cta-question-at-both-edges",
+  "role": "cta",
+  "name": "Question at both edges",
+  "shape": "statement",
+  "tags": [
+   "type-led",
+   "poster"
+  ],
+  "directions": [
+   "type-only-statement",
+   "sentence-as-layout",
+   "dark-room",
+   "loud-flat-poster"
+  ],
+  "needs": [],
+  "blueprint": "For a closing choice between two answers: book or ask, this date or that, the tasting or the tour. A flat field exactly 100svh tall in the darkest tone. The question is a two-line heading at clamp(110px, 11vw, 168px), leading 1.0, centred, about 54% of the width: line one with its cap line 32px under the field's top edge, line two with its baseline 24px above the bottom edge. The band of about 560px between them is empty except for one row at its optical centre: two solid rectangular buttons, each about 200×56px with its label at 18px in medium weight, their inner edges 120px either side of the centre axis, and between them, exactly on the axis, the word 'or' at 18px in the soft ink. 16px under the row, centred, one line at 16px in the soft ink says what happens after either choice. The type above and below closes the empty band, so it reads as held breath rather than a gap.",
+  "mobile": "The question drops to 18vw, still two centred lines, line one 32px from the top and line two 24px above the bottom. The buttons stack at the centre at 72% of the width, 12px apart, with 'or' between them and the line of explanation under the second.",
+  "seenIn": []
+ },
+ {
+  "id": "intro-headline-crossing-onto-a-photograph",
+  "role": "intro",
+  "name": "Headline crossing onto a photograph",
+  "shape": "split",
+  "tags": [
+   "type-led",
+   "photo-led"
+  ],
+  "directions": [
+   "sentence-as-layout",
+   "editorial-report",
+   "place-carries-it",
+   "uneven-photographs"
+  ],
+  "needs": [],
+  "blueprint": "A white or pale ground. A photograph taller than it is wide, 720px wide (columns 7–12), sits flush against the right viewport edge with its top at 46% of the section's first screen and runs below the fold. The heading starts on the 32px left margin across columns 1–8: two lines of light-weight serif capitals at clamp(64px, 5.6vw, 88px), leading 1.04, the first line starting 34% down the screen and the second placed so that its right half runs onto the photograph's upper-left corner. Choose a picture whose upper-left quarter is pale enough for the ink, or set the second line twice, in the ink and in the paper colour, each copy clipped to its side of the photograph's left edge. Under the heading on columns 1–5, one paragraph of up to 25 words at 22px, leading 1.4. At the bottom-left a second, smaller photograph of 360×400px enters, cropped by the screen's lower edge, and on the next screen becomes the left half of a staggered pair with the large one. Nothing else is on the screen.",
+  "mobile": "The heading sits at 10vw on two lines on the 20px margin. The photograph becomes 75% of the width, flush right, and starts under the heading's first line so the second line crosses its top-left corner. The paragraph follows at 17px, then the small photograph at 50% of the width on the left margin.",
+  "seenIn": [
+   "aww-sobha-privy-collection"
+  ]
+ },
+ {
+  "id": "features-four-cards-dealt-into-a-fan",
+  "role": "features",
+  "name": "Four cards dealt into a fan",
+  "shape": "pinned",
+  "tags": [
+   "colour-field",
+   "poster"
+  ],
+  "directions": [
+   "pinned-poster",
+   "loud-flat-poster",
+   "borrowed-category",
+   "colour-chapters",
+   "specimen-catalogue"
+  ],
+  "needs": [],
+  "blueprint": "Four values, rules or features, each on a card dealt onto the table as the page scrolls. A wrapper about 400svh tall holds a sticky stage of 100svh on the page's darkest flat ground. Each card is a portrait panel of 340×400px with a 20px radius, filled with its own palette colour (four colours that differ clearly in lightness), no border, no shadow. On a card, with 28px padding: its name at 32px in heavy capitals on one or two lines at the top, a photograph or a single picture of the thing at 60% of the card's width in the middle, and one sentence at 16px at the foot. Card one lands alone at the centre; each further quarter of the wrapper deals the next from below the bottom edge, landing 250px to the right of the one before, rotated between -4 and 4 degrees and overlapping only its right 90px, until the four form a fan about 1,090px wide centred on the stage. Keep each card's name, picture and sentence inside its left 240px, so no card ever covers another's words. In the study the cards overlap by two thirds and bury the earlier titles; here nothing lies on top of text. The heading, two to four words at clamp(40px, 4vw, 60px), sits top-left on the stage on the 32px margin with one sentence at 17px under it. The stage releases after the fourth card has settled; under reduced motion the fan is simply there.",
+  "mobile": "No pin. The cards sit in one row that scrolls sideways with scroll-snap, each 82% of the width with the next peeking in at the right edge, all upright. The heading and sentence sit above the row.",
+  "seenIn": [
+   "aww-made-with-gsap-1"
+  ]
+ },
+ {
+  "id": "work-small-index-large-picture",
+  "role": "work",
+  "name": "Small index, large picture",
+  "shape": "pinned",
+  "tags": [
+   "photo-led",
+   "type-led"
+  ],
+  "directions": [
+   "split-stage",
+   "pinned-poster",
+   "editorial-report",
+   "product-performs"
+  ],
+  "needs": [],
+  "blueprint": "A sticky stage of 100svh split 38/62. The right 62%, from x 560 to the right viewport edge, is one photograph the full height of the stage, bleeding off the right, top and bottom edges, square corners: a staged picture of the current project in use, in a real place. The left column, from the 20px margin to x 520, holds the heading at the top, two lines at clamp(80px, 8.2vw, 120px), leading 0.95, 40px under the navigation; then empty ground; then, anchored to the bottom with a 32px margin, the index: three to six rows 44px tall, each with the project's name at 28px on the left and two or three disciplines at 16px right-aligned in the soft ink. The current row is in the full ink and the others at 40% opacity; rows are told apart by space only. Each project gets one viewport of scroll: as it arrives, its photograph wipes in from the bottom edge (`clip-path: inset(100% 0 0 0)` to `inset(0)` over 900ms) and the current row moves down the list. The empty middle of the left column is closed by the heading above it and the index below.",
+  "mobile": "The heading sits at the top at 14vw on two lines, then the photograph at full width at 4:5, sticky under the heading while the index rows below it change the picture; or let each project simply stack as photograph and row.",
+  "seenIn": [
+   "aww-neutomni"
+  ]
+ },
+ {
+  "id": "list-cards-fold-into-spines",
+  "role": "list",
+  "name": "Cards that fold into spines",
+  "shape": "pinned",
+  "tags": [
+   "type-led",
+   "colour-field",
+   "dense"
+  ],
+  "directions": [
+   "editorial-report",
+   "colour-chapters",
+   "page-is-the-object",
+   "dense-tiles"
+  ],
+  "needs": [],
+  "blueprint": "For a journal, a run of notes or a list of chapters without pictures. A wrapper about 400svh tall holds a sticky stage of 100svh. The heading, two to four words at clamp(48px, 4.2vw, 64px), sits top-left on the 32px margin, 120px from the top. Under it a band 360px tall spans the content width and holds a horizontal deck of text cards, each about 620px wide, in three neighbouring flat tones of one hue taken in turn. On a card, with 32px padding: its title at 30px on up to two lines, leading 1.1; an excerpt of two lines at 16px; and along the bottom edge the date on the left and a text link to read it on the right, both at 16px. As the page scrolls, each step slides the next card in from the right edge and squeezes the earlier ones into slivers 120px wide stacked edge to edge at the left, like book spines, where only the first letters of their titles show, clipped by the sliver. Clicking a sliver brings its card back. 48px under the band, the number of entries and a link to the full list sit at 17px on the left margin, so the stage does not end on an empty floor.",
+  "mobile": "No pin and no slivers. The cards stack at full width with 12px gaps, each in its tone, the title at 24px, the excerpt at 16px, the date and link at the foot. The heading sits above them at 10vw.",
+  "seenIn": [
+   "aww-noho"
+  ]
+ },
+ {
+  "id": "gallery-photographs-around-a-heading",
+  "role": "gallery",
+  "name": "Photographs gathered round a heading",
+  "shape": "mosaic",
+  "tags": [
+   "photo-led",
+   "quiet"
+  ],
+  "directions": [
+   "uneven-photographs",
+   "place-carries-it",
+   "quiet-instrument",
+   "dark-room"
+  ],
+  "needs": [],
+  "blueprint": "A band about one screen tall on the plain page ground, used as the page's one deliberate rest. At its visual centre sits the heading, two lines at clamp(32px, 2.6vw, 40px) in a light weight, centred, with one sentence at 17px under it and a text link beneath that. Around it six to eight small photographs are scattered irregularly across the middle columns (x 320–1120; the outer 320px on each side stay empty, equally), each 160–200px wide at about 9:10, square corners, at different heights with 60–200px of air between them. Two of them come within 40px of the heading's block, which their drift never reaches, so the cluster reads as gathered round it rather than laid on a grid. No captions and no frames. Each photograph drifts at its own rate as the band passes (4–12% of its own height on a scroll-linked timeline), so the cluster loosens and tightens; under reduced motion it stays put. The pictures come from one place or one day and share one treatment.",
+  "mobile": "Five photographs at 30% of the width sit offset left and right around the centred heading, two above it and three below, none cut by an edge. The heading drops to 7vw on two lines.",
+  "seenIn": [
+   "aww-tengile-malamala-collection",
+   "aww-moto-finance"
+  ]
  }
 ]
