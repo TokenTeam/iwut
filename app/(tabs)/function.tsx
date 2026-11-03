@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { type Href, router } from "expo-router";
-import { useState } from "react";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -21,102 +21,18 @@ import { IS_DEV } from "@/constants/is-dev";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
-import { type TKey, useT } from "@/lib/i18n";
+import {
+  filterSections,
+  isFunctionVisible,
+  type WebApp,
+} from "@/lib/functions";
+import {
+  canOpenApp,
+  subscribeFunctionUser,
+  useFunctionUser,
+} from "@/lib/functions/user";
+import { useT } from "@/lib/i18n";
 import { useScheduleStore } from "@/store/schedule";
-import { useUserBindStore } from "@/store/user-bind";
-
-type WebApp = {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
-  labelKey: TKey;
-  color: string;
-  route?: Href;
-  uri?: string;
-  lan?: boolean;
-};
-
-type Section = {
-  titleKey: TKey;
-  items: WebApp[];
-};
-
-const SECTIONS: Section[] = [
-  {
-    titleKey: "fn.section.study",
-    items: [
-      {
-        icon: "bar-chart-outline",
-        labelKey: "fn.app.grade",
-        color: "#8b5cf6",
-        route: "/grade",
-      },
-      {
-        icon: "calendar-clear-outline",
-        labelKey: "fn.app.exam",
-        color: "#3b82f6",
-        route: "/exam",
-      },
-      {
-        icon: "book-outline",
-        labelKey: "fn.app.classroom",
-        color: "#0d9488",
-        uri: "https://classroom-iwut.tokenteam.net",
-        lan: false,
-      },
-      {
-        icon: "easel-outline",
-        labelKey: "fn.app.icSpace",
-        color: "#06b6d4",
-        uri: "https://zhlgd.whut.edu.cn/tpass/login?service=https%3A%2F%2Fzw.whut.edu.cn%2Frem%2Fstatic%2Fsso%2FwebOAuthRed",
-        lan: true,
-      },
-      {
-        icon: "library-outline",
-        labelKey: "fn.app.library",
-        color: "#3b82f6",
-        uri: "https://library-info-iwut.tokenteam.net",
-        lan: true,
-      },
-    ],
-  },
-  {
-    titleKey: "fn.section.life",
-    items: [
-      {
-        icon: "card-outline",
-        labelKey: "fn.app.card",
-        color: "#10b981",
-        uri: "https://cardcare-iwut.tokenteam.net",
-        lan: false,
-      },
-      {
-        icon: "flash-outline",
-        labelKey: "fn.app.elec",
-        color: "#eab308",
-        uri: "https://zhlgd.whut.edu.cn/tpass/login?service=http://nyyzf.whut.edu.cn/MobileWebOnlineHall/#/",
-        lan: false,
-      },
-      {
-        icon: "wifi-outline",
-        labelKey: "fn.app.netPay",
-        color: "#2563eb",
-        uri: "https://zhlgd.whut.edu.cn/tpass/login?service=http://cwsf.whut.edu.cn/netdetails515N023",
-        lan: false,
-      },
-    ],
-  },
-  {
-    titleKey: "fn.section.info",
-    items: [
-      {
-        icon: "newspaper-outline",
-        labelKey: "fn.app.campusNews",
-        color: "#f97316",
-        uri: "http://i.whut.edu.cn",
-        lan: true,
-      },
-    ],
-  },
-];
 
 function openWeb(uri: string) {
   router.push({ pathname: "/browser", params: { uri } });
@@ -132,13 +48,34 @@ export default function FunctionScreen() {
   const isDark = colorScheme === "dark";
   const insets = useSafeAreaInsets();
   const hasBgImage = useScheduleStore((s) => !!s.backgroundImageUri);
-  const isBound = useUserBindStore((s) => s.isBound);
+  const user = useFunctionUser();
+  const { isBound } = user;
   const { height } = useWindowDimensions();
   const [showBrowser, setShowBrowser] = useState(false);
   const [uri, setUri] = useState("");
   const [pendingLanApp, setPendingLanApp] = useState<WebApp | null>(null);
+  const visibleSections = filterSections(user);
+  const pendingLanAppVisible =
+    pendingLanApp !== null && isBound && isFunctionVisible(pendingLanApp, user);
+
+  useEffect(
+    () =>
+      subscribeFunctionUser((next, previous) => {
+        const identityChanged =
+          next.isBound !== previous.isBound ||
+          next.studentId !== previous.studentId;
+        setPendingLanApp((app) =>
+          app &&
+          (identityChanged || !next.isBound || !isFunctionVisible(app, next))
+            ? null
+            : app,
+        );
+      }),
+    [],
+  );
 
   const handleOpenApp = (app: WebApp) => {
+    if (!canOpenApp(app)) return;
     haptic();
     if (app.route) {
       router.push(app.route);
@@ -153,9 +90,9 @@ export default function FunctionScreen() {
   };
 
   const handleConfirmLan = () => {
-    const nextUri = pendingLanApp?.uri;
+    const app = pendingLanApp;
     setPendingLanApp(null);
-    if (nextUri) openWeb(nextUri);
+    if (app?.uri && canOpenApp(app)) openWeb(app.uri);
   };
 
   return (
@@ -216,7 +153,7 @@ export default function FunctionScreen() {
               }`}
             />
 
-            {SECTIONS.map((section) => (
+            {visibleSections.map((section) => (
               <View key={section.titleKey} className="mb-5">
                 <Text className="mb-3 px-6 text-base font-semibold text-neutral-800 dark:text-neutral-100">
                   {t(section.titleKey)}
@@ -380,7 +317,7 @@ export default function FunctionScreen() {
         )}
 
         <ConfirmSheet
-          visible={pendingLanApp !== null}
+          visible={pendingLanAppVisible}
           onClose={() => setPendingLanApp(null)}
           title={t("fn.lanTitle")}
           description={t("fn.lanDesc", {
