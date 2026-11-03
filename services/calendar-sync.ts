@@ -277,9 +277,8 @@ async function doSyncCoursesToCalendar(
   }
 
   const reminderMinutes = useSettingsStore.getState().reminderMinutes;
-  // Android 用正值，iOS 用负值
-  const reminderOffset =
-    Platform.OS === "android" ? reminderMinutes : -reminderMinutes;
+  // 用负偏移表示在事件开始前提醒
+  const reminderOffset = -reminderMinutes;
 
   const requestedIds = new Set(targetCalendarIds ?? []);
   const useLocalCalendar =
