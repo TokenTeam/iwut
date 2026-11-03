@@ -12,6 +12,7 @@ import {
   canAutoRefreshCourses,
   type CourseImportOrigin,
 } from "@/services/course-import/auto-refresh";
+import { clearCourseImportSession } from "@/services/course-import/session-cleanup";
 import {
   buildCourseFetchScript,
   getCourseImportPage,
@@ -151,6 +152,7 @@ function RefreshWebView({
 }) {
   const webview = useRef<WebView>(null);
   const finished = useRef(false);
+  const cancelled = useRef(false);
   const injected = useRef(false);
   const injectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentUrl = useRef("");
@@ -168,6 +170,7 @@ function RefreshWebView({
       finished.current = true;
       if (injectTimer.current) clearTimeout(injectTimer.current);
       webview.current?.stopLoading();
+      webview.current?.clearCache(true);
       log.info("finished", {
         reason,
         type: run.origin.type,
@@ -179,7 +182,9 @@ function RefreshWebView({
         manualImportActive: useCourseStore.getState().manualImportActive,
         ...details,
       });
-      onFinish();
+      void clearCourseImportSession().finally(() => {
+        if (!cancelled.current) onFinish();
+      });
     },
     [onFinish, run.origin.type, run.startedAt],
   );
@@ -200,13 +205,19 @@ function RefreshWebView({
     });
 
   useEffect(() => {
+    cancelled.current = false;
+    const currentWebView = webview.current;
     log.info("started", { type: run.origin.type, platform: Platform.OS });
     const timer = setTimeout(() => finish("timeout"), TIMEOUT_MS);
     return () => {
+      cancelled.current = true;
       clearTimeout(timer);
       if (injectTimer.current) clearTimeout(injectTimer.current);
       if (!finished.current) {
         finished.current = true;
+        currentWebView?.stopLoading();
+        currentWebView?.clearCache(true);
+        void clearCourseImportSession();
         log.info("finished", {
           reason: "cancelled",
           type: run.origin.type,

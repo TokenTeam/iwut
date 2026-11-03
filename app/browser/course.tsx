@@ -1,4 +1,3 @@
-import CookieManager from "@preeternal/react-native-cookie-manager";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
@@ -31,6 +30,7 @@ import {
   WebViewLoadError,
 } from "@/lib/webview-error";
 import type { BaseImportType } from "@/services/course-import/auto-refresh";
+import { clearCourseImportSession } from "@/services/course-import/session-cleanup";
 import {
   buildCourseFetchScript,
   getCourseImportPage,
@@ -62,21 +62,15 @@ export default function CourseImportScreen() {
   const webview = useRef<WebView>(null);
   const injected = useRef(false);
   const finished = useRef(false);
-  const shouldClearSessionOnExit = useRef(!isBound);
   const injectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingInjectionUrl = useRef("");
   const [showImportOverlay, setShowImportOverlay] = useState(isBound);
-  const clearManualImportSession = useCallback(
-    () =>
-      CookieManager.clearAll(true).catch((error) =>
-        reportError(error, { module: "course-session-cleanup" }),
-      ),
-    [],
-  );
   const finish = useCallback(
     (success: boolean, message?: string, notify = true) => {
       if (finished.current) return;
       finished.current = true;
+      if (injectTimer.current) clearTimeout(injectTimer.current);
+      webview.current?.stopLoading();
       webview.current?.clearCache(true);
       injected.current = false;
 
@@ -104,14 +98,9 @@ export default function CourseImportScreen() {
         }
       };
 
-      if (shouldClearSessionOnExit.current) {
-        clearManualImportSession().finally(leaveImportScreen);
-        return;
-      }
-
-      leaveImportScreen();
+      void clearCourseImportSession().finally(leaveImportScreen);
     },
-    [clearManualImportSession, t],
+    [t],
   );
   const {
     onLoadEnd: autoLoginOnLoadEnd,
@@ -148,16 +137,14 @@ export default function CourseImportScreen() {
   useEffect(() => {
     useCourseStore.setState({ manualImportActive: true });
     const currentWebView = webview.current;
-    const clearSessionOnExit = shouldClearSessionOnExit.current;
     return () => {
       useCourseStore.setState({ manualImportActive: false });
       if (injectTimer.current) clearTimeout(injectTimer.current);
+      currentWebView?.stopLoading();
       currentWebView?.clearCache(true);
       if (!finished.current) {
         finished.current = true;
-        if (clearSessionOnExit) {
-          void clearManualImportSession();
-        }
+        void clearCourseImportSession();
         Toast.show({
           type: "error",
           text1: translate("course.importFail"),
@@ -166,7 +153,7 @@ export default function CourseImportScreen() {
         });
       }
     };
-  }, [clearManualImportSession]);
+  }, []);
 
   useEffect(() => {
     if (!isBound || sms.visible) return;
