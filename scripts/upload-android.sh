@@ -26,5 +26,5 @@ aws s3 cp "$APK" "$VERSIONED" \
 
 aws s3 cp "$VERSIONED" "$LATEST" \
   --endpoint-url "$ENDPOINT" \
-  --metadata-directive COPY \
+  --copy-props metadata-directive \
   --only-show-errors
