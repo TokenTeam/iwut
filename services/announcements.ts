@@ -2,6 +2,7 @@ import * as Application from "expo-application";
 import { Platform } from "react-native";
 
 import { CONFIG_REPO_CDN } from "@/constants/api";
+import { isNetworkAvailable } from "@/lib/network";
 import { compareVersions } from "@/lib/version";
 
 export type AnnouncementType = "info" | "warning" | "event" | "maintenance";
@@ -130,6 +131,8 @@ function parseAnnouncement(raw: unknown): Announcement | null {
 }
 
 export async function fetchAnnouncements(): Promise<Announcement[] | null> {
+  if (!(await isNetworkAvailable())) return null;
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 5000);
 

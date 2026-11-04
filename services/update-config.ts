@@ -4,6 +4,7 @@ import { Platform } from "react-native";
 
 import { CONFIG_REPO_CDN } from "@/constants/api";
 import { BASE_LOCALE, type ResolvedLang } from "@/lib/i18n/languages";
+import { isNetworkAvailable } from "@/lib/network";
 import { isInRollout, type Rollout } from "@/lib/update-rollout";
 import { compareVersions } from "@/lib/version";
 
@@ -287,6 +288,8 @@ export function getCurrentChannel(): string {
 }
 
 export async function fetchUpdateManifest(): Promise<UpdateManifest | null> {
+  if (!(await isNetworkAvailable())) return null;
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 5000);
 

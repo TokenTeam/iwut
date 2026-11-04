@@ -32,6 +32,7 @@ import {
   useFunctionUser,
 } from "@/lib/functions/user";
 import { useT } from "@/lib/i18n";
+import { isCampusNetwork } from "@/lib/network";
 import { useScheduleStore } from "@/store/schedule";
 
 function openWeb(uri: string) {
@@ -74,7 +75,7 @@ export default function FunctionScreen() {
     [],
   );
 
-  const handleOpenApp = (app: WebApp) => {
+  const handleOpenApp = async (app: WebApp) => {
     if (!canOpenApp(app)) return;
     haptic();
     if (app.route) {
@@ -83,6 +84,12 @@ export default function FunctionScreen() {
     }
     if (!app.uri) return;
     if (app.lan) {
+      const isCampus = await isCampusNetwork();
+      if (!canOpenApp(app)) return;
+      if (isCampus) {
+        openWeb(app.uri);
+        return;
+      }
       setPendingLanApp(app);
       return;
     }
@@ -372,7 +379,6 @@ function AppItem({
           height: 44,
           borderRadius: 14,
           overflow: "hidden",
-          // 有背景图时先垫近实底，避免图标淹没在图片纹理里
           backgroundColor: hasBg
             ? isDark
               ? "rgba(28,28,30,0.88)"
