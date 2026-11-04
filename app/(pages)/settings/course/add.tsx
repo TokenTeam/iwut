@@ -1,8 +1,9 @@
 import { DateTimePicker } from "@expo/ui/community/datetime-picker";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { RangeSlider } from "@react-native-assets/slider";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronDown, ChevronUp } from "lucide";
+import ChevronDown from "lucide/dist/esm/icons/chevron-down.mjs";
+import ChevronUp from "lucide/dist/esm/icons/chevron-up.mjs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,

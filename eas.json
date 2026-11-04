@@ -22,8 +22,7 @@
       "distribution": "internal",
       "env": {
         "EAS_BUILD_PROFILE": "preview",
-        "EXPO_PUBLIC_DEBUG": "1",
-        "SENTRY_ALLOW_FAILURE": "true"
+        "EXPO_PUBLIC_DEBUG": "1"
       },
       "android": {
         "gradleCommand": ":app:assembleRelease --stacktrace --init-script ../scripts/android-mirror.init.gradle"
@@ -35,8 +34,7 @@
       "autoIncrement": true,
       "env": {
         "EAS_BUILD_PROFILE": "production",
-        "EXPO_PUBLIC_DEBUG": "0",
-        "SENTRY_ALLOW_FAILURE": "true"
+        "EXPO_PUBLIC_DEBUG": "0"
       },
       "android": {
         "buildType": "apk",

@@ -1,6 +1,7 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, Stack } from "expo-router";
-import { ChevronDown, ChevronUp } from "lucide";
+import ChevronDown from "lucide/dist/esm/icons/chevron-down.mjs";
+import ChevronUp from "lucide/dist/esm/icons/chevron-up.mjs";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 

@@ -1,8 +1,7 @@
-import forge from "node-forge";
-
 import { CONFIG_REPO_CDN } from "@/constants/api";
-import { DefaultSpiderHttpClientProvider, Spider } from "@/lib/spider";
+import { encryptRsa } from "@/lib/rsa";
 import type { SpiderHttpClient, SpiderInfo } from "@/lib/spider";
+import { DefaultSpiderHttpClientProvider, Spider } from "@/lib/spider";
 import { useUserBindStore } from "@/store/user-bind";
 
 import { NativeRPCErrorType, nativeRPCError } from "../error";
@@ -109,8 +108,8 @@ export class NativeRPCSpiderService implements NativeRPCService {
     const publicKey = await this.fetchPublicKey();
 
     return {
-      ul: encryptRSA(credentials.username, publicKey),
-      pl: encryptRSA(credentials.password, publicKey),
+      ul: encryptRsa(credentials.username, publicKey),
+      pl: encryptRsa(credentials.password, publicKey),
     };
   }
 
@@ -169,22 +168,6 @@ export class NativeRPCSpiderService implements NativeRPCService {
 
     return this.spider.deserialize(await response.text());
   }
-}
-
-function encryptRSA(content: string, publicKeyBase64: string): string {
-  const pem = `-----BEGIN PUBLIC KEY-----\n${chunkPem(
-    publicKeyBase64,
-  )}\n-----END PUBLIC KEY-----`;
-  const publicKey = forge.pki.publicKeyFromPem(pem);
-  const encrypted = publicKey.encrypt(content, "RSAES-PKCS1-V1_5");
-  return forge.util.encode64(encrypted).replace(/\r?\n/g, "");
-}
-
-function chunkPem(input: string): string {
-  return input
-    .replace(/\s+/g, "")
-    .replace(/(.{64})/g, "$1\n")
-    .trim();
 }
 
 function createPublicKeySpider(): SpiderInfo {

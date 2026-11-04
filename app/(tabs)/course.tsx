@@ -1,7 +1,8 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect, useIsFocused } from "expo-router";
-import { Menu, X } from "lucide";
+import Menu from "lucide/dist/esm/icons/menu.mjs";
+import X from "lucide/dist/esm/icons/x.mjs";
 import {
   type ReactNode,
   startTransition,

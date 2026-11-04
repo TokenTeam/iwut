@@ -1,6 +1,7 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useFocusEffect, useIsFocused } from "expo-router";
-import { CirclePlus, CircleX } from "lucide";
+import CirclePlus from "lucide/dist/esm/icons/circle-plus.mjs";
+import CircleX from "lucide/dist/esm/icons/circle-x.mjs";
 import { type ComponentProps, useCallback, useRef, useState } from "react";
 import {
   Modal,

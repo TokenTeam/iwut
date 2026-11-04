@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import CookieManager from "@preeternal/react-native-cookie-manager";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";

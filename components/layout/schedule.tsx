@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { BlurView } from "expo-blur";
 import { useIsFocused, useRouter } from "expo-router";

@@ -55,7 +55,8 @@ Sentry.init({
 
 /* eslint-disable import/first */
 import "@/lib/i18n/bootstrap";
-import { Feather, Ionicons } from "@expo/vector-icons";
+import Feather from "@expo/vector-icons/Feather";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useFonts } from "expo-font";
 import { Observe, ObserveRoot } from "expo-observe";
