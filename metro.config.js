@@ -17,4 +17,18 @@ config.transformer.getTransformOptions = async () => ({
 
 config.resolver.assetExts.push("md");
 
+const resolveRequest = config.resolver.resolveRequest;
+
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === "nitro-core") {
+    return { type: "sourceFile", filePath: require.resolve("nitro-core") };
+  }
+
+  return (resolveRequest ?? context.resolveRequest)(
+    context,
+    moduleName,
+    platform,
+  );
+};
+
 module.exports = withNativewind(config);
