@@ -134,7 +134,12 @@ const config: ExpoConfig = {
       {
         android: {
           buildExpoModulesCoreFromSource: true,
-          buildArchs: ["arm64-v8a"],
+          buildArchs: [
+            "arm64-v8a",
+            ...(process.env.ANDROID_MULTIABI === "1"
+              ? ["x86", "armeabi-v7a"]
+              : []),
+          ],
           useLegacyPackaging: false,
           enableMinifyInReleaseBuilds: true,
           enableShrinkResourcesInReleaseBuilds: true,

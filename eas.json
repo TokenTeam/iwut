@@ -42,6 +42,13 @@
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease --stacktrace --init-script ../scripts/android-mirror.init.gradle"
       }
+    },
+    "multiabi": {
+      "extends": "production",
+      "autoIncrement": false,
+      "env": {
+        "ANDROID_MULTIABI": "1"
+      }
     }
   },
   "submit": {

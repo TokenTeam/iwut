@@ -17,6 +17,10 @@ name: Build Android
         description: Production
         type: boolean
         default: false
+      multiabi:
+        description: Production (Multi-ABI)
+        type: boolean
+        default: false
       upload:
         description: Upload to Cloudflare R2
         type: boolean
@@ -46,10 +50,11 @@ jobs:
           DEVELOPMENT: ${{ inputs.development }}
           PREVIEW: ${{ github.event_name == 'pull_request' || inputs.preview }}
           PRODUCTION: ${{ inputs.production }}
+          MULTIABI: ${{ inputs.multiabi }}
         run: |
           node <<'EOF'
           const fs = require('node:fs');
-          const profiles = ['development', 'preview', 'production'].filter(
+          const profiles = ['development', 'preview', 'production', 'multiabi'].filter(
             profile => process.env[profile.toUpperCase()] === 'true'
           );
           if (profiles.length === 0) {

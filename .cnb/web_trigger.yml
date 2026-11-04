@@ -15,6 +15,8 @@ branch:
                 value: preview
               - name: Production
                 value: production
+              - name: Production (Multi-ABI)
+                value: multiabi
           USE_ANDROID_MIRROR:
             name: Use Android mirror
             type: switch
