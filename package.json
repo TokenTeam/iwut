@@ -10,6 +10,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "lint": "expo lint",
+    "atlas": "EXPO_ATLAS=true expo export && expo-atlas .expo/atlas.jsonl",
     "typecheck": "tsc --noEmit",
     "i18n-check": "bun scripts/i18n-check/index.ts",
     "check": "bun run lint && bun run typecheck && bun run i18n-check",
@@ -98,6 +99,7 @@
     "eslint-config-expo": "58.0.4",
     "eslint-config-prettier": "~10.1.8",
     "eslint-plugin-prettier": "~5.5.7",
+    "expo-atlas": "~0.5.0",
     "lefthook": "~2.2.2",
     "prettier": "~3.9.10",
     "typescript": "~6.0.3"
