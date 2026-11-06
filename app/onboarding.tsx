@@ -19,7 +19,7 @@ import Toast from "react-native-toast-message";
 import { AcademicSyncSetting } from "@/components/layout/academic-sync-setting";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { PermissionSettingsSheet } from "@/components/ui/permission-settings-sheet";
-import { IWUT_WEB_URL } from "@/constants/api";
+import { WEB_URL } from "@/constants/api";
 import { IS_DEV } from "@/constants/is-dev";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHaptics } from "@/hooks/use-haptics";
@@ -413,7 +413,7 @@ function AccountWelcome({
             hitSlop={8}
             onPress={() => {
               haptic();
-              Linking.openURL(IWUT_WEB_URL);
+              Linking.openURL(WEB_URL);
             }}
           >
             <Text className="text-sm leading-5" style={{ color: muted }}>
