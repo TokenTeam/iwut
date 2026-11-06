@@ -11,11 +11,16 @@ import { useUserBindStore } from "@/store/user-bind";
 
 export function AcademicSyncSetting({
   showLastSync = false,
-}: Readonly<{ showLastSync?: boolean }>) {
+  requireCourses = false,
+}: Readonly<{ showLastSync?: boolean; requireCourses?: boolean }>) {
   const t = useT();
   const enabled = useSettingsStore((s) => s.autoRefreshCourses);
   const setEnabled = useSettingsStore((s) => s.setAutoRefreshCourses);
   const lastSyncAt = useCourseStore((s) => s.lastAutoRefreshSuccessAt);
+  const hasCourses = useCourseStore((s) => s.courses.length > 0);
+  const isBound = useUserBindStore((s) => s.isBound);
+  const needsBind = requireCourses && !isBound;
+  const needsImport = requireCourses && !hasCourses;
   const [confirmVisible, setConfirmVisible] = useState(false);
   const lastSyncDate = useMemo(
     () =>
@@ -33,6 +38,8 @@ export function AcademicSyncSetting({
   );
 
   const handleChange = (value: boolean, conflictConfirmed = false) => {
+    if (requireCourses && useCourseStore.getState().courses.length === 0)
+      return;
     const user = useUserBindStore.getState();
     if (value && !user.isBound) {
       Toast.show({
@@ -70,9 +77,13 @@ export function AcademicSyncSetting({
         iconBg="#178f8b"
         label={t("calendarSet.academicSync")}
         value={
-          showLastSync && enabled
-            ? (lastSyncDate ?? t("calendarSet.neverSynced"))
-            : undefined
+          needsBind
+            ? t("onboarding.needBindShort")
+            : needsImport
+              ? t("onboarding.needTimetableShort")
+              : showLastSync && enabled
+                ? (lastSyncDate ?? t("calendarSet.neverSynced"))
+                : undefined
         }
         onPress={() =>
           handleChange(!useSettingsStore.getState().autoRefreshCourses)
@@ -80,6 +91,7 @@ export function AcademicSyncSetting({
         showArrow={false}
         right={
           <Switch
+            disabled={needsBind || needsImport}
             value={enabled}
             onValueChange={handleChange}
             testID="auto-refresh-courses"

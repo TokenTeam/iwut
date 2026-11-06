@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
 import { AcademicSyncSetting } from "@/components/layout/academic-sync-setting";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { PermissionSettingsSheet } from "@/components/ui/permission-settings-sheet";
 import { WEB_URL } from "@/constants/api";
@@ -77,9 +78,13 @@ export default function OnboardingScreen() {
     "calendar" | "notification" | "exact-alarm" | null
   >(null);
   const [calendarBusy, setCalendarBusy] = useState(false);
+  const [pendingImport, setPendingImport] = useState<ImportType | null>(null);
   const finishStarted = useRef(false);
 
-  const step = selectedStep === "account" && !isBound ? "account" : "setup";
+  const step =
+    params.step !== "setup" && selectedStep === "account" && !isBound
+      ? "account"
+      : "setup";
 
   const handleLogin = () => {
     if (!acceptedLegal) {
@@ -91,15 +96,26 @@ export default function OnboardingScreen() {
       return;
     }
     haptic();
-    router.push("/browser/bind");
+    router.push({
+      pathname: "/auth/login",
+      params: { from: "onboarding" },
+    });
   };
 
-  const handleImport = (type: ImportType) => {
-    haptic();
+  const openImport = (type: ImportType) => {
     router.push({
       pathname: "/browser/course",
       params: { type },
     });
+  };
+
+  const handleImport = (type: ImportType) => {
+    haptic();
+    if (!useUserBindStore.getState().isBound) {
+      setPendingImport(type);
+      return;
+    }
+    openImport(type);
   };
 
   const handleReminderToggle = async (value: boolean) => {
@@ -240,6 +256,23 @@ export default function OnboardingScreen() {
       <PermissionSettingsSheet
         target={permissionIssue}
         onClose={() => setPermissionIssue(null)}
+      />
+      <ConfirmSheet
+        visible={pendingImport !== null}
+        onClose={() => setPendingImport(null)}
+        title={t("onboarding.bindBeforeImportTitle")}
+        description={t("onboarding.bindBeforeImportDesc")}
+        confirmText={t("onboarding.bindFirst")}
+        cancelText={t("onboarding.continueImport")}
+        onConfirm={() => {
+          setPendingImport(null);
+          router.push("/browser/bind");
+        }}
+        onCancel={() => {
+          const type = pendingImport;
+          setPendingImport(null);
+          if (type) openImport(type);
+        }}
       />
     </>
   );
@@ -467,10 +500,9 @@ function SetupScreen({
   onReminderToggle: (value: boolean) => void;
 }>) {
   const t = useT();
-  const haptic = useHaptics();
   const insets = useSafeAreaInsets();
-  const [showChoices, setShowChoices] = useState(false);
-  const [importSkipped, setImportSkipped] = useState(false);
+  const isBound = useUserBindStore((s) => s.isBound);
+  const studentId = useUserBindStore((s) => s.studentId);
 
   return (
     <View
@@ -507,6 +539,17 @@ function SetupScreen({
         </View>
 
         <View style={{ marginTop: 24 }}>
+          <MenuGroup>
+            <MenuItem
+              icon={isBound ? "check-circle" : "person-add"}
+              iconBg={isBound ? "#34C759" : "#007AFF"}
+              label={t("user.bindScreenTitle")}
+              value={isBound ? studentId : undefined}
+              showArrow={!isBound}
+              onPress={isBound ? undefined : () => router.push("/browser/bind")}
+            />
+          </MenuGroup>
+
           <MenuGroup title={t("onboarding.scheduleSection")}>
             {hasCourses ? (
               <MenuItem
@@ -516,7 +559,7 @@ function SetupScreen({
                 value={t("onboarding.courseEntries", { n: courseCount })}
                 showArrow={false}
               />
-            ) : showChoices ? (
+            ) : (
               <>
                 <MenuItem
                   icon="school"
@@ -530,45 +573,12 @@ function SetupScreen({
                   label={t("course.master")}
                   onPress={() => onImport("master")}
                 />
-                <MenuItem
-                  icon="close"
-                  iconBg="#8E8E93"
-                  label={t("common.cancel")}
-                  showArrow={false}
-                  onPress={() => {
-                    haptic();
-                    setShowChoices(false);
-                  }}
-                />
-              </>
-            ) : (
-              <>
-                <MenuItem
-                  icon="calendar-today"
-                  iconBg="#34C759"
-                  label={t("onboarding.importNow")}
-                  onPress={() => {
-                    haptic();
-                    setShowChoices(true);
-                  }}
-                />
-                <MenuItem
-                  icon={importSkipped ? "check" : "schedule"}
-                  iconBg={importSkipped ? "#34C759" : "#8E8E93"}
-                  label={t("onboarding.importLater")}
-                  value={importSkipped ? t("onboarding.selected") : undefined}
-                  showArrow={false}
-                  onPress={() => {
-                    haptic();
-                    setImportSkipped(true);
-                  }}
-                />
               </>
             )}
           </MenuGroup>
 
           <MenuGroup title={t("onboarding.optionsSection")}>
-            <AcademicSyncSetting />
+            <AcademicSyncSetting requireCourses />
             <MenuItem
               icon="notifications-active"
               iconBg="#FF9500"
