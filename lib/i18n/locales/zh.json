@@ -16,6 +16,12 @@
   },
   "auth": {
     "login": "登录",
+    "guest": "游客",
+    "loginHint": "点击登录",
+    "sessionLoading": "正在加载",
+    "sessionFailed": "用户信息获取失败",
+    "logout": "退出登录",
+    "logoutDesc": "确定要退出登录吗？您将无法使用云服务相关功能，本地数据将保留。",
     "register": "注册",
     "name": "昵称",
     "namePlaceholder": "输入你的昵称",
@@ -289,7 +295,7 @@
     "lanConfirm": "已连接，继续打开"
   },
   "user": {
-    "bindTitle": "绑定智慧理工大",
+    "bindTitle": "绑定智慧理工大账号",
     "bindSubtitle": "绑定后可自动登录校园服务",
     "unbindTitle": "解除绑定",
     "unbindDesc": "确定要解除智慧理工大账号绑定吗？",

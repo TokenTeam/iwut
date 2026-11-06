@@ -3,8 +3,15 @@ import MaskedView from "@react-native-masked-view/masked-view";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { type ReactNode, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { type ReactNode, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, {
   Defs,
@@ -16,12 +23,14 @@ import Svg, {
   Stop,
   LinearGradient as SvgLinearGradient,
 } from "react-native-svg";
+import Toast from "react-native-toast-message";
 
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { MenuGroup, MenuItem } from "@/components/ui/menu-item";
 import { IS_DEV } from "@/constants/is-dev";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useMarkRouteInteractive } from "@/hooks/use-mark-route-interactive";
+import { authClient } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { reportError } from "@/lib/report";
 import { useDeveloperOptionsStore } from "@/store/developer-options";
@@ -202,12 +211,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "rgba(255,255,255,0.82)",
   },
-  heroSubtle: {
-    marginTop: 2,
-    fontSize: 13,
-    color: "rgba(255,255,255,0.82)",
-    fontVariant: ["tabular-nums"],
-  },
   logoutBtn: {
     height: 32,
     width: 32,
@@ -225,77 +228,209 @@ const styles = StyleSheet.create({
   },
 });
 
-function UnboundHero() {
+function UserHero() {
   const t = useT();
   const router = useRouter();
+  const { data, isPending, error, refetch } = authClient.useSession();
+  const user = data?.user;
+  const [logoutVisible, setLogoutVisible] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const signingOut = useRef(false);
+  const [avatarFailed, setAvatarFailed] = useState<string | null>(null);
+
+  async function logout() {
+    if (signingOut.current) return;
+    signingOut.current = true;
+    setLoggingOut(true);
+    setLogoutVisible(false);
+    try {
+      const result = await authClient.signOut();
+      if (result.error) throw result.error;
+    } catch {
+      Toast.show({
+        type: "error",
+        text1: t("auth.requestFailed"),
+        position: "bottom",
+      });
+    } finally {
+      signingOut.current = false;
+      setLoggingOut(false);
+    }
+  }
+
+  const loading = !user && isPending;
+  const failed = !user && !isPending && Boolean(error);
+  const openAccount = () => {
+    if (failed) void refetch();
+    else router.push("/auth/login");
+  };
+
   return (
-    <Pressable
-      style={({ pressed }) => [styles.heroRow, { opacity: pressed ? 0.8 : 1 }]}
-      onPress={() => router.push("/browser/bind")}
-    >
-      <View style={styles.avatarRing}>
-        <MaterialIcons name="person-add" size={32} color="#ffffff" />
-      </View>
-      <View style={styles.heroBody}>
-        <Text style={styles.heroName} numberOfLines={1}>
-          {t("user.bindTitle")}
-        </Text>
-        <Text style={styles.heroMeta} numberOfLines={1}>
-          {t("user.bindSubtitle")}
-        </Text>
-      </View>
-      <MaterialIcons
-        name="chevron-right"
-        size={22}
-        color="rgba(255,255,255,0.85)"
+    <>
+      <Pressable
+        style={({ pressed }) => [
+          styles.heroRow,
+          { opacity: pressed ? 0.8 : 1 },
+        ]}
+        onPress={!user && !loading ? openAccount : undefined}
+      >
+        <View style={styles.avatarRing}>
+          <Image
+            source={
+              user?.image && avatarFailed !== user.image
+                ? { uri: user.image }
+                : defaultAvatar
+            }
+            style={styles.avatarImage}
+            contentFit="cover"
+            onError={() => setAvatarFailed(user?.image ?? null)}
+          />
+        </View>
+        <View style={styles.heroBody}>
+          <Text style={styles.heroName} numberOfLines={1}>
+            {user?.name ||
+              user?.email ||
+              t(
+                loading
+                  ? "auth.sessionLoading"
+                  : failed
+                    ? "auth.sessionFailed"
+                    : "auth.guest",
+              )}
+          </Text>
+          <Text style={styles.heroMeta} numberOfLines={1}>
+            {user?.email || (!loading && !failed ? t("auth.loginHint") : "")}
+          </Text>
+        </View>
+        {user ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("auth.logout")}
+            disabled={loggingOut}
+            style={({ pressed }) => [
+              styles.logoutBtn,
+              { opacity: pressed || loggingOut ? 0.7 : 1 },
+            ]}
+            onPress={() => setLogoutVisible(true)}
+            hitSlop={10}
+          >
+            {loggingOut ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <MaterialIcons name="logout" size={15} color="#ffffff" />
+            )}
+          </Pressable>
+        ) : loading ? (
+          <ActivityIndicator size="small" color="#ffffff" />
+        ) : (
+          <MaterialIcons
+            name={failed ? "refresh" : "chevron-right"}
+            size={22}
+            color="rgba(255,255,255,0.85)"
+          />
+        )}
+      </Pressable>
+      <ConfirmSheet
+        visible={logoutVisible}
+        onClose={() => setLogoutVisible(false)}
+        title={t("auth.logout")}
+        description={t("auth.logoutDesc")}
+        confirmText={t("auth.logout")}
+        destructive
+        onConfirm={() => void logout()}
       />
-    </Pressable>
+    </>
   );
 }
 
-function BoundHero() {
+function CampusAccountSetting() {
   const t = useT();
+  const router = useRouter();
+  const isBound = useUserBindStore((s) => s.isBound);
   const studentId = useUserBindStore((s) => s.studentId);
   const studentName = useUserBindStore((s) => s.studentName);
   const college = useUserBindStore((s) => s.college);
   const eduLevel = useUserBindStore((s) => s.eduLevel);
   const unbind = useUserBindStore((s) => s.unbind);
   const [unbindVisible, setUnbindVisible] = useState(false);
-
   const meta = [eduLevel, college].filter(Boolean).join(" · ");
 
   return (
     <>
-      <View style={styles.heroRow}>
-        <View style={styles.avatarRing}>
-          <Image
-            source={defaultAvatar}
-            style={styles.avatarImage}
-            contentFit="cover"
-          />
-        </View>
-        <View style={styles.heroBody}>
-          <Text style={styles.heroName} numberOfLines={1}>
-            {studentName}
-          </Text>
-          {meta ? (
-            <Text style={styles.heroMeta} numberOfLines={1}>
-              {meta}
-            </Text>
-          ) : null}
-          <Text style={styles.heroSubtle} numberOfLines={1}>
-            {studentId}
-          </Text>
-        </View>
+      <View
+        className="mb-4 overflow-hidden rounded-lg bg-white dark:bg-neutral-800"
+        style={{ height: 88 }}
+      >
         <Pressable
-          style={({ pressed }) => [
-            styles.logoutBtn,
-            { opacity: pressed ? 0.7 : 1 },
-          ]}
-          onPress={() => setUnbindVisible(true)}
-          hitSlop={10}
+          onPress={isBound ? undefined : () => router.push("/browser/bind")}
+          className="flex-1 flex-row items-center gap-3 p-4"
+          style={({ pressed }) => ({
+            opacity: pressed && !isBound ? 0.7 : 1,
+          })}
         >
-          <MaterialIcons name="logout" size={15} color="#ffffff" />
+          <View className="h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-700">
+            <MaterialIcons name="school" size={25} color="#007AFF" />
+          </View>
+          <View className="min-w-0 flex-1 gap-1">
+            {isBound ? (
+              <View className="flex-row items-center gap-2">
+                {studentName ? (
+                  <Text
+                    numberOfLines={1}
+                    className="shrink text-base font-semibold text-neutral-900 dark:text-neutral-100"
+                  >
+                    {studentName}
+                  </Text>
+                ) : null}
+                <Text
+                  numberOfLines={1}
+                  className="shrink text-sm text-neutral-500 dark:text-neutral-400"
+                  style={{ fontVariant: ["tabular-nums"] }}
+                >
+                  {studentId}
+                </Text>
+              </View>
+            ) : (
+              <Text
+                numberOfLines={1}
+                className="text-base font-semibold text-neutral-900 dark:text-neutral-100"
+              >
+                {t("user.bindTitle")}
+              </Text>
+            )}
+            {isBound ? (
+              <>
+                {meta ? (
+                  <Text
+                    numberOfLines={1}
+                    className="text-sm text-neutral-500 dark:text-neutral-400"
+                  >
+                    {meta}
+                  </Text>
+                ) : null}
+              </>
+            ) : (
+              <Text
+                numberOfLines={2}
+                className="text-sm text-neutral-500 dark:text-neutral-400"
+              >
+                {t("user.bindSubtitle")}
+              </Text>
+            )}
+          </View>
+          {isBound ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("user.unbind")}
+              hitSlop={8}
+              className="h-8 w-8 items-center justify-center rounded-full active:bg-neutral-100 dark:active:bg-neutral-700"
+              onPress={() => setUnbindVisible(true)}
+            >
+              <MaterialIcons name="link-off" size={20} color="#8E8E93" />
+            </Pressable>
+          ) : (
+            <MaterialIcons name="chevron-right" size={22} color="#8E8E93" />
+          )}
         </Pressable>
       </View>
       <ConfirmSheet
@@ -312,11 +447,6 @@ function BoundHero() {
       />
     </>
   );
-}
-
-function UserHero() {
-  const isBound = useUserBindStore((s) => s.isBound);
-  return isBound ? <BoundHero /> : <UnboundHero />;
 }
 
 export default function UserScreen() {
@@ -339,6 +469,7 @@ export default function UserScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View className="px-4">
+          <CampusAccountSetting />
           <MenuGroup title={t("user.menuTools")}>
             <MenuItem
               icon="wifi"
